@@ -253,7 +253,6 @@
     <div class="field">
       <label for="sort">Tri</label>
       <select id="sort">
-        <!-- plus de Z->A, plus de tri par nom de coaster -->
         <option value="park_asc" selected>Parc A→Z</option>
         <option value="year_asc">Ouverture ↑</option>
         <option value="year_desc">Ouverture ↓</option>
@@ -263,7 +262,6 @@
     <div class="field">
       <label for="sort2">Tri secondaire</label>
       <select id="sort2">
-        <!-- plus de Z->A, plus de tri par nom de coaster -->
         <option value="year_asc" selected>Ouverture ↑</option>
         <option value="year_desc">Ouverture ↓</option>
         <option value="park_asc">Parc A→Z</option>
@@ -460,11 +458,9 @@
       `;
     }
 
-    // Normalise "au sens près" : on ignore l'ordre (asc/desc) et on garde uniquement la famille du tri
-    // ex: year_asc et year_desc => même sens (year)
-    //     park_asc => park
+    // "au sens près": on ignore asc/desc, on compare la famille (park / year)
     function sortFamily(mode){
-      return String(mode || "").split("_")[0]; // "year" ou "park"
+      return String(mode || "").split("_")[0];
     }
 
     function sortRows(list, mode1, mode2, f){
@@ -491,7 +487,7 @@
         c = cmp(mode2, a, b);
         if(c !== 0) return c;
 
-        // fallback stable : parc puis année
+        // fallback stable
         c = cmp("park_asc", a, b);
         if(c !== 0) return c;
         return cmp("year_asc", a, b);
@@ -580,7 +576,7 @@
           throw new Error("Champ 'Nom de coaster' introuvable dans le JSON. Vérifie la clé (ex: 'Nom' ou 'Coaster').");
         }
 
-        // Intervalle d'années global
+        // Années globales
         let yMinAbs = 1900;
         let yMaxAbs = new Date().getUTCFullYear();
         if(f.yearField){
@@ -600,6 +596,7 @@
         yearMaxEl.value = String(yMaxAbs);
         updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
 
+        // Checklists
         let makerCtl = null;
         let parkCtl = null;
 
@@ -617,7 +614,7 @@
         }
 
         if(f.parkField){
-          const parkLabels = uniqueSortedLabels(rows.map r => r[f.parkField]));
+          const parkLabels = uniqueSortedLabels(rows.map(r => r[f.parkField])); // ✅ corrigé
           parkCtl = buildChecklist({
             containerEl: parkList,
             searchEl: parkSearch,
@@ -629,52 +626,39 @@
           parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé.</div>`;
         }
 
-        // --- règle anti-identique (au sens près) + désactivation des options secondaires ---
-        // Quand le principal devient identique au secondaire AU SENS PRÈS (famille),
-        // on met le secondaire à la valeur de l'ancien principal (exacte).
+        // Règles tri principal/secondaire
         let prevPrimary = sortSel.value;
 
         function updateSecondaryOptions(){
           const fam1 = sortFamily(sortSel.value);
-          Array.from(sort2Sel.options).forEach(opt => {
+          for (const opt of Array.from(sort2Sel.options)){
             opt.disabled = (sortFamily(opt.value) === fam1);
-          });
-
-          // si l'option actuellement sélectionnée devient invalide, basculer sur la première option valide
+          }
+          // si l'actuel secondaire devient interdit, basculer sur une option valide
           if(sortFamily(sort2Sel.value) === fam1){
             const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
             if(firstValid) sort2Sel.value = firstValid.value;
           }
         }
 
-        function enforceSwapIfSameFamily(newPrimary){
-          const famP = sortFamily(newPrimary);
-          const famS = sortFamily(sort2Sel.value);
-          if(famP === famS){
-            // mettre le secondaire à l'ancien principal (exact)
+        function applyPrimaryChange(){
+          const newPrimary = sortSel.value;
+
+          // si même famille (au sens près) => secondaire = ancien principal (valeur exacte)
+          if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
             sort2Sel.value = prevPrimary;
           }
+
           prevPrimary = newPrimary;
+          updateSecondaryOptions();
+          render();
         }
 
-        // init: empêcher secondaire d'être "park" si principal "park"
-        updateSecondaryOptions();
-        // si malgré tout principal et secondaire sont en conflit, on corrige
-        enforceSwapIfSameFamily(sortSel.value);
-        updateSecondaryOptions();
+        sortSel.addEventListener("change", applyPrimaryChange);
+        sort2Sel.addEventListener("change", () => { updateSecondaryOptions(); render(); });
 
-        sortSel.addEventListener("change", () => {
-          const newPrimary = sortSel.value;
-          enforceSwapIfSameFamily(newPrimary);
-          updateSecondaryOptions();
-          render();
-        });
-
-        sort2Sel.addEventListener("change", () => {
-          // le menu empêche normalement, mais on sécurise
-          updateSecondaryOptions();
-          render();
-        });
+        // Init blocage options secondaires
+        updateSecondaryOptions();
 
         function activeFiltersText(state){
           const parts = [];
@@ -708,7 +692,6 @@
 
             let filtered = rows.filter(r => {
               if(!hasCoasterName(r, f)) return false;
-
               if(!matchesQuery(r, state.q)) return false;
 
               if(f.makerField && state.makers.size){
@@ -738,7 +721,7 @@
             statusEl.textContent = "Affichage: tous";
 
             if(total === 0){
-              grid.innerHTML = `<div class="empty">Aucun résultat. Essaie d’enlever un filtre.</div>`;
+              grid.innerHTML = `<div class="empty">Aucun résultat. (Vérifie le filtre “Ouverture” ou la présence du champ Nom)</div>`;
               return;
             }
 
@@ -753,15 +736,10 @@
         yearMinEl.addEventListener("input", render);
         yearMaxEl.addEventListener("input", render);
 
-        // Defaults demandés : principal=park A→Z, secondaire=ouverture ↑
-        sortSel.value = "park_asc";
-        sort2Sel.value = "year_asc";
-        prevPrimary = sortSel.value;
-        updateSecondaryOptions();
-
         document.getElementById("clear").addEventListener("click", () => {
           qEl.value = "";
 
+          // defaults: principal park, secondaire year asc
           sortSel.value = "park_asc";
           sort2Sel.value = "year_asc";
           prevPrimary = sortSel.value;

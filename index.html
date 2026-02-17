@@ -6,302 +6,534 @@
 <title>Coasters — Fiches</title>
 
 <style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
-h1{margin:0 0 10px}
-.bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:24px;align-items:start}
-label{font-size:13px;margin-bottom:4px;display:block}
-input,select,button{padding:8px;font-size:14px;width:100%;box-sizing:border-box}
-button{cursor:pointer}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
+  h1{margin:0 0 10px}
+  .bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:22px;align-items:start}
+  label{font-size:13px;margin-bottom:4px;display:block}
+  input,select,button{padding:9px 10px;font-size:14px;width:100%;box-sizing:border-box}
+  button{cursor:pointer}
 
-.multibox{border:1px solid #e6e6e6;border-radius:10px;padding:8px;background:#fff}
-.multibox .list{max-height:180px;overflow:auto;margin-top:6px}
-.multibox label{display:flex;align-items:center;gap:6px;font-size:13px;margin:2px 0}
+  .multibox{border:1px solid #e6e6e6;border-radius:12px;padding:10px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.03)}
+  .multibox .list{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px}
+  .multibox .row{display:flex;gap:8px;align-items:center;padding:6px 2px;font-size:13px}
+  .multibox .row input{width:auto}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .tools button{width:auto;padding:8px 10px;font-size:13px}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.title{font-weight:750;margin:0 0 6px;font-size:16px}
-.sub{opacity:.75;margin:0 0 10px;font-size:13px}
-.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
-.k{opacity:.6}
+  .range-wrap{position:relative;height:36px}
+  .range-wrap input[type="range"]{
+    position:absolute;left:0;top:9px;width:100%;
+    margin:0;padding:0;background:none;
+    pointer-events:none;-webkit-appearance:none;appearance:none;height:18px
+  }
+  .range-wrap input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:transparent}
+  .range-wrap input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;pointer-events:auto;
+    height:16px;width:16px;border-radius:50%;
+    border:1px solid #999;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.12);cursor:pointer
+  }
+  .track{position:absolute;left:0;right:0;top:15px;height:6px;background:#eee;border-radius:999px}
+  .range{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
+  .range-meta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
+  .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px}
 
-.range-wrap{position:relative;height:36px}
-.range-wrap input{position:absolute;width:100%;pointer-events:none;-webkit-appearance:none;background:none;height:18px;top:9px}
-.range-wrap input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;height:16px;width:16px;border-radius:50%;background:#fff;border:1px solid #999}
-.track{position:absolute;left:0;right:0;top:15px;height:6px;background:#eee;border-radius:999px}
-.range{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
-.range-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+  .title{font-weight:750;margin:0 0 6px;font-size:16px}
+  .sub{opacity:.75;margin:0 0 10px;font-size:13px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
+  .k{opacity:.6}
+  .v{word-break:break-word}
 
-.empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.8}
-.error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px;border-radius:10px;margin:10px 0}
+  .empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.85}
+  .error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px 12px;border-radius:12px;margin:12px 0}
 </style>
 </head>
 
 <body>
-
 <h1>Coasters</h1>
 
 <div class="bar">
+  <div>
+    <label>Recherche</label>
+    <input id="q" placeholder="Rechercher…">
+  </div>
 
-<div>
-<label>Recherche</label>
-<input id="q" placeholder="Rechercher…">
-</div>
+  <div>
+    <label>Fabricants</label>
+    <div class="multibox" id="makerBox">
+      <input id="makerSearch" placeholder="Filtrer fabricant…">
+      <div id="makerList" class="list"></div>
+      <div class="tools">
+        <button id="makerClear" type="button">Effacer</button>
+      </div>
+    </div>
+  </div>
 
-<div>
-<label>Fabricants</label>
-<div class="multibox">
-<input id="makerSearch" placeholder="Filtrer fabricant…">
-<div id="makerList" class="list"></div>
-<button id="makerClear">Effacer</button>
-</div>
-</div>
+  <div>
+    <label>Parcs</label>
+    <div class="multibox" id="parkBox">
+      <input id="parkSearch" placeholder="Filtrer parc…">
+      <div id="parkList" class="list"></div>
+      <div class="tools">
+        <button id="parkClear" type="button">Effacer</button>
+      </div>
+    </div>
+  </div>
 
-<div>
-<label>Parcs</label>
-<div class="multibox">
-<input id="parkSearch" placeholder="Filtrer parc…">
-<div id="parkList" class="list"></div>
-<button id="parkClear">Effacer</button>
-</div>
-</div>
+  <div>
+    <label>Ouverture</label>
+    <div class="range-wrap">
+      <div class="track"></div>
+      <div id="rangeFill" class="range"></div>
+      <input id="yearMin" type="range" aria-label="Année minimum">
+      <input id="yearMax" type="range" aria-label="Année maximum">
+    </div>
+    <div class="range-meta">
+      <span class="pill" id="minLabel">—</span>
+      <span class="pill" id="maxLabel">—</span>
+    </div>
+  </div>
 
-<div>
-<label>Ouverture</label>
-<div class="range-wrap">
-<div class="track"></div>
-<div id="rangeFill" class="range"></div>
-<input id="yearMin" type="range">
-<input id="yearMax" type="range">
-</div>
-<div class="range-meta">
-<span id="minLabel">—</span>
-<span id="maxLabel">—</span>
-</div>
-</div>
+  <div>
+    <label>Tri principal</label>
+    <select id="sort">
+      <option value="park_asc" selected>Parc A→Z</option>
+      <option value="year_asc">Ouverture ↑</option>
+      <option value="year_desc">Ouverture ↓</option>
+    </select>
+  </div>
 
-<div>
-<label>Tri principal</label>
-<select id="sort">
-<option value="park_asc" selected>Parc A→Z</option>
-<option value="year_asc">Ouverture ↑</option>
-<option value="year_desc">Ouverture ↓</option>
-</select>
-</div>
+  <div>
+    <label>Tri secondaire</label>
+    <select id="sort2">
+      <option value="year_asc" selected>Ouverture ↑</option>
+      <option value="year_desc">Ouverture ↓</option>
+      <option value="park_asc">Parc A→Z</option>
+    </select>
+  </div>
 
-<div>
-<label>Tri secondaire</label>
-<select id="sort2">
-<option value="year_asc" selected>Ouverture ↑</option>
-<option value="year_desc">Ouverture ↓</option>
-<option value="park_asc">Parc A→Z</option>
-</select>
-</div>
-
-<div>
-<button id="clear">Réinitialiser</button>
-</div>
-
+  <div style="align-self:end">
+    <button id="clear" type="button">Réinitialiser</button>
+  </div>
 </div>
 
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
 <script>
-const dataUrl="./data/coasters_clean.json"
+const dataUrl = "./data/coasters_clean.json";
 
-const qEl=document.getElementById("q")
-const sortSel=document.getElementById("sort")
-const sort2Sel=document.getElementById("sort2")
-const grid=document.getElementById("grid")
-const yearMinEl=document.getElementById("yearMin")
-const yearMaxEl=document.getElementById("yearMax")
-const fill=document.getElementById("rangeFill")
-const minLabel=document.getElementById("minLabel")
-const maxLabel=document.getElementById("maxLabel")
-const errBox=document.getElementById("err")
+const qEl = document.getElementById("q");
+const sortSel = document.getElementById("sort");
+const sort2Sel = document.getElementById("sort2");
 
-const makerList=document.getElementById("makerList")
-const parkList=document.getElementById("parkList")
-const makerSearch=document.getElementById("makerSearch")
-const parkSearch=document.getElementById("parkSearch")
+const makerBox = document.getElementById("makerBox");
+const parkBox  = document.getElementById("parkBox");
+const makerList = document.getElementById("makerList");
+const parkList  = document.getElementById("parkList");
+const makerSearch = document.getElementById("makerSearch");
+const parkSearch  = document.getElementById("parkSearch");
 
-let selectedMakers=new Set()
-let selectedParks=new Set()
+const grid = document.getElementById("grid");
+const errBox = document.getElementById("err");
 
-function showError(msg){errBox.style.display="block";errBox.textContent=msg}
-function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+const yearMinEl = document.getElementById("yearMin");
+const yearMaxEl = document.getElementById("yearMax");
+const fill = document.getElementById("rangeFill");
+const minLabel = document.getElementById("minLabel");
+const maxLabel = document.getElementById("maxLabel");
 
-function toNumber(v){const n=Number(String(v??"").replace(/[^0-9.\-]/g,""));return Number.isFinite(n)?n:null}
+function showError(msg){ errBox.style.display="block"; errBox.textContent = msg; }
+function clearError(){ errBox.style.display="none"; errBox.textContent = ""; }
+
+function norm(v){ return String(v ?? "").trim().toLowerCase(); }
+function esc(s){
+  return String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+function pickField(obj, candidates){
+  const keys = Object.keys(obj || {});
+  const lower = new Map(keys.map(k => [k.toLowerCase(), k]));
+  for(const c of candidates){
+    const hit = lower.get(String(c).toLowerCase());
+    if(hit) return hit;
+  }
+  // fallback regex
+  for(const k of keys){
+    const kl = k.toLowerCase();
+    if(candidates.some(c => kl.includes(String(c).toLowerCase()))) return k;
+  }
+  return null;
+}
+
+function toNumber(v){
+  const s = String(v ?? "").trim();
+  if(!s) return null;
+  const cleaned = s.replace(/[^0-9.\-]/g,"");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+// ✅ timestamps positifs & négatifs
 function toYear(v){
-const n=toNumber(v)
-if(n===null)return null
-if(n>=1800&&n<=2200)return Math.trunc(n)
-const a=Math.abs(n)
-if(a>1e11)return new Date(n).getUTCFullYear()
-if(a>1e9)return new Date(n*1000).getUTCFullYear()
-return null
+  const n = toNumber(v);
+  if(n === null) return null;
+
+  if(n >= 1800 && n <= 2200) return Math.trunc(n);
+
+  const a = Math.abs(n);
+  if(a > 1e11){
+    const y = new Date(n).getUTCFullYear();
+    return Number.isFinite(y) ? y : null;
+  }
+  if(a > 1e9){
+    const y = new Date(n * 1000).getUTCFullYear();
+    return Number.isFinite(y) ? y : null;
+  }
+  return null;
 }
 
-function sortFamily(v){return v.split("_")[0]}
-
-function sortRows(list,mode1,mode2,f){
-function cmp(mode,a,b){
-if(mode==="year_desc")return (toYear(b[f.year])??-Infinity)-(toYear(a[f.year])??-Infinity)
-if(mode==="year_asc")return (toYear(a[f.year])??Infinity)-(toYear(b[f.year])??Infinity)
-if(mode==="park_asc")return String(a[f.park]??"").localeCompare(String(b[f.park]??""),"fr")
-return 0
-}
-return list.slice().sort((a,b)=>{
-let c=cmp(mode1,a,b);if(c!==0)return c
-c=cmp(mode2,a,b);if(c!==0)return c
-return cmp("park_asc",a,b)
-})
+function sortFamily(mode){
+  return String(mode || "").split("_")[0]; // "park" ou "year"
 }
 
-function updateSlider(absMin,absMax){
-let min=parseInt(yearMinEl.value)
-let max=parseInt(yearMaxEl.value)
-if(min>max){[min,max]=[max,min];yearMinEl.value=min;yearMaxEl.value=max}
-minLabel.textContent=min
-maxLabel.textContent=max
-const total=absMax-absMin||1
-const left=((min-absMin)/total)*100
-const right=((max-absMin)/total)*100
-fill.style.left=left+"%"
-fill.style.width=(right-left)+"%"
-return{min,max}
+function clampSwap(){
+  let a = parseInt(yearMinEl.value, 10);
+  let b = parseInt(yearMaxEl.value, 10);
+  if(a > b){
+    const t = a; a = b; b = t;
+    yearMinEl.value = String(a);
+    yearMaxEl.value = String(b);
+  }
+  return {min:a, max:b};
 }
 
-function buildChecklist(container,values,set){
-container.innerHTML=values.map(v=>`
-<label><input type="checkbox" value="${esc(v)}"> ${esc(v)}</label>
-`).join("")
-container.querySelectorAll("input").forEach(cb=>{
-cb.onchange=()=>{
-if(cb.checked)set.add(cb.value)
-else set.delete(cb.value)
-render()
-}
-})
-}
+function updateSliderUI(absMin, absMax){
+  const {min, max} = clampSwap();
+  minLabel.textContent = String(min);
+  maxLabel.textContent = String(max);
 
-(async function(){
-try{
-const res=await fetch(dataUrl)
-const rows=await res.json()
+  const total = (absMax - absMin) || 1;
+  const left = ((min - absMin) / total) * 100;
+  const right = ((max - absMin) / total) * 100;
 
-if(!rows.length){grid.innerHTML='<div class="empty">Aucune donnée</div>';return}
-
-const keys=Object.keys(rows[0])
-const f={
-name:keys.find(k=>/nom|name|coaster/i.test(k)),
-park:keys.find(k=>/park|parc/i.test(k)),
-year:keys.find(k=>/year|annee|ouverture/i.test(k)),
-maker:keys.find(k=>/fabricant|manufacturer/i.test(k))
+  fill.style.left = left + "%";
+  fill.style.width = Math.max(0, right - left) + "%";
+  return {min, max};
 }
 
-let years=rows.map(r=>toYear(r[f.year])).filter(Boolean)
-let absMin=Math.min(...years)
-let absMax=Math.max(...years)
-
-yearMinEl.min=yearMaxEl.min=absMin
-yearMinEl.max=yearMaxEl.max=absMax
-yearMinEl.value=absMin
-yearMaxEl.value=absMax
-
-const makers=[...new Set(rows.map(r=>r[f.maker]).filter(Boolean))].sort()
-const parks=[...new Set(rows.map(r=>r[f.park]).filter(Boolean))].sort()
-
-buildChecklist(makerList,makers,selectedMakers)
-buildChecklist(parkList,parks,selectedParks)
-
-makerSearch.oninput=()=>{
-const val=makerSearch.value.toLowerCase()
-makerList.querySelectorAll("label").forEach(l=>{
-l.style.display=l.textContent.toLowerCase().includes(val)?"flex":"none"
-})
-}
-parkSearch.oninput=()=>{
-const val=parkSearch.value.toLowerCase()
-parkList.querySelectorAll("label").forEach(l=>{
-l.style.display=l.textContent.toLowerCase().includes(val)?"flex":"none"
-})
+function uniqueSorted(values){
+  const cleaned = values
+    .map(v => String(v ?? "").trim())
+    .filter(v => v !== "" && v.toLowerCase() !== "unknown" && v !== "-" && v !== "—" && v.toLowerCase() !== "n/a");
+  return Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b,"fr"));
 }
 
-document.getElementById("makerClear").onclick=()=>{selectedMakers.clear();makerList.querySelectorAll("input").forEach(i=>i.checked=false);render()}
-document.getElementById("parkClear").onclick=()=>{selectedParks.clear();parkList.querySelectorAll("input").forEach(i=>i.checked=false);render()}
+function buildChecklist(container, labels, selectedSet, onChange){
+  function draw(filterText){
+    const ft = norm(filterText);
+    const shown = labels.filter(l => norm(l).includes(ft));
 
-let prevPrimary=sortSel.value
-function updateSecondary(){
-const fam=sortFamily(sortSel.value)
-for(const o of sort2Sel.options)o.disabled=(sortFamily(o.value)===fam)
-if(sortFamily(sort2Sel.value)===fam)sort2Sel.value=prevPrimary
+    container.innerHTML = shown.map(label => {
+      const value = label; // on garde la valeur exacte
+      const checked = selectedSet.has(value) ? "checked" : "";
+      return `
+        <div class="row">
+          <input type="checkbox" value="${esc(value)}" ${checked}>
+          <span>${esc(label)}</span>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener("change", ()=>{
+        const v = cb.value;
+        if(cb.checked) selectedSet.add(v);
+        else selectedSet.delete(v);
+        onChange();
+      });
+    });
+  }
+
+  draw("");
+
+  return {
+    redraw: () => draw(filterTextInput.value),
+    draw,
+    clear: () => { selectedSet.clear(); draw(""); }
+  };
 }
 
-sortSel.onchange=()=>{
-if(sortFamily(sortSel.value)===sortFamily(sort2Sel.value))
-sort2Sel.value=prevPrimary
-prevPrimary=sortSel.value
-updateSecondary()
-render()
-}
-sort2Sel.onchange=()=>{updateSecondary();render()}
-
-qEl.oninput=render
-yearMinEl.oninput=render
-yearMaxEl.oninput=render
-
-document.getElementById("clear").onclick=()=>{
-qEl.value=""
-selectedMakers.clear()
-selectedParks.clear()
-makerList.querySelectorAll("input").forEach(i=>i.checked=false)
-parkList.querySelectorAll("input").forEach(i=>i.checked=false)
-yearMinEl.value=absMin
-yearMaxEl.value=absMax
-sortSel.value="park_asc"
-sort2Sel.value="year_asc"
-prevPrimary="park_asc"
-updateSecondary()
-render()
+function matchesQuery(row, q){
+  if(!q) return true;
+  const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
+  return text.includes(q);
 }
 
-updateSecondary()
-
-function render(){
-const {min,max}=updateSlider(absMin,absMax)
-let filtered=rows.filter(r=>{
-if(!r[f.name]||!r[f.name].trim())return false
-if(qEl.value&&!Object.values(r).join(" ").toLowerCase().includes(qEl.value.toLowerCase()))return false
-if(selectedMakers.size&&!selectedMakers.has(r[f.maker]))return false
-if(selectedParks.size&&!selectedParks.has(r[f.park]))return false
-const y=toYear(r[f.year])
-if(y!==null&&(y<min||y>max))return false
-return true
-})
-
-filtered=sortRows(filtered,sortSel.value,sort2Sel.value,f)
-
-if(!filtered.length){grid.innerHTML='<div class="empty">Aucun résultat</div>';return}
-
-grid.innerHTML=filtered.map(r=>{
-const y=toYear(r[f.year])
-return `
-<div class="card">
-<div class="title">${esc(r[f.name])}</div>
-<div class="sub">${esc(r[f.park]||"")}</div>
-<div class="kv">
-<div class="k">Fabricant</div><div>${esc(r[f.maker]||"")}</div>
-<div class="k">Ouverture</div><div>${y??""}</div>
-</div>
-</div>`
-}).join("")
+function hasCoasterName(row, nameField){
+  if(!nameField) return false;
+  const n = String(row[nameField] ?? "").trim().toLowerCase();
+  if(!n) return false;
+  if(n === "n/a" || n === "na" || n === "unknown" || n === "-" || n === "—") return false;
+  return true;
 }
 
-render()
+function sortRows(list, mode1, mode2, f){
+  const getYear = (r) => f.year ? (toYear(r[f.year]) ?? null) : null;
+  const getPark = (r) => f.park ? String(r[f.park] ?? "") : "";
 
-}catch(e){showError(e.message)}
-})()
+  function cmp(mode, a, b){
+    if(mode === "year_desc") return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
+    if(mode === "year_asc")  return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
+    if(mode === "park_asc")  return getPark(a).localeCompare(getPark(b), "fr");
+    return 0;
+  }
+
+  return list.slice().sort((a,b)=>{
+    let c = cmp(mode1, a, b);
+    if(c !== 0) return c;
+    c = cmp(mode2, a, b);
+    if(c !== 0) return c;
+    c = cmp("park_asc", a, b);
+    if(c !== 0) return c;
+    return cmp("year_asc", a, b);
+  });
+}
+
+function cardHTML(r, f){
+  const title = String(r[f.name] ?? "").trim();
+  const park = f.park ? String(r[f.park] ?? "").trim() : "";
+  const y = f.year ? toYear(r[f.year]) : null;
+
+  const rows = [];
+  if(f.maker) rows.push(["Fabricant", r[f.maker]]);
+  if(f.year) rows.push(["Ouverture", (y ?? "")]);
+
+  // Ajoute d'autres champs si présents (facultatif mais utile)
+  if(f.speed && String(r[f.speed]??"").trim() !== "") rows.push(["Vitesse", r[f.speed]]);
+  if(f.height && String(r[f.height]??"").trim() !== "") rows.push(["Hauteur", r[f.height]]);
+  if(f.length && String(r[f.length]??"").trim() !== "") rows.push(["Longueur", r[f.length]]);
+  if(f.inversions && String(r[f.inversions]??"").trim() !== "") rows.push(["Inversions", r[f.inversions]]);
+
+  const kv = rows
+    .filter(([_,v]) => String(v ?? "").trim() !== "")
+    .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
+    .join("");
+
+  return `
+    <article class="card">
+      <h2 class="title">${esc(title)}</h2>
+      ${park ? `<p class="sub">${esc(park)}</p>` : ""}
+      <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
+    </article>
+  `;
+}
+
+(async function init(){
+  clearError();
+
+  try{
+    const res = await fetch(dataUrl, { cache:"no-store" });
+    if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
+
+    const rows = await res.json();
+    if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
+    if(rows.length === 0){ grid.innerHTML = `<div class="empty">Aucune donnée.</div>`; return; }
+
+    const sample = rows[0];
+
+    const f = {
+      name: pickField(sample, ["Nom","Name","Coaster","coaster","ride","attraction"]),
+      park: pickField(sample, ["Parc","Park","parc","park"]),
+      maker: pickField(sample, ["Fabricant","Manufacturer","Constructeur","maker","builder"]),
+      year: pickField(sample, ["Ouverture","Année","Annee","Year","opened","opening_year"]),
+      speed: pickField(sample, ["Vitesse","Speed","top_speed"]),
+      height: pickField(sample, ["Hauteur","Height"]),
+      length: pickField(sample, ["Longueur","Length"]),
+      inversions: pickField(sample, ["Inversions","nb_inversions"]),
+    };
+
+    if(!f.name){
+      throw new Error("Champ 'Nom de coaster' introuvable. Vérifie la clé (Nom/Name/Coaster…).");
+    }
+    if(!f.maker){
+      makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé.</div>`;
+    }
+    if(!f.park){
+      parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé.</div>`;
+    }
+
+    // plage année globale (si champ année présent)
+    let absMin = 1900, absMax = new Date().getUTCFullYear();
+    if(f.year){
+      const years = rows.map(r => toYear(r[f.year])).filter(y => Number.isFinite(y));
+      if(years.length){
+        absMin = Math.min(...years);
+        absMax = Math.max(...years);
+      }
+    }
+
+    yearMinEl.min = yearMaxEl.min = String(absMin);
+    yearMinEl.max = yearMaxEl.max = String(absMax);
+    yearMinEl.value = String(absMin);
+    yearMaxEl.value = String(absMax);
+
+    // selections
+    const selectedMakers = new Set();
+    const selectedParks  = new Set();
+
+    // build lists (robuste: pas de vides)
+    const makerLabels = f.maker ? uniqueSorted(rows.map(r => r[f.maker])) : [];
+    const parkLabels  = f.park  ? uniqueSorted(rows.map(r => r[f.park]))  : [];
+
+    // render checklists
+    function drawChecklist(containerEl, labels, selectedSet, searchEl){
+      function draw(){
+        const ft = norm(searchEl.value);
+        const shown = labels.filter(l => norm(l).includes(ft));
+
+        containerEl.innerHTML = shown.map(label => {
+          const checked = selectedSet.has(label) ? "checked" : "";
+          return `
+            <div class="row">
+              <input type="checkbox" value="${esc(label)}" ${checked}>
+              <span>${esc(label)}</span>
+            </div>
+          `;
+        }).join("");
+
+        containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+          cb.addEventListener("change", ()=>{
+            const v = cb.value;
+            if(cb.checked) selectedSet.add(v);
+            else selectedSet.delete(v);
+            render();
+          });
+        });
+      }
+
+      searchEl.addEventListener("input", draw);
+      draw();
+      return { draw, clear: () => { selectedSet.clear(); searchEl.value=""; draw(); } };
+    }
+
+    const makerCtl = (f.maker && makerLabels.length)
+      ? drawChecklist(makerList, makerLabels, selectedMakers, makerSearch)
+      : null;
+
+    const parkCtl = (f.park && parkLabels.length)
+      ? drawChecklist(parkList, parkLabels, selectedParks, parkSearch)
+      : null;
+
+    document.getElementById("makerClear").addEventListener("click", ()=>{
+      if(makerCtl) makerCtl.clear();
+      render();
+    });
+    document.getElementById("parkClear").addEventListener("click", ()=>{
+      if(parkCtl) parkCtl.clear();
+      render();
+    });
+
+    // tri: anti-conflit au sens près
+    let prevPrimary = sortSel.value;
+
+    function updateSecondaryOptions(){
+      const fam1 = sortFamily(sortSel.value);
+      for(const opt of Array.from(sort2Sel.options)){
+        opt.disabled = (sortFamily(opt.value) === fam1);
+      }
+      if(sortFamily(sort2Sel.value) === fam1){
+        const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
+        if(firstValid) sort2Sel.value = firstValid.value;
+      }
+    }
+
+    sortSel.addEventListener("change", ()=>{
+      const newPrimary = sortSel.value;
+      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
+        sort2Sel.value = prevPrimary; // valeur exacte de l'ancien tri principal
+      }
+      prevPrimary = newPrimary;
+      updateSecondaryOptions();
+      render();
+    });
+
+    sort2Sel.addEventListener("change", ()=>{ updateSecondaryOptions(); render(); });
+
+    qEl.addEventListener("input", render);
+    yearMinEl.addEventListener("input", render);
+    yearMaxEl.addEventListener("input", render);
+
+    document.getElementById("clear").addEventListener("click", ()=>{
+      qEl.value = "";
+
+      if(makerCtl) makerCtl.clear();
+      if(parkCtl) parkCtl.clear();
+
+      yearMinEl.value = String(absMin);
+      yearMaxEl.value = String(absMax);
+
+      sortSel.value = "park_asc";
+      sort2Sel.value = "year_asc";
+      prevPrimary = sortSel.value;
+
+      updateSecondaryOptions();
+      render();
+    });
+
+    updateSecondaryOptions();
+
+    function render(){
+      const q = norm(qEl.value);
+      const {min, max} = updateSliderUI(absMin, absMax);
+
+      let filtered = rows.filter(r=>{
+        if(!hasCoasterName(r, f.name)) return false;
+        if(!matchesQuery(r, q)) return false;
+
+        if(f.maker && selectedMakers.size){
+          const m = String(r[f.maker] ?? "").trim();
+          if(!selectedMakers.has(m)) return false;
+        }
+        if(f.park && selectedParks.size){
+          const p = String(r[f.park] ?? "").trim();
+          if(!selectedParks.has(p)) return false;
+        }
+
+        if(f.year){
+          const y = toYear(r[f.year]);
+          if(y === null){
+            if(min !== absMin || max !== absMax) return false;
+          } else {
+            if(y < min || y > max) return false;
+          }
+        }
+
+        return true;
+      });
+
+      filtered = sortRows(filtered, sortSel.value, sort2Sel.value, f);
+
+      if(filtered.length === 0){
+        grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(r => cardHTML(r, f)).join("");
+    }
+
+    render();
+
+  } catch(e){
+    console.error(e);
+    showError(
+      "Erreur:\n" + (e?.message ?? String(e)) +
+      "\n\nÀ vérifier:\n- data/coasters_clean.json existe\n- JSON valide (tableau)\n- GitHub Pages (pas file://)"
+    );
+  }
+})();
 </script>
 
 </body>

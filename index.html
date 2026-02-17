@@ -88,13 +88,17 @@
     }
 
     function buildOptions(selectEl, values){
-      const uniq = Array.from(new Set(values.filter(v => v && String(v).trim() !== "")))
-        .map(v => String(v).trim())
-        .sort((a,b)=>a.localeCompare(b, "fr"));
-      uniq.forEach(v => {
+      // On garde un "label" joli, mais on met une value normalisée (trim + lowercase)
+      const cleaned = values
+        .map(v => String(v ?? "").trim())
+        .filter(v => v !== "");
+    
+      const uniqLabels = Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b, "fr"));
+    
+      uniqLabels.forEach(label => {
         const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
+        opt.value = norm(label);      // value normalisée
+        opt.textContent = label;      // texte affiché
         selectEl.appendChild(opt);
       });
     }
@@ -215,13 +219,13 @@
 
       function render(){
         const q = norm(qEl.value);
-        const country = countrySel.value;
-        const maker = makerSel.value;
+        const country = norm(countrySel.value);
+        const maker = norm(makerSel.value);
 
         const filtered = rows.filter(r => {
           if(!matchesQuery(r, q)) return false;
-          if(fields.countryField && country && String(r[fields.countryField] ?? "") !== country) return false;
-          if(fields.makerField && maker && String(r[fields.makerField] ?? "") !== maker) return false;
+          if(fields.countryField && country && norm(r[fields.countryField]) !== country) return false;
+          if(fields.makerField && maker && norm(r[fields.makerField]) !== maker) return false;
           return true;
         });
 

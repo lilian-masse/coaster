@@ -10,14 +10,48 @@
     .muted { opacity: .75; margin-bottom: 16px; line-height: 1.35; }
     .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; }
 
-    .bar { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; margin: 16px 0 18px; align-items: end; }
+    .bar { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; margin: 16px 0 18px; align-items: start; }
     .field { grid-column: span 3; }
     .field.wide { grid-column: span 6; }
     .field.small { grid-column: span 2; }
-    .field.actions { grid-column: span 2; display: flex; gap: 10px; }
+    .field.actions { grid-column: span 2; display: flex; gap: 10px; align-items: end; }
     label { display:block; font-size: 14px; margin-bottom: 6px; }
     input, select, button { padding: 10px 12px; font-size: 14px; width: 100%; box-sizing: border-box; }
     button { cursor: pointer; }
+
+    .multibox {
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0,0,0,.03);
+    }
+    .multibox .search { margin-bottom: 8px; }
+    .multibox .list {
+      max-height: 200px;
+      overflow: auto;
+      border-top: 1px solid #eee;
+      padding-top: 8px;
+    }
+    .multibox .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 2px;
+      font-size: 13px;
+    }
+    .multibox .row input { width: auto; }
+    .multibox .tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .multibox .tools button{
+      width: auto;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
 
     .grid {
       display: grid;
@@ -66,7 +100,7 @@
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Affichage en fiches avec recherche + filtres (Fabricant, Parc, Ouverture min/max), tri et pagination.
+    Fiches avec recherche + filtres multi (Fabricants / Parcs), ouverture min/max, tri et pagination.
     <span id="count" class="pill">…</span>
   </div>
 
@@ -77,17 +111,27 @@
     </div>
 
     <div class="field">
-      <label for="maker">Fabricant</label>
-      <select id="maker">
-        <option value="">Tous</option>
-      </select>
+      <label>Fabricants (multi)</label>
+      <div class="multibox" id="makerBox">
+        <input class="search" id="makerSearch" type="text" placeholder="Rechercher un fabricant…" />
+        <div class="list" id="makerList"></div>
+        <div class="tools">
+          <button type="button" id="makerAll">Tout</button>
+          <button type="button" id="makerNone">Aucun</button>
+        </div>
+      </div>
     </div>
 
     <div class="field">
-      <label for="park">Parc</label>
-      <select id="park">
-        <option value="">Tous</option>
-      </select>
+      <label>Parcs (multi)</label>
+      <div class="multibox" id="parkBox">
+        <input class="search" id="parkSearch" type="text" placeholder="Rechercher un parc…" />
+        <div class="list" id="parkList"></div>
+        <div class="tools">
+          <button type="button" id="parkAll">Tout</button>
+          <button type="button" id="parkNone">Aucun</button>
+        </div>
+      </div>
     </div>
 
     <div class="field small">
@@ -174,43 +218,24 @@
       return Number.isFinite(n) ? n : null;
     }
 
-    function buildOptions(selectEl, values){
-      // value normalisée, label affiché d'origine (trim)
-      const cleaned = values
-        .map(v => String(v ?? "").trim())
-        .filter(v => v !== "");
-      const uniqLabels = Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b, "fr"));
-      uniqLabels.forEach(label => {
-        const opt = document.createElement("option");
-        opt.value = norm(label);
-        opt.textContent = label;
-        selectEl.appendChild(opt);
-      });
-    }
-
     function matchesQuery(row, q){
       if(!q) return true;
-      // recherche sur toutes les valeurs concaténées
       const text = Object.values(row).map(v => String(v ?? "")).join(" ").toLowerCase();
       return text.includes(q);
     }
 
     function renderCard(row, f){
-      // titre
       let title = f.nameField ? row[f.nameField] : "";
       if(!title){
-        // fallback: 1re valeur non vide
         const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
         title = firstNonEmpty ?? "Fiche";
       }
 
-      // sous-titre
       const subParts = [];
       if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
       if (f.yearField && row[f.yearField]) subParts.push("Ouverture: " + row[f.yearField]);
       const sub = subParts.join(" • ");
 
-      // champs affichés dans la fiche
       const show = [];
       const pushIf = (label, field) => {
         if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
@@ -226,7 +251,6 @@
       pushIf("Longueur", f.lengthField);
       pushIf("Inversions", f.inversionsField);
 
-      // fallback si rien trouvé
       if(show.length === 0){
         Object.entries(row).slice(0, 8).forEach(([k,v]) => {
           if (String(v??"").trim() !== "") show.push([titleize(k), v]);
@@ -247,6 +271,79 @@
       `;
     }
 
+    function uniqueSortedLabels(values){
+      const cleaned = values.map(v => String(v ?? "").trim()).filter(v => v !== "");
+      const uniq = Array.from(new Set(cleaned));
+      uniq.sort((a,b)=>a.localeCompare(b, "fr"));
+      return uniq;
+    }
+
+    function buildChecklist({containerEl, searchEl, allBtn, noneBtn, labels, onChange}){
+      // value normalisée (norm(label)), label affiché (label)
+      function draw(filterText){
+        const ft = norm(filterText);
+        const shown = labels.filter(l => norm(l).includes(ft));
+
+        containerEl.innerHTML = shown.map(label => {
+          const value = norm(label);
+          return `
+            <div class="row">
+              <input type="checkbox" value="${escapeHtml(value)}" data-label="${escapeHtml(label)}" />
+              <span>${escapeHtml(label)}</span>
+            </div>
+          `;
+        }).join("");
+
+        // hook change
+        containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener("change", onChange);
+        });
+      }
+
+      function setAll(checked){
+        containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.checked = checked;
+        });
+        onChange();
+      }
+
+      searchEl.addEventListener("input", () => draw(searchEl.value));
+      allBtn.addEventListener("click", () => setAll(true));
+      noneBtn.addEventListener("click", () => setAll(false));
+
+      draw("");
+    }
+
+    function getCheckedSet(listEl){
+      const set = new Set();
+      listEl.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => set.add(cb.value));
+      return set;
+    }
+
+    function countChecked(listEl){
+      return listEl.querySelectorAll('input[type="checkbox"]:checked').length;
+    }
+
+    function sortRows(list, state, f){
+      const mode = state.sort;
+      const getYear = (r) => f.yearField ? toInt(r[f.yearField]) : null;
+      const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
+
+      if(mode === "year_desc"){
+        return list.slice().sort((a,b) => (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity));
+      }
+      if(mode === "year_asc"){
+        return list.slice().sort((a,b) => (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity));
+      }
+      if(mode === "name_asc"){
+        return list.slice().sort((a,b) => getName(a).localeCompare(getName(b), "fr"));
+      }
+      if(mode === "name_desc"){
+        return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
+      }
+      return list;
+    }
+
     // ---- App
     (async function init(){
       const grid = document.getElementById("grid");
@@ -255,12 +352,20 @@
       const activeFiltersEl = document.getElementById("activeFilters");
 
       const qEl = document.getElementById("q");
-      const makerSel = document.getElementById("maker");
-      const parkSel = document.getElementById("park");
       const yearMinEl = document.getElementById("yearMin");
       const yearMaxEl = document.getElementById("yearMax");
       const sortSel = document.getElementById("sort");
       const pageSizeSel = document.getElementById("pageSize");
+
+      const makerSearch = document.getElementById("makerSearch");
+      const makerList = document.getElementById("makerList");
+      const makerAll = document.getElementById("makerAll");
+      const makerNone = document.getElementById("makerNone");
+
+      const parkSearch = document.getElementById("parkSearch");
+      const parkList = document.getElementById("parkList");
+      const parkAll = document.getElementById("parkAll");
+      const parkNone = document.getElementById("parkNone");
 
       const prevBtn = document.getElementById("prev");
       const nextBtn = document.getElementById("next");
@@ -273,7 +378,7 @@
       const rows = await res.json();
       const sample = rows[0] || {};
 
-      // Détection adaptée à ton JSON (FR + quelques variantes)
+      // Champs adaptés à ton JSON FR
       const f = {
         nameField: pickField(sample, ["Nom", "Coaster", "Name", "name", "coaster", "ride", "attraction"]),
         parkField: pickField(sample, ["Parc", "Park", "park", "parc", "location"]),
@@ -285,14 +390,10 @@
         inversionsField: pickField(sample, ["Inversions", "inversions", "nb_inversions"]),
       };
 
-      // Remplir les filtres (si champs présents)
-      if (f.makerField) buildOptions(makerSel, rows.map(r => r[f.makerField]));
-      else { makerSel.disabled = true; makerSel.title = "Champ 'Fabricant' non trouvé"; }
+      // Construire les listes multi
+      const makerLabels = f.makerField ? uniqueSortedLabels(rows.map(r => r[f.makerField])) : [];
+      const parkLabels  = f.parkField  ? uniqueSortedLabels(rows.map(r => r[f.parkField]))  : [];
 
-      if (f.parkField) buildOptions(parkSel, rows.map(r => r[f.parkField]));
-      else { parkSel.disabled = true; parkSel.title = "Champ 'Parc' non trouvé"; }
-
-      // Pagination state
       let page = 1;
 
       function getPageSize(){
@@ -303,69 +404,47 @@
       function activeFiltersText(state){
         const parts = [];
         if(state.q) parts.push(`Recherche: “${state.q}”`);
-        if(state.maker) parts.push(`Fabricant: ${state.makerLabel}`);
-        if(state.park) parts.push(`Parc: ${state.parkLabel}`);
+        if(state.makers.size) parts.push(`Fabricants: ${state.makers.size}`);
+        if(state.parks.size) parts.push(`Parcs: ${state.parks.size}`);
         if(state.ymin !== null) parts.push(`Ouverture ≥ ${state.ymin}`);
         if(state.ymax !== null) parts.push(`Ouverture ≤ ${state.ymax}`);
         return parts.length ? parts.join(" • ") : "aucun";
       }
 
-      function sortRows(list, state){
-        const mode = state.sort;
-        const getYear = (r) => f.yearField ? toInt(r[f.yearField]) : null;
-        const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
-
-        if(mode === "year_desc"){
-          return list.slice().sort((a,b) => (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity));
-        }
-        if(mode === "year_asc"){
-          return list.slice().sort((a,b) => (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity));
-        }
-        if(mode === "name_asc"){
-          return list.slice().sort((a,b) => getName(a).localeCompare(getName(b), "fr"));
-        }
-        if(mode === "name_desc"){
-          return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
-        }
-        // relevance: on ne re-trie pas (ordre d'origine)
-        return list;
-      }
-
       function render(){
+        const makersSet = getCheckedSet(makerList);
+        const parksSet  = getCheckedSet(parkList);
+
         const state = {
           q: norm(qEl.value),
-          maker: norm(makerSel.value),
-          park: norm(parkSel.value),
+          makers: makersSet,
+          parks: parksSet,
           ymin: yearMinEl.value === "" ? null : toInt(yearMinEl.value),
           ymax: yearMaxEl.value === "" ? null : toInt(yearMaxEl.value),
           sort: sortSel.value,
-          makerLabel: makerSel.options[makerSel.selectedIndex]?.textContent ?? "",
-          parkLabel: parkSel.options[parkSel.selectedIndex]?.textContent ?? "",
         };
 
-        // Filtrage
         let filtered = rows.filter(r => {
           if(!matchesQuery(r, state.q)) return false;
 
-          if(f.makerField && state.maker){
-            if(norm(r[f.makerField]) !== state.maker) return false;
+          if(f.makerField && state.makers.size){
+            if(!state.makers.has(norm(r[f.makerField]))) return false;
           }
-          if(f.parkField && state.park){
-            if(norm(r[f.parkField]) !== state.park) return false;
+          if(f.parkField && state.parks.size){
+            if(!state.parks.has(norm(r[f.parkField]))) return false;
           }
+
           if(f.yearField && (state.ymin !== null || state.ymax !== null)){
             const y = toInt(r[f.yearField]);
-            if(y === null) return false; // si on filtre par année, on exclut les lignes sans année
+            if(y === null) return false;
             if(state.ymin !== null && y < state.ymin) return false;
             if(state.ymax !== null && y > state.ymax) return false;
           }
           return true;
         });
 
-        // Tri
-        filtered = sortRows(filtered, state);
+        filtered = sortRows(filtered, state, f);
 
-        // Pagination
         const pageSize = getPageSize();
         const total = filtered.length;
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -375,7 +454,6 @@
         const start = (page - 1) * pageSize;
         const slice = filtered.slice(start, start + pageSize);
 
-        // UI
         countEl.textContent = `${total} résultat(s)`;
         activeFiltersEl.textContent = "Filtres: " + activeFiltersText(state);
 
@@ -387,14 +465,38 @@
           grid.innerHTML = `<div class="empty">Aucun résultat. Essaie d’enlever un filtre.</div>`;
           return;
         }
-
         grid.innerHTML = slice.map(r => renderCard(r, f)).join("");
+      }
+
+      // Build checklists (calls render on change)
+      if(f.makerField){
+        buildChecklist({
+          containerEl: makerList,
+          searchEl: makerSearch,
+          allBtn: makerAll,
+          noneBtn: makerNone,
+          labels: makerLabels,
+          onChange: () => { page = 1; render(); }
+        });
+      } else {
+        document.getElementById("makerBox").innerHTML = `<div class="empty">Champ "Fabricant" non trouvé dans les données.</div>`;
+      }
+
+      if(f.parkField){
+        buildChecklist({
+          containerEl: parkList,
+          searchEl: parkSearch,
+          allBtn: parkAll,
+          noneBtn: parkNone,
+          labels: parkLabels,
+          onChange: () => { page = 1; render(); }
+        });
+      } else {
+        document.getElementById("parkBox").innerHTML = `<div class="empty">Champ "Parc" non trouvé dans les données.</div>`;
       }
 
       // Events
       qEl.addEventListener("input", () => { page = 1; render(); });
-      makerSel.addEventListener("change", () => { page = 1; render(); });
-      parkSel.addEventListener("change", () => { page = 1; render(); });
       yearMinEl.addEventListener("input", () => { page = 1; render(); });
       yearMaxEl.addEventListener("input", () => { page = 1; render(); });
       sortSel.addEventListener("change", () => { page = 1; render(); });
@@ -405,11 +507,14 @@
 
       document.getElementById("clear").addEventListener("click", () => {
         qEl.value = "";
-        makerSel.value = "";
-        parkSel.value = "";
         yearMinEl.value = "";
         yearMaxEl.value = "";
         sortSel.value = "relevance";
+
+        // décocher tout
+        makerList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        parkList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
         page = 1;
         render();
       });
@@ -421,6 +526,7 @@
         render();
       });
 
+      // première render
       render();
     })();
   </script>

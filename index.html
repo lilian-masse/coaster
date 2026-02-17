@@ -6,383 +6,302 @@
 <title>Coasters — Fiches</title>
 
 <style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
-  h1{margin:0 0 8px}
-  .bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:20px;align-items:end}
-  label{font-size:13px;margin-bottom:4px;display:block}
-  input,select,button{padding:9px 10px;font-size:14px;width:100%;box-sizing:border-box}
-  button{cursor:pointer}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
+h1{margin:0 0 10px}
+.bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:24px;align-items:start}
+label{font-size:13px;margin-bottom:4px;display:block}
+input,select,button{padding:8px;font-size:14px;width:100%;box-sizing:border-box}
+button{cursor:pointer}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-  .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-  .title{font-weight:750;margin:0 0 6px;font-size:16px}
-  .sub{opacity:.75;margin:0 0 10px;font-size:13px}
-  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
-  .k{opacity:.6}
-  .v{word-break:break-word}
+.multibox{border:1px solid #e6e6e6;border-radius:10px;padding:8px;background:#fff}
+.multibox .list{max-height:180px;overflow:auto;margin-top:6px}
+.multibox label{display:flex;align-items:center;gap:6px;font-size:13px;margin:2px 0}
 
-  .range-wrap{position:relative;height:36px}
-  .range-wrap input{position:absolute;width:100%;pointer-events:none;-webkit-appearance:none;appearance:none;background:none;height:18px;top:9px;margin:0;padding:0}
-  .range-wrap input::-webkit-slider-runnable-track{height:6px;background:transparent;border-radius:999px}
-  .range-wrap input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;appearance:none;height:16px;width:16px;border-radius:50%;background:#fff;border:1px solid #999;box-shadow:0 1px 6px rgba(0,0,0,.12)}
-  .range-wrap input::-moz-range-track{height:6px;background:transparent;border-radius:999px}
-  .range-wrap input::-moz-range-thumb{pointer-events:auto;height:16px;width:16px;border-radius:50%;background:#fff;border:1px solid #999;box-shadow:0 1px 6px rgba(0,0,0,.12)}
-  .track{position:absolute;left:0;right:0;top:15px;height:6px;background:#eee;border-radius:999px}
-  .range{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
-  .range-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;opacity:.75;margin-top:6px}
-  .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.title{font-weight:750;margin:0 0 6px;font-size:16px}
+.sub{opacity:.75;margin:0 0 10px;font-size:13px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
+.k{opacity:.6}
 
-  .empty{padding:20px;border:1px dashed #ccc;border-radius:12px;opacity:.85}
-  .error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px 12px;border-radius:12px;margin:12px 0}
+.range-wrap{position:relative;height:36px}
+.range-wrap input{position:absolute;width:100%;pointer-events:none;-webkit-appearance:none;background:none;height:18px;top:9px}
+.range-wrap input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;height:16px;width:16px;border-radius:50%;background:#fff;border:1px solid #999}
+.track{position:absolute;left:0;right:0;top:15px;height:6px;background:#eee;border-radius:999px}
+.range{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
+.range-meta{display:flex;justify-content:space-between;font-size:12px;margin-top:6px}
+
+.empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.8}
+.error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px;border-radius:10px;margin:10px 0}
 </style>
 </head>
 
 <body>
 
 <h1>Coasters</h1>
+
 <div class="bar">
-  <div>
-    <label>Recherche</label>
-    <input id="q" placeholder="Rechercher…">
-  </div>
 
-  <div>
-    <label>Tri principal</label>
-    <select id="sort">
-      <option value="park_asc" selected>Parc A→Z</option>
-      <option value="year_asc">Ouverture ↑</option>
-      <option value="year_desc">Ouverture ↓</option>
-    </select>
-  </div>
+<div>
+<label>Recherche</label>
+<input id="q" placeholder="Rechercher…">
+</div>
 
-  <div>
-    <label>Tri secondaire</label>
-    <select id="sort2">
-      <option value="year_asc" selected>Ouverture ↑</option>
-      <option value="year_desc">Ouverture ↓</option>
-      <option value="park_asc">Parc A→Z</option>
-    </select>
-  </div>
+<div>
+<label>Fabricants</label>
+<div class="multibox">
+<input id="makerSearch" placeholder="Filtrer fabricant…">
+<div id="makerList" class="list"></div>
+<button id="makerClear">Effacer</button>
+</div>
+</div>
 
-  <div>
-    <label>Ouverture</label>
-    <div class="range-wrap">
-      <div class="track"></div>
-      <div id="rangeFill" class="range"></div>
-      <input id="yearMin" type="range" aria-label="Année minimum">
-      <input id="yearMax" type="range" aria-label="Année maximum">
-    </div>
-    <div class="range-meta">
-      <span class="pill" id="minLabel">—</span>
-      <span class="pill" id="maxLabel">—</span>
-    </div>
-  </div>
+<div>
+<label>Parcs</label>
+<div class="multibox">
+<input id="parkSearch" placeholder="Filtrer parc…">
+<div id="parkList" class="list"></div>
+<button id="parkClear">Effacer</button>
+</div>
+</div>
 
-  <div>
-    <button id="clear">Réinitialiser</button>
-  </div>
+<div>
+<label>Ouverture</label>
+<div class="range-wrap">
+<div class="track"></div>
+<div id="rangeFill" class="range"></div>
+<input id="yearMin" type="range">
+<input id="yearMax" type="range">
+</div>
+<div class="range-meta">
+<span id="minLabel">—</span>
+<span id="maxLabel">—</span>
+</div>
+</div>
+
+<div>
+<label>Tri principal</label>
+<select id="sort">
+<option value="park_asc" selected>Parc A→Z</option>
+<option value="year_asc">Ouverture ↑</option>
+<option value="year_desc">Ouverture ↓</option>
+</select>
+</div>
+
+<div>
+<label>Tri secondaire</label>
+<select id="sort2">
+<option value="year_asc" selected>Ouverture ↑</option>
+<option value="year_desc">Ouverture ↓</option>
+<option value="park_asc">Parc A→Z</option>
+</select>
+</div>
+
+<div>
+<button id="clear">Réinitialiser</button>
+</div>
+
 </div>
 
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
 <script>
-const dataUrl = "./data/coasters_clean.json";
+const dataUrl="./data/coasters_clean.json"
 
-const qEl = document.getElementById("q");
-const sortSel = document.getElementById("sort");
-const sort2Sel = document.getElementById("sort2");
-const grid = document.getElementById("grid");
-const yearMinEl = document.getElementById("yearMin");
-const yearMaxEl = document.getElementById("yearMax");
-const fill = document.getElementById("rangeFill");
-const minLabel = document.getElementById("minLabel");
-const maxLabel = document.getElementById("maxLabel");
-const errBox = document.getElementById("err");
+const qEl=document.getElementById("q")
+const sortSel=document.getElementById("sort")
+const sort2Sel=document.getElementById("sort2")
+const grid=document.getElementById("grid")
+const yearMinEl=document.getElementById("yearMin")
+const yearMaxEl=document.getElementById("yearMax")
+const fill=document.getElementById("rangeFill")
+const minLabel=document.getElementById("minLabel")
+const maxLabel=document.getElementById("maxLabel")
+const errBox=document.getElementById("err")
 
-function showError(msg){ errBox.style.display="block"; errBox.textContent = msg; }
-function clearError(){ errBox.style.display="none"; errBox.textContent = ""; }
+const makerList=document.getElementById("makerList")
+const parkList=document.getElementById("parkList")
+const makerSearch=document.getElementById("makerSearch")
+const parkSearch=document.getElementById("parkSearch")
 
-function norm(v){ return String(v ?? "").trim().toLowerCase(); }
+let selectedMakers=new Set()
+let selectedParks=new Set()
 
-function esc(s){
-  return String(s ?? "")
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-}
+function showError(msg){errBox.style.display="block";errBox.textContent=msg}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 
-function toNumber(v){
-  const s = String(v ?? "").trim();
-  if(!s) return null;
-  const cleaned = s.replace(/[^0-9.\-]/g,"");
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
-}
-
-// ✅ gère timestamps positifs ET négatifs (avant 1970)
+function toNumber(v){const n=Number(String(v??"").replace(/[^0-9.\-]/g,""));return Number.isFinite(n)?n:null}
 function toYear(v){
-  const n = toNumber(v);
-  if(n === null) return null;
-
-  // déjà une année
-  if(n >= 1800 && n <= 2200) return Math.trunc(n);
-
-  const a = Math.abs(n);
-
-  // millisecondes
-  if(a > 1e11){
-    const y = new Date(n).getUTCFullYear();
-    return Number.isFinite(y) ? y : null;
-  }
-
-  // secondes
-  if(a > 1e9){
-    const y = new Date(n * 1000).getUTCFullYear();
-    return Number.isFinite(y) ? y : null;
-  }
-
-  return null;
+const n=toNumber(v)
+if(n===null)return null
+if(n>=1800&&n<=2200)return Math.trunc(n)
+const a=Math.abs(n)
+if(a>1e11)return new Date(n).getUTCFullYear()
+if(a>1e9)return new Date(n*1000).getUTCFullYear()
+return null
 }
 
-function sortFamily(mode){
-  return String(mode || "").split("_")[0]; // "park" ou "year"
+function sortFamily(v){return v.split("_")[0]}
+
+function sortRows(list,mode1,mode2,f){
+function cmp(mode,a,b){
+if(mode==="year_desc")return (toYear(b[f.year])??-Infinity)-(toYear(a[f.year])??-Infinity)
+if(mode==="year_asc")return (toYear(a[f.year])??Infinity)-(toYear(b[f.year])??Infinity)
+if(mode==="park_asc")return String(a[f.park]??"").localeCompare(String(b[f.park]??""),"fr")
+return 0
+}
+return list.slice().sort((a,b)=>{
+let c=cmp(mode1,a,b);if(c!==0)return c
+c=cmp(mode2,a,b);if(c!==0)return c
+return cmp("park_asc",a,b)
+})
 }
 
-function clampSwap(minEl, maxEl){
-  let a = parseInt(minEl.value,10);
-  let b = parseInt(maxEl.value,10);
-  if(a > b){
-    const t=a; a=b; b=t;
-    minEl.value = String(a);
-    maxEl.value = String(b);
-  }
-  return {min:a, max:b};
+function updateSlider(absMin,absMax){
+let min=parseInt(yearMinEl.value)
+let max=parseInt(yearMaxEl.value)
+if(min>max){[min,max]=[max,min];yearMinEl.value=min;yearMaxEl.value=max}
+minLabel.textContent=min
+maxLabel.textContent=max
+const total=absMax-absMin||1
+const left=((min-absMin)/total)*100
+const right=((max-absMin)/total)*100
+fill.style.left=left+"%"
+fill.style.width=(right-left)+"%"
+return{min,max}
 }
 
-function updateSliderUI(absMin, absMax){
-  const {min, max} = clampSwap(yearMinEl, yearMaxEl);
-  minLabel.textContent = String(min);
-  maxLabel.textContent = String(max);
-
-  const total = (absMax - absMin) || 1;
-  const left = ((min - absMin) / total) * 100;
-  const right = ((max - absMin) / total) * 100;
-  fill.style.left = left + "%";
-  fill.style.width = Math.max(0, right - left) + "%";
-  return {min, max};
+function buildChecklist(container,values,set){
+container.innerHTML=values.map(v=>`
+<label><input type="checkbox" value="${esc(v)}"> ${esc(v)}</label>
+`).join("")
+container.querySelectorAll("input").forEach(cb=>{
+cb.onchange=()=>{
+if(cb.checked)set.add(cb.value)
+else set.delete(cb.value)
+render()
+}
+})
 }
 
-function sortRows(list, mode1, mode2, f){
-  const getYear = (r) => f.year ? (toYear(r[f.year]) ?? null) : null;
-  const getPark = (r) => f.park ? String(r[f.park] ?? "") : "";
+(async function(){
+try{
+const res=await fetch(dataUrl)
+const rows=await res.json()
 
-  function cmp(mode, a, b){
-    if(mode === "year_desc") return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
-    if(mode === "year_asc")  return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
-    if(mode === "park_asc")  return getPark(a).localeCompare(getPark(b), "fr");
-    return 0;
-  }
+if(!rows.length){grid.innerHTML='<div class="empty">Aucune donnée</div>';return}
 
-  return list.slice().sort((a,b)=>{
-    let c = cmp(mode1, a, b);
-    if(c !== 0) return c;
-    c = cmp(mode2, a, b);
-    if(c !== 0) return c;
-    // fallback stable
-    c = cmp("park_asc", a, b);
-    if(c !== 0) return c;
-    return cmp("year_asc", a, b);
-  });
+const keys=Object.keys(rows[0])
+const f={
+name:keys.find(k=>/nom|name|coaster/i.test(k)),
+park:keys.find(k=>/park|parc/i.test(k)),
+year:keys.find(k=>/year|annee|ouverture/i.test(k)),
+maker:keys.find(k=>/fabricant|manufacturer/i.test(k))
 }
 
-function matchesQuery(row, q){
-  if(!q) return true;
-  const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
-  return text.includes(q);
+let years=rows.map(r=>toYear(r[f.year])).filter(Boolean)
+let absMin=Math.min(...years)
+let absMax=Math.max(...years)
+
+yearMinEl.min=yearMaxEl.min=absMin
+yearMinEl.max=yearMaxEl.max=absMax
+yearMinEl.value=absMin
+yearMaxEl.value=absMax
+
+const makers=[...new Set(rows.map(r=>r[f.maker]).filter(Boolean))].sort()
+const parks=[...new Set(rows.map(r=>r[f.park]).filter(Boolean))].sort()
+
+buildChecklist(makerList,makers,selectedMakers)
+buildChecklist(parkList,parks,selectedParks)
+
+makerSearch.oninput=()=>{
+const val=makerSearch.value.toLowerCase()
+makerList.querySelectorAll("label").forEach(l=>{
+l.style.display=l.textContent.toLowerCase().includes(val)?"flex":"none"
+})
+}
+parkSearch.oninput=()=>{
+const val=parkSearch.value.toLowerCase()
+parkList.querySelectorAll("label").forEach(l=>{
+l.style.display=l.textContent.toLowerCase().includes(val)?"flex":"none"
+})
 }
 
-function hasCoasterName(row, f){
-  if(!f.name) return false;
-  const n = String(row[f.name] ?? "").trim().toLowerCase();
-  if(!n) return false;
-  if(n === "n/a" || n === "na" || n === "unknown" || n === "-" || n === "—") return false;
-  return true;
+document.getElementById("makerClear").onclick=()=>{selectedMakers.clear();makerList.querySelectorAll("input").forEach(i=>i.checked=false);render()}
+document.getElementById("parkClear").onclick=()=>{selectedParks.clear();parkList.querySelectorAll("input").forEach(i=>i.checked=false);render()}
+
+let prevPrimary=sortSel.value
+function updateSecondary(){
+const fam=sortFamily(sortSel.value)
+for(const o of sort2Sel.options)o.disabled=(sortFamily(o.value)===fam)
+if(sortFamily(sort2Sel.value)===fam)sort2Sel.value=prevPrimary
 }
 
-function detectFields(sample){
-  const keys = Object.keys(sample || {});
-  const find = (re) => keys.find(k => re.test(k));
-  return {
-    name: find(/^(nom|name|coaster)/i) || find(/nom|name|coaster/i),
-    park: find(/^(parc|park)$/i) || find(/parc|park/i),
-    year: find(/^(ouverture|annee|année|year)$/i) || find(/ouverture|annee|année|year|opened/i),
-    maker: find(/^(fabricant|manufacturer|constructeur)$/i) || find(/fabricant|manufacturer|constructeur/i),
-    speed: find(/vitesse|speed/i),
-    height: find(/hauteur|height/i),
-    length: find(/longueur|length/i),
-    inversions: find(/inversions?/i),
-  };
+sortSel.onchange=()=>{
+if(sortFamily(sortSel.value)===sortFamily(sort2Sel.value))
+sort2Sel.value=prevPrimary
+prevPrimary=sortSel.value
+updateSecondary()
+render()
+}
+sort2Sel.onchange=()=>{updateSecondary();render()}
+
+qEl.oninput=render
+yearMinEl.oninput=render
+yearMaxEl.oninput=render
+
+document.getElementById("clear").onclick=()=>{
+qEl.value=""
+selectedMakers.clear()
+selectedParks.clear()
+makerList.querySelectorAll("input").forEach(i=>i.checked=false)
+parkList.querySelectorAll("input").forEach(i=>i.checked=false)
+yearMinEl.value=absMin
+yearMaxEl.value=absMax
+sortSel.value="park_asc"
+sort2Sel.value="year_asc"
+prevPrimary="park_asc"
+updateSecondary()
+render()
 }
 
-function cardHTML(r, f){
-  const title = String(r[f.name] ?? "").trim();
-  const park = f.park ? String(r[f.park] ?? "").trim() : "";
-  const year = f.year ? toYear(r[f.year]) : null;
+updateSecondary()
 
-  const rows = [];
-  if(f.maker) rows.push(["Fabricant", r[f.maker]]);
-  // ✅ parc uniquement en sous-titre (pas dans le corps)
-  if(f.year) rows.push(["Ouverture", year ?? ""]);
-  if(f.speed) rows.push(["Vitesse", r[f.speed]]);
-  if(f.height) rows.push(["Hauteur", r[f.height]]);
-  if(f.length) rows.push(["Longueur", r[f.length]]);
-  if(f.inversions) rows.push(["Inversions", r[f.inversions]]);
+function render(){
+const {min,max}=updateSlider(absMin,absMax)
+let filtered=rows.filter(r=>{
+if(!r[f.name]||!r[f.name].trim())return false
+if(qEl.value&&!Object.values(r).join(" ").toLowerCase().includes(qEl.value.toLowerCase()))return false
+if(selectedMakers.size&&!selectedMakers.has(r[f.maker]))return false
+if(selectedParks.size&&!selectedParks.has(r[f.park]))return false
+const y=toYear(r[f.year])
+if(y!==null&&(y<min||y>max))return false
+return true
+})
 
-  const kv = rows
-    .filter(([_,v]) => String(v ?? "").trim() !== "")
-    .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
-    .join("");
+filtered=sortRows(filtered,sortSel.value,sort2Sel.value,f)
 
-  return `
-    <article class="card">
-      <h2 class="title">${esc(title)}</h2>
-      ${park ? `<p class="sub">${esc(park)}</p>` : ""}
-      <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
-    </article>
-  `;
+if(!filtered.length){grid.innerHTML='<div class="empty">Aucun résultat</div>';return}
+
+grid.innerHTML=filtered.map(r=>{
+const y=toYear(r[f.year])
+return `
+<div class="card">
+<div class="title">${esc(r[f.name])}</div>
+<div class="sub">${esc(r[f.park]||"")}</div>
+<div class="kv">
+<div class="k">Fabricant</div><div>${esc(r[f.maker]||"")}</div>
+<div class="k">Ouverture</div><div>${y??""}</div>
+</div>
+</div>`
+}).join("")
 }
 
-(async function init(){
-  clearError();
+render()
 
-  try{
-    const res = await fetch(dataUrl, { cache: "no-store" });
-    if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
-
-    const rows = await res.json();
-    if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
-    if(rows.length === 0){
-      grid.innerHTML = `<div class="empty">Aucune donnée.</div>`;
-      return;
-    }
-
-    const f = detectFields(rows[0]);
-
-    if(!f.name){
-      throw new Error("Champ 'Nom' introuvable. Vérifie la clé (ex: Nom / Name / Coaster).");
-    }
-
-    // plage année globale
-    let absMin = 1900, absMax = new Date().getUTCFullYear();
-    if(f.year){
-      const years = rows.map(r => toYear(r[f.year])).filter(y => Number.isFinite(y));
-      if(years.length){
-        absMin = Math.min(...years);
-        absMax = Math.max(...years);
-      }
-    }
-
-    yearMinEl.min = String(absMin);
-    yearMaxEl.min = String(absMin);
-    yearMinEl.max = String(absMax);
-    yearMaxEl.max = String(absMax);
-
-    yearMinEl.value = String(absMin);
-    yearMaxEl.value = String(absMax);
-
-    // règles tri principal/secondaire
-    let prevPrimary = sortSel.value;
-
-    function updateSecondaryOptions(){
-      const fam1 = sortFamily(sortSel.value);
-      for(const opt of Array.from(sort2Sel.options)){
-        opt.disabled = (sortFamily(opt.value) === fam1);
-      }
-      // si le secondaire est interdit, passer sur une option valide
-      if(sortFamily(sort2Sel.value) === fam1){
-        const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
-        if(firstValid) sort2Sel.value = firstValid.value;
-      }
-    }
-
-    sortSel.addEventListener("change", () => {
-      const newPrimary = sortSel.value;
-
-      // si même famille (au sens près), secondaire = ancien principal (valeur exacte)
-      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
-        sort2Sel.value = prevPrimary;
-      }
-
-      prevPrimary = newPrimary;
-      updateSecondaryOptions();
-      render();
-    });
-
-    sort2Sel.addEventListener("change", () => {
-      updateSecondaryOptions();
-      render();
-    });
-
-    qEl.addEventListener("input", render);
-    yearMinEl.addEventListener("input", render);
-    yearMaxEl.addEventListener("input", render);
-
-    document.getElementById("clear").addEventListener("click", () => {
-      qEl.value = "";
-
-      sortSel.value = "park_asc";
-      sort2Sel.value = "year_asc";
-      prevPrimary = sortSel.value;
-
-      yearMinEl.value = String(absMin);
-      yearMaxEl.value = String(absMax);
-
-      updateSecondaryOptions();
-      render();
-    });
-
-    updateSecondaryOptions();
-
-    function render(){
-      const q = norm(qEl.value);
-      const {min, max} = updateSliderUI(absMin, absMax);
-
-      let filtered = rows.filter(r => {
-        if(!hasCoasterName(r, f)) return false;
-        if(!matchesQuery(r, q)) return false;
-
-        if(f.year){
-          const y = toYear(r[f.year]);
-          // si y est null, on le garde uniquement si on est sur la plage complète
-          if(y === null){
-            if(min !== absMin || max !== absMax) return false;
-          } else {
-            if(y < min || y > max) return false;
-          }
-        }
-        return true;
-      });
-
-      filtered = sortRows(filtered, sortSel.value, sort2Sel.value, f);
-
-      if(filtered.length === 0){
-        grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
-        return;
-      }
-
-      grid.innerHTML = filtered.map(r => cardHTML(r, f)).join("");
-    }
-
-    render();
-
-  } catch(e){
-    console.error(e);
-    showError(
-      "Erreur:\n" + (e?.message ?? String(e)) +
-      "\n\nÀ vérifier:\n- data/coasters_clean.json existe\n- JSON valide (tableau)\n- tu es sur GitHub Pages (pas file://)"
-    );
-  }
-})();
+}catch(e){showError(e.message)}
+})()
 </script>
 
 </body>

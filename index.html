@@ -38,12 +38,37 @@
   .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-  .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+
+  /* Card */
+  .card{
+    border:1px solid #e6e6e6;border-radius:14px;background:#fff;
+    box-shadow:0 1px 6px rgba(0,0,0,.04);
+    overflow:hidden;
+  }
+  .cardBtn{
+    width:100%;
+    text-align:left;
+    border:0;
+    background:transparent;
+    padding:14px;
+    cursor:pointer;
+  }
   .title{font-weight:750;margin:0 0 6px;font-size:16px}
   .sub{opacity:.75;margin:0 0 10px;font-size:13px}
   .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
   .k{opacity:.6}
   .v{word-break:break-word}
+
+  .details{
+    border-top:1px solid #eee;
+    padding:12px 14px 14px;
+    display:none;
+  }
+  .card.open .details{display:block}
+  .detailsTitle{
+    display:flex;justify-content:space-between;align-items:center;
+    margin:0 0 10px;font-size:13px;opacity:.8
+  }
 
   .empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.85}
   .error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px 12px;border-radius:12px;margin:12px 0}
@@ -124,6 +149,7 @@
 <script>
 const dataUrl = "./data/coasters_clean.json";
 
+/* --- DOM --- */
 const qEl = document.getElementById("q");
 const sortSel = document.getElementById("sort");
 const sort2Sel = document.getElementById("sort2");
@@ -161,7 +187,7 @@ function pickField(obj, candidates){
     const hit = lower.get(String(c).toLowerCase());
     if(hit) return hit;
   }
-  // fallback regex
+  // fallback: contient le mot
   for(const k of keys){
     const kl = k.toLowerCase();
     if(candidates.some(c => kl.includes(String(c).toLowerCase()))) return k;
@@ -177,7 +203,7 @@ function toNumber(v){
   return Number.isFinite(n) ? n : null;
 }
 
-// ✅ timestamps positifs & négatifs
+// ✅ timestamps positifs & négatifs (avant 1970)
 function toYear(v){
   const n = toNumber(v);
   if(n === null) return null;
@@ -232,41 +258,6 @@ function uniqueSorted(values){
   return Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b,"fr"));
 }
 
-function buildChecklist(container, labels, selectedSet, onChange){
-  function draw(filterText){
-    const ft = norm(filterText);
-    const shown = labels.filter(l => norm(l).includes(ft));
-
-    container.innerHTML = shown.map(label => {
-      const value = label; // on garde la valeur exacte
-      const checked = selectedSet.has(value) ? "checked" : "";
-      return `
-        <div class="row">
-          <input type="checkbox" value="${esc(value)}" ${checked}>
-          <span>${esc(label)}</span>
-        </div>
-      `;
-    }).join("");
-
-    container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-      cb.addEventListener("change", ()=>{
-        const v = cb.value;
-        if(cb.checked) selectedSet.add(v);
-        else selectedSet.delete(v);
-        onChange();
-      });
-    });
-  }
-
-  draw("");
-
-  return {
-    redraw: () => draw(filterTextInput.value),
-    draw,
-    clear: () => { selectedSet.clear(); draw(""); }
-  };
-}
-
 function matchesQuery(row, q){
   if(!q) return true;
   const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
@@ -303,31 +294,99 @@ function sortRows(list, mode1, mode2, f){
   });
 }
 
-function cardHTML(r, f){
+function titleizeKey(k){
+  const s = String(k ?? "").replace(/_/g," ").trim();
+  if(!s) return "Champ";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* --- Checklist renderer --- */
+function drawChecklist(containerEl, labels, selectedSet, searchEl, onChange){
+  function draw(){
+    const ft = norm(searchEl.value);
+    const shown = labels.filter(l => norm(l).includes(ft));
+
+    containerEl.innerHTML = shown.map(label => {
+      const checked = selectedSet.has(label) ? "checked" : "";
+      return `
+        <div class="row">
+          <input type="checkbox" value="${esc(label)}" ${checked}>
+          <span>${esc(label)}</span>
+        </div>
+      `;
+    }).join("");
+
+    containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener("change", ()=>{
+        const v = cb.value;
+        if(cb.checked) selectedSet.add(v);
+        else selectedSet.delete(v);
+        onChange();
+      });
+    });
+  }
+
+  searchEl.addEventListener("input", draw);
+  draw();
+
+  return {
+    clear: () => { selectedSet.clear(); searchEl.value=""; draw(); },
+    redraw: draw
+  };
+}
+
+/* --- Card with click-to-expand --- */
+function cardHTML(r, f, idx, expanded){
   const title = String(r[f.name] ?? "").trim();
   const park = f.park ? String(r[f.park] ?? "").trim() : "";
   const y = f.year ? toYear(r[f.year]) : null;
 
-  const rows = [];
-  if(f.maker) rows.push(["Fabricant", r[f.maker]]);
-  if(f.year) rows.push(["Ouverture", (y ?? "")]);
+  // compact (toujours visible)
+  const compactRows = [];
+  if(f.maker) compactRows.push(["Fabricant", r[f.maker]]);
+  if(f.year)  compactRows.push(["Ouverture", (y ?? "")]);
 
-  // Ajoute d'autres champs si présents (facultatif mais utile)
-  if(f.speed && String(r[f.speed]??"").trim() !== "") rows.push(["Vitesse", r[f.speed]]);
-  if(f.height && String(r[f.height]??"").trim() !== "") rows.push(["Hauteur", r[f.height]]);
-  if(f.length && String(r[f.length]??"").trim() !== "") rows.push(["Longueur", r[f.length]]);
-  if(f.inversions && String(r[f.inversions]??"").trim() !== "") rows.push(["Inversions", r[f.inversions]]);
-
-  const kv = rows
+  const compactKV = compactRows
     .filter(([_,v]) => String(v ?? "").trim() !== "")
     .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
     .join("");
 
+  // details : toutes les colonnes non vides, en évitant doublons (nom/parc)
+  const excludeKeys = new Set([f.name, f.park]); // parc en sous-titre uniquement
+  const detailPairs = Object.entries(r)
+    .filter(([k,v]) => !excludeKeys.has(k) && String(v ?? "").trim() !== "")
+    .map(([k,v]) => {
+      // si c'est l'année: afficher l'année
+      if(f.year && k === f.year){
+        const yy = toYear(v);
+        return [titleizeKey(k), (yy ?? v)];
+      }
+      return [titleizeKey(k), v];
+    });
+
+  const detailKV = detailPairs.map(([k,v]) =>
+    `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`
+  ).join("");
+
+  const openClass = expanded ? "open" : "";
+  const ariaExpanded = expanded ? "true" : "false";
+
   return `
-    <article class="card">
-      <h2 class="title">${esc(title)}</h2>
-      ${park ? `<p class="sub">${esc(park)}</p>` : ""}
-      <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
+    <article class="card ${openClass}" data-idx="${idx}">
+      <button class="cardBtn" type="button" aria-expanded="${ariaExpanded}">
+        <h2 class="title">${esc(title)}</h2>
+        ${park ? `<p class="sub">${esc(park)}</p>` : ""}
+        <div class="kv">${compactKV || `<div class="empty">Aucune info</div>`}</div>
+      </button>
+      <div class="details">
+        <div class="detailsTitle">
+          <span>Détails</span>
+          <span class="pill">clic pour replier</span>
+        </div>
+        <div class="kv">
+          ${detailKV || `<div class="empty">Aucun détail.</div>`}
+        </div>
+      </div>
     </article>
   `;
 }
@@ -350,10 +409,6 @@ function cardHTML(r, f){
       park: pickField(sample, ["Parc","Park","parc","park"]),
       maker: pickField(sample, ["Fabricant","Manufacturer","Constructeur","maker","builder"]),
       year: pickField(sample, ["Ouverture","Année","Annee","Year","opened","opening_year"]),
-      speed: pickField(sample, ["Vitesse","Speed","top_speed"]),
-      height: pickField(sample, ["Hauteur","Height"]),
-      length: pickField(sample, ["Longueur","Length"]),
-      inversions: pickField(sample, ["Inversions","nb_inversions"]),
     };
 
     if(!f.name){
@@ -366,14 +421,11 @@ function cardHTML(r, f){
       parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé.</div>`;
     }
 
-    // plage année globale (si champ année présent)
+    // plage année globale
     let absMin = 1900, absMax = new Date().getUTCFullYear();
     if(f.year){
       const years = rows.map(r => toYear(r[f.year])).filter(y => Number.isFinite(y));
-      if(years.length){
-        absMin = Math.min(...years);
-        absMax = Math.max(...years);
-      }
+      if(years.length){ absMin = Math.min(...years); absMax = Math.max(...years); }
     }
 
     yearMinEl.min = yearMaxEl.min = String(absMin);
@@ -381,63 +433,28 @@ function cardHTML(r, f){
     yearMinEl.value = String(absMin);
     yearMaxEl.value = String(absMax);
 
-    // selections
     const selectedMakers = new Set();
     const selectedParks  = new Set();
 
-    // build lists (robuste: pas de vides)
     const makerLabels = f.maker ? uniqueSorted(rows.map(r => r[f.maker])) : [];
     const parkLabels  = f.park  ? uniqueSorted(rows.map(r => r[f.park]))  : [];
 
-    // render checklists
-    function drawChecklist(containerEl, labels, selectedSet, searchEl){
-      function draw(){
-        const ft = norm(searchEl.value);
-        const shown = labels.filter(l => norm(l).includes(ft));
-
-        containerEl.innerHTML = shown.map(label => {
-          const checked = selectedSet.has(label) ? "checked" : "";
-          return `
-            <div class="row">
-              <input type="checkbox" value="${esc(label)}" ${checked}>
-              <span>${esc(label)}</span>
-            </div>
-          `;
-        }).join("");
-
-        containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-          cb.addEventListener("change", ()=>{
-            const v = cb.value;
-            if(cb.checked) selectedSet.add(v);
-            else selectedSet.delete(v);
-            render();
-          });
-        });
-      }
-
-      searchEl.addEventListener("input", draw);
-      draw();
-      return { draw, clear: () => { selectedSet.clear(); searchEl.value=""; draw(); } };
-    }
-
     const makerCtl = (f.maker && makerLabels.length)
-      ? drawChecklist(makerList, makerLabels, selectedMakers, makerSearch)
+      ? drawChecklist(makerList, makerLabels, selectedMakers, makerSearch, render)
       : null;
 
     const parkCtl = (f.park && parkLabels.length)
-      ? drawChecklist(parkList, parkLabels, selectedParks, parkSearch)
+      ? drawChecklist(parkList, parkLabels, selectedParks, parkSearch, render)
       : null;
 
     document.getElementById("makerClear").addEventListener("click", ()=>{
-      if(makerCtl) makerCtl.clear();
-      render();
+      if(makerCtl) makerCtl.clear(); render();
     });
     document.getElementById("parkClear").addEventListener("click", ()=>{
-      if(parkCtl) parkCtl.clear();
-      render();
+      if(parkCtl) parkCtl.clear(); render();
     });
 
-    // tri: anti-conflit au sens près
+    // tri anti-conflit (au sens près)
     let prevPrimary = sortSel.value;
 
     function updateSecondaryOptions(){
@@ -454,13 +471,12 @@ function cardHTML(r, f){
     sortSel.addEventListener("change", ()=>{
       const newPrimary = sortSel.value;
       if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
-        sort2Sel.value = prevPrimary; // valeur exacte de l'ancien tri principal
+        sort2Sel.value = prevPrimary;
       }
       prevPrimary = newPrimary;
       updateSecondaryOptions();
       render();
     });
-
     sort2Sel.addEventListener("change", ()=>{ updateSecondaryOptions(); render(); });
 
     qEl.addEventListener("input", render);
@@ -469,7 +485,6 @@ function cardHTML(r, f){
 
     document.getElementById("clear").addEventListener("click", ()=>{
       qEl.value = "";
-
       if(makerCtl) makerCtl.clear();
       if(parkCtl) parkCtl.clear();
 
@@ -480,11 +495,23 @@ function cardHTML(r, f){
       sort2Sel.value = "year_asc";
       prevPrimary = sortSel.value;
 
+      expandedKey = null; // replier
       updateSecondaryOptions();
       render();
     });
 
     updateSecondaryOptions();
+
+    // Gestion “fiche ouverte”
+    // On garde 1 fiche ouverte à la fois (plus propre). Si tu veux multi-ouvert, je te le fais.
+    let expandedKey = null;
+
+    function keyForRow(r, idx){
+      // clé stable : nom + parc + idx (fallback)
+      const n = String(r[f.name] ?? "").trim();
+      const p = f.park ? String(r[f.park] ?? "").trim() : "";
+      return `${n}__${p}__${idx}`;
+    }
 
     function render(){
       const q = norm(qEl.value);
@@ -521,7 +548,25 @@ function cardHTML(r, f){
         grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
         return;
       }
-      grid.innerHTML = filtered.map(r => cardHTML(r, f)).join("");
+
+      grid.innerHTML = filtered.map((r, i) => {
+        const k = keyForRow(r, i);
+        const expanded = (expandedKey === k);
+        return cardHTML(r, f, i, expanded);
+      }).join("");
+
+      // click handlers (accordéon)
+      grid.querySelectorAll(".cardBtn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const card = btn.closest(".card");
+          const idx = Number(card.getAttribute("data-idx"));
+          const r = filtered[idx];
+          const k = keyForRow(r, idx);
+
+          expandedKey = (expandedKey === k) ? null : k;
+          render();
+        });
+      });
     }
 
     render();
@@ -535,6 +580,5 @@ function cardHTML(r, f){
   }
 })();
 </script>
-
 </body>
 </html>

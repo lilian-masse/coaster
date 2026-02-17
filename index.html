@@ -7,13 +7,17 @@
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
     h1 { margin: 0 0 6px; }
-    .muted { opacity: .75; margin-bottom: 16px; }
-    .bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin: 16px 0 18px; }
-    label { display:block; font-size: 14px; margin-bottom: 6px; }
-    input, select, button { padding: 10px 12px; font-size: 14px; }
-    input, select { min-width: 220px; }
-    button { cursor: pointer; }
+    .muted { opacity: .75; margin-bottom: 16px; line-height: 1.35; }
     .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; }
+
+    .bar { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; margin: 16px 0 18px; align-items: end; }
+    .field { grid-column: span 3; }
+    .field.wide { grid-column: span 6; }
+    .field.small { grid-column: span 2; }
+    .field.actions { grid-column: span 2; display: flex; gap: 10px; }
+    label { display:block; font-size: 14px; margin-bottom: 6px; }
+    input, select, button { padding: 10px 12px; font-size: 14px; width: 100%; box-sizing: border-box; }
+    button { cursor: pointer; }
 
     .grid {
       display: grid;
@@ -27,137 +31,123 @@
       box-shadow: 0 1px 6px rgba(0,0,0,.04);
       background: #fff;
     }
-    .title { font-weight: 700; font-size: 16px; margin: 0 0 8px; }
+    .title { font-weight: 750; font-size: 16px; margin: 0 0 8px; }
     .sub { opacity: .8; margin: 0 0 10px; font-size: 13px; }
     .kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 10px; font-size: 13px; }
     .k { opacity: .65; }
     .v { word-break: break-word; }
+
+    .footer {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pager { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .pager button { width: auto; }
+    .pager .info { opacity: .8; font-size: 14px; }
     .empty { padding: 18px; border: 1px dashed #ddd; border-radius: 16px; opacity: .8; }
+
+    @media (max-width: 980px){
+      .bar { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .field { grid-column: span 3; }
+      .field.wide { grid-column: span 6; }
+      .field.small { grid-column: span 3; }
+      .field.actions { grid-column: span 6; }
+    }
+    @media (max-width: 560px){
+      .bar { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .field, .field.wide, .field.small, .field.actions { grid-column: span 1; }
+    }
   </style>
 </head>
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Affichage en fiches avec recherche + filtres.
+    Affichage en fiches avec recherche + filtres (Fabricant, Parc, Ouverture min/max), tri et pagination.
     <span id="count" class="pill">…</span>
   </div>
 
   <div class="bar">
-    <div>
+    <div class="field wide">
       <label for="q">Recherche (tous champs)</label>
-      <input id="q" type="text" placeholder="ex: Intamin, 2005, USA..." />
+      <input id="q" type="text" placeholder="ex: Intamin, 2005, wood, vitesse..." />
     </div>
 
-    <div>
-      <label for="country">Pays</label>
-      <select id="country">
-        <option value="">Tous</option>
-      </select>
-    </div>
-
-    <div>
-      <label for="maker">Constructeur</label>
+    <div class="field">
+      <label for="maker">Fabricant</label>
       <select id="maker">
         <option value="">Tous</option>
       </select>
     </div>
 
-    <div>
-      <button id="clear">Réinitialiser</button>
+    <div class="field">
+      <label for="park">Parc</label>
+      <select id="park">
+        <option value="">Tous</option>
+      </select>
+    </div>
+
+    <div class="field small">
+      <label for="yearMin">Ouverture min</label>
+      <input id="yearMin" type="number" inputmode="numeric" placeholder="ex: 1990" />
+    </div>
+
+    <div class="field small">
+      <label for="yearMax">Ouverture max</label>
+      <input id="yearMax" type="number" inputmode="numeric" placeholder="ex: 2010" />
+    </div>
+
+    <div class="field small">
+      <label for="sort">Tri</label>
+      <select id="sort">
+        <option value="relevance">Pertinence</option>
+        <option value="year_desc">Ouverture ↓</option>
+        <option value="year_asc">Ouverture ↑</option>
+        <option value="name_asc">Nom A→Z</option>
+        <option value="name_desc">Nom Z→A</option>
+      </select>
+    </div>
+
+    <div class="field small">
+      <label for="pageSize">Par page</label>
+      <select id="pageSize">
+        <option>12</option>
+        <option selected>24</option>
+        <option>48</option>
+        <option>96</option>
+      </select>
+    </div>
+
+    <div class="field actions">
+      <button id="clear" type="button">Réinitialiser</button>
+      <button id="clearYears" type="button">Effacer années</button>
     </div>
   </div>
 
   <div id="grid" class="grid"></div>
 
+  <div class="footer">
+    <div class="pager">
+      <button id="prev" type="button">← Précédent</button>
+      <button id="next" type="button">Suivant →</button>
+      <span id="pageInfo" class="info"></span>
+    </div>
+    <div class="info">
+      <span class="pill" id="activeFilters">Filtres: aucun</span>
+    </div>
+  </div>
+
   <script>
     const dataUrl = "./data/coasters_clean.json";
 
-    // Helpers
+    // ---- Helpers
     const norm = (v) => String(v ?? "").trim().toLowerCase();
-    const titleize = (s) => (s||"").replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
-
-    // Essaie de deviner les champs (les noms peuvent varier selon ton Excel)
-    function pickField(obj, candidates){
-      const keys = Object.keys(obj || {});
-      const lower = new Map(keys.map(k => [k.toLowerCase(), k]));
-      for (const c of candidates){
-        const hit = lower.get(c.toLowerCase());
-        if (hit) return hit;
-      }
-      return null;
-    }
-
-    function buildOptions(selectEl, values){
-      // On garde un "label" joli, mais on met une value normalisée (trim + lowercase)
-      const cleaned = values
-        .map(v => String(v ?? "").trim())
-        .filter(v => v !== "");
-    
-      const uniqLabels = Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b, "fr"));
-    
-      uniqLabels.forEach(label => {
-        const opt = document.createElement("option");
-        opt.value = norm(label);      // value normalisée
-        opt.textContent = label;      // texte affiché
-        selectEl.appendChild(opt);
-      });
-    }
-
-    function cardHTML(row, fields){
-      // Titre: on prend "name" si existe, sinon le 1er champ texte non vide
-      const nameField = fields.nameField;
-      let title = nameField ? row[nameField] : "";
-      if(!title){
-        const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
-        title = firstNonEmpty ?? "Fiche";
-      }
-
-      const subParts = [];
-      if (fields.parkField && row[fields.parkField]) subParts.push(row[fields.parkField]);
-      if (fields.countryField && row[fields.countryField]) subParts.push(row[fields.countryField]);
-      const sub = subParts.join(" • ");
-
-      // Champs affichés dans la fiche (ajuste si tu veux)
-      const show = [];
-      const pushIf = (label, field) => {
-        if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
-          show.push([label, row[field]]);
-        }
-      };
-
-      pushIf("Constructeur", fields.makerField);
-      pushIf("Parc", fields.parkField);
-      pushIf("Pays", fields.countryField);
-      pushIf("Ouvert", fields.yearField);
-      pushIf("Vitesse", fields.speedField);
-      pushIf("Hauteur", fields.heightField);
-      pushIf("Longueur", fields.lengthField);
-      pushIf("Inversions", fields.inversionsField);
-
-      // Si aucun des champs “connus” n’existe, on affiche quelques champs génériques
-      if(show.length === 0){
-        const entries = Object.entries(row).slice(0, 8);
-        entries.forEach(([k,v]) => {
-          if (String(v??"").trim() !== "") show.push([titleize(k), v]);
-        });
-      }
-
-      return `
-        <article class="card">
-          <h2 class="title">${escapeHtml(String(title))}</h2>
-          ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ""}
-          <div class="kv">
-            ${show.map(([k,v]) => `
-              <div class="k">${escapeHtml(String(k))}</div>
-              <div class="v">${escapeHtml(String(v))}</div>
-            `).join("")}
-          </div>
-        </article>
-      `;
-    }
 
     function escapeHtml(str){
-      return str
+      return String(str ?? "")
         .replaceAll("&","&amp;")
         .replaceAll("<","&lt;")
         .replaceAll(">","&gt;")
@@ -165,88 +155,269 @@
         .replaceAll("'","&#039;");
     }
 
+    function titleize(s){
+      return (s||"").replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function pickField(obj, candidates){
+      const keys = Object.keys(obj || {});
+      const lower = new Map(keys.map(k => [k.toLowerCase(), k]));
+      for (const c of candidates){
+        const hit = lower.get(String(c).toLowerCase());
+        if (hit) return hit;
+      }
+      return null;
+    }
+
+    function toInt(v){
+      const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function buildOptions(selectEl, values){
+      // value normalisée, label affiché d'origine (trim)
+      const cleaned = values
+        .map(v => String(v ?? "").trim())
+        .filter(v => v !== "");
+      const uniqLabels = Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b, "fr"));
+      uniqLabels.forEach(label => {
+        const opt = document.createElement("option");
+        opt.value = norm(label);
+        opt.textContent = label;
+        selectEl.appendChild(opt);
+      });
+    }
+
     function matchesQuery(row, q){
       if(!q) return true;
+      // recherche sur toutes les valeurs concaténées
       const text = Object.values(row).map(v => String(v ?? "")).join(" ").toLowerCase();
       return text.includes(q);
     }
 
-    (async function init(){
-      const res = await fetch(dataUrl);
-      if(!res.ok){
-        document.getElementById("grid").innerHTML =
-          `<div class="empty">Impossible de charger <code>${dataUrl}</code>. Vérifie que le fichier existe bien dans <code>/data/</code>.</div>`;
-        return;
+    function renderCard(row, f){
+      // titre
+      let title = f.nameField ? row[f.nameField] : "";
+      if(!title){
+        // fallback: 1re valeur non vide
+        const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
+        title = firstNonEmpty ?? "Fiche";
       }
 
+      // sous-titre
+      const subParts = [];
+      if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
+      if (f.yearField && row[f.yearField]) subParts.push("Ouverture: " + row[f.yearField]);
+      const sub = subParts.join(" • ");
+
+      // champs affichés dans la fiche
+      const show = [];
+      const pushIf = (label, field) => {
+        if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
+          show.push([label, row[field]]);
+        }
+      };
+
+      pushIf("Fabricant", f.makerField);
+      pushIf("Parc", f.parkField);
+      pushIf("Ouverture", f.yearField);
+      pushIf("Vitesse", f.speedField);
+      pushIf("Hauteur", f.heightField);
+      pushIf("Longueur", f.lengthField);
+      pushIf("Inversions", f.inversionsField);
+
+      // fallback si rien trouvé
+      if(show.length === 0){
+        Object.entries(row).slice(0, 8).forEach(([k,v]) => {
+          if (String(v??"").trim() !== "") show.push([titleize(k), v]);
+        });
+      }
+
+      return `
+        <article class="card">
+          <h2 class="title">${escapeHtml(title)}</h2>
+          ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ""}
+          <div class="kv">
+            ${show.map(([k,v]) => `
+              <div class="k">${escapeHtml(k)}</div>
+              <div class="v">${escapeHtml(v)}</div>
+            `).join("")}
+          </div>
+        </article>
+      `;
+    }
+
+    // ---- App
+    (async function init(){
+      const grid = document.getElementById("grid");
+      const countEl = document.getElementById("count");
+      const pageInfoEl = document.getElementById("pageInfo");
+      const activeFiltersEl = document.getElementById("activeFilters");
+
+      const qEl = document.getElementById("q");
+      const makerSel = document.getElementById("maker");
+      const parkSel = document.getElementById("park");
+      const yearMinEl = document.getElementById("yearMin");
+      const yearMaxEl = document.getElementById("yearMax");
+      const sortSel = document.getElementById("sort");
+      const pageSizeSel = document.getElementById("pageSize");
+
+      const prevBtn = document.getElementById("prev");
+      const nextBtn = document.getElementById("next");
+
+      const res = await fetch(dataUrl);
+      if(!res.ok){
+        grid.innerHTML = `<div class="empty">Impossible de charger <code>${dataUrl}</code>. Vérifie que le fichier existe bien dans <code>/data/</code>.</div>`;
+        return;
+      }
       const rows = await res.json();
       const sample = rows[0] || {};
 
-      // Détection des champs possibles (tu peux enrichir la liste de candidats)
-      const fields = {
-        nameField: pickField(sample, ["name","coaster","coaster_name","ride","ride_name","attraction"]),
-        parkField: pickField(sample, ["park","amusement_park","location","parc"]),
-        countryField: pickField(sample, ["country","pays","nation"]),
-        makerField: pickField(sample, ["manufacturer","maker","constructeur","builder"]),
-        yearField: pickField(sample, ["year","opened","opening_year","ouvert","année"]),
-        speedField: pickField(sample, ["speed","top_speed","vitesse"]),
-        heightField: pickField(sample, ["height","hauteur"]),
-        lengthField: pickField(sample, ["length","longueur"]),
-        inversionsField: pickField(sample, ["inversions","nb_inversions"]),
+      // Détection adaptée à ton JSON (FR + quelques variantes)
+      const f = {
+        nameField: pickField(sample, ["Nom", "Coaster", "Name", "name", "coaster", "ride", "attraction"]),
+        parkField: pickField(sample, ["Parc", "Park", "park", "parc", "location"]),
+        makerField: pickField(sample, ["Fabricant", "Fabricant_2", "Constructeur", "Manufacturer", "manufacturer", "maker", "builder"]),
+        yearField: pickField(sample, ["Ouverture", "Année", "Annee", "Year", "year", "opened", "opening_year"]),
+        speedField: pickField(sample, ["Vitesse", "Speed", "speed", "top_speed"]),
+        heightField: pickField(sample, ["Hauteur", "Height", "height"]),
+        lengthField: pickField(sample, ["Longueur", "Length", "length"]),
+        inversionsField: pickField(sample, ["Inversions", "inversions", "nb_inversions"]),
       };
 
-      // Remplir les filtres (si champs existants)
-      const countrySel = document.getElementById("country");
-      const makerSel = document.getElementById("maker");
+      // Remplir les filtres (si champs présents)
+      if (f.makerField) buildOptions(makerSel, rows.map(r => r[f.makerField]));
+      else { makerSel.disabled = true; makerSel.title = "Champ 'Fabricant' non trouvé"; }
 
-      if(fields.countryField){
-        buildOptions(countrySel, rows.map(r => r[fields.countryField]));
-      } else {
-        countrySel.disabled = true;
-        countrySel.title = "Champ 'pays' non trouvé dans les données";
+      if (f.parkField) buildOptions(parkSel, rows.map(r => r[f.parkField]));
+      else { parkSel.disabled = true; parkSel.title = "Champ 'Parc' non trouvé"; }
+
+      // Pagination state
+      let page = 1;
+
+      function getPageSize(){
+        const n = parseInt(pageSizeSel.value, 10);
+        return Number.isFinite(n) && n > 0 ? n : 24;
       }
 
-      if(fields.makerField){
-        buildOptions(makerSel, rows.map(r => r[fields.makerField]));
-      } else {
-        makerSel.disabled = true;
-        makerSel.title = "Champ 'constructeur' non trouvé dans les données";
+      function activeFiltersText(state){
+        const parts = [];
+        if(state.q) parts.push(`Recherche: “${state.q}”`);
+        if(state.maker) parts.push(`Fabricant: ${state.makerLabel}`);
+        if(state.park) parts.push(`Parc: ${state.parkLabel}`);
+        if(state.ymin !== null) parts.push(`Ouverture ≥ ${state.ymin}`);
+        if(state.ymax !== null) parts.push(`Ouverture ≤ ${state.ymax}`);
+        return parts.length ? parts.join(" • ") : "aucun";
       }
 
-      const grid = document.getElementById("grid");
-      const countEl = document.getElementById("count");
-      const qEl = document.getElementById("q");
+      function sortRows(list, state){
+        const mode = state.sort;
+        const getYear = (r) => f.yearField ? toInt(r[f.yearField]) : null;
+        const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
+
+        if(mode === "year_desc"){
+          return list.slice().sort((a,b) => (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity));
+        }
+        if(mode === "year_asc"){
+          return list.slice().sort((a,b) => (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity));
+        }
+        if(mode === "name_asc"){
+          return list.slice().sort((a,b) => getName(a).localeCompare(getName(b), "fr"));
+        }
+        if(mode === "name_desc"){
+          return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
+        }
+        // relevance: on ne re-trie pas (ordre d'origine)
+        return list;
+      }
 
       function render(){
-        const q = norm(qEl.value);
-        const country = norm(countrySel.value);
-        const maker = norm(makerSel.value);
+        const state = {
+          q: norm(qEl.value),
+          maker: norm(makerSel.value),
+          park: norm(parkSel.value),
+          ymin: yearMinEl.value === "" ? null : toInt(yearMinEl.value),
+          ymax: yearMaxEl.value === "" ? null : toInt(yearMaxEl.value),
+          sort: sortSel.value,
+          makerLabel: makerSel.options[makerSel.selectedIndex]?.textContent ?? "",
+          parkLabel: parkSel.options[parkSel.selectedIndex]?.textContent ?? "",
+        };
 
-        const filtered = rows.filter(r => {
-          if(!matchesQuery(r, q)) return false;
-          if(fields.countryField && country && norm(r[fields.countryField]) !== country) return false;
-          if(fields.makerField && maker && norm(r[fields.makerField]) !== maker) return false;
+        // Filtrage
+        let filtered = rows.filter(r => {
+          if(!matchesQuery(r, state.q)) return false;
+
+          if(f.makerField && state.maker){
+            if(norm(r[f.makerField]) !== state.maker) return false;
+          }
+          if(f.parkField && state.park){
+            if(norm(r[f.parkField]) !== state.park) return false;
+          }
+          if(f.yearField && (state.ymin !== null || state.ymax !== null)){
+            const y = toInt(r[f.yearField]);
+            if(y === null) return false; // si on filtre par année, on exclut les lignes sans année
+            if(state.ymin !== null && y < state.ymin) return false;
+            if(state.ymax !== null && y > state.ymax) return false;
+          }
           return true;
         });
 
-        countEl.textContent = `${filtered.length} résultat(s)`;
+        // Tri
+        filtered = sortRows(filtered, state);
 
-        if(filtered.length === 0){
+        // Pagination
+        const pageSize = getPageSize();
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if(page > totalPages) page = totalPages;
+        if(page < 1) page = 1;
+
+        const start = (page - 1) * pageSize;
+        const slice = filtered.slice(start, start + pageSize);
+
+        // UI
+        countEl.textContent = `${total} résultat(s)`;
+        activeFiltersEl.textContent = "Filtres: " + activeFiltersText(state);
+
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= totalPages;
+        pageInfoEl.textContent = `Page ${page} / ${totalPages} (affiche ${slice.length} sur ${total})`;
+
+        if(total === 0){
           grid.innerHTML = `<div class="empty">Aucun résultat. Essaie d’enlever un filtre.</div>`;
           return;
         }
 
-        grid.innerHTML = filtered.map(r => cardHTML(r, fields)).join("");
+        grid.innerHTML = slice.map(r => renderCard(r, f)).join("");
       }
 
-      qEl.addEventListener("input", render);
-      countrySel.addEventListener("change", render);
-      makerSel.addEventListener("change", render);
+      // Events
+      qEl.addEventListener("input", () => { page = 1; render(); });
+      makerSel.addEventListener("change", () => { page = 1; render(); });
+      parkSel.addEventListener("change", () => { page = 1; render(); });
+      yearMinEl.addEventListener("input", () => { page = 1; render(); });
+      yearMaxEl.addEventListener("input", () => { page = 1; render(); });
+      sortSel.addEventListener("change", () => { page = 1; render(); });
+      pageSizeSel.addEventListener("change", () => { page = 1; render(); });
+
+      prevBtn.addEventListener("click", () => { page -= 1; render(); });
+      nextBtn.addEventListener("click", () => { page += 1; render(); });
 
       document.getElementById("clear").addEventListener("click", () => {
         qEl.value = "";
-        countrySel.value = "";
         makerSel.value = "";
+        parkSel.value = "";
+        yearMinEl.value = "";
+        yearMaxEl.value = "";
+        sortSel.value = "relevance";
+        page = 1;
+        render();
+      });
+
+      document.getElementById("clearYears").addEventListener("click", () => {
+        yearMinEl.value = "";
+        yearMaxEl.value = "";
+        page = 1;
         render();
       });
 

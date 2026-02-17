@@ -108,7 +108,7 @@
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Fiches avec recherche + filtres multi (Fabricants / Parcs) + ouverture min/max (année) + tri.
+    Fiches avec recherche + filtres (Fabricants / Parcs) + ouverture min/max (année) + tri.
     <span id="count" class="pill">…</span>
   </div>
 
@@ -121,24 +121,22 @@
     </div>
 
     <div class="field">
-      <label>Fabricants (multi)</label>
+      <label>Fabricants</label>
       <div class="multibox" id="makerBox">
         <input class="search" id="makerSearch" type="text" placeholder="Rechercher un fabricant…" />
         <div class="list" id="makerList"></div>
         <div class="tools">
-          <button type="button" id="makerAll">Tout</button>
           <button type="button" id="makerNone">Aucun</button>
         </div>
       </div>
     </div>
 
     <div class="field">
-      <label>Parcs (multi)</label>
+      <label>Parcs</label>
       <div class="multibox" id="parkBox">
         <input class="search" id="parkSearch" type="text" placeholder="Rechercher un parc…" />
         <div class="list" id="parkList"></div>
         <div class="tools">
-          <button type="button" id="parkAll">Tout</button>
           <button type="button" id="parkNone">Aucun</button>
         </div>
       </div>
@@ -183,21 +181,12 @@
   </div>
 
   <script>
-    // Ton JSON doit être ici dans ton repo :
-    // /data/coasters_clean.json
     const dataUrl = "./data/coasters_clean.json";
 
     const errBox = document.getElementById("err");
-    function showError(msg){
-      errBox.style.display = "block";
-      errBox.textContent = msg;
-    }
-    function clearError(){
-      errBox.style.display = "none";
-      errBox.textContent = "";
-    }
+    function showError(msg){ errBox.style.display = "block"; errBox.textContent = msg; }
+    function clearError(){ errBox.style.display = "none"; errBox.textContent = ""; }
 
-    // ---- Helpers
     const norm = (v) => String(v ?? "").trim().toLowerCase();
 
     function escapeHtml(str){
@@ -231,10 +220,6 @@
       return Number.isFinite(n) ? n : null;
     }
 
-    // Convertit "Ouverture" en année:
-    // - année 1800–2200 => ok
-    // - timestamp ms => année UTC
-    // - timestamp seconds => *1000 => année UTC
     function toYear(v){
       const n = toNumber(v);
       if(n === null) return null;
@@ -269,9 +254,8 @@
       return uniq;
     }
 
-    // Checklist multi avec sélection persistante même quand on tape dans la recherche
-    function buildChecklist({containerEl, searchEl, allBtn, noneBtn, labels, onChange}){
-      const selected = new Set(); // values normalisées
+    function buildChecklist({containerEl, searchEl, noneBtn, labels, onChange}){
+      const selected = new Set();
 
       function draw(filterText){
         const ft = norm(filterText);
@@ -297,19 +281,14 @@
         });
       }
 
-      function setAll(checked){
-        if(checked){
-          labels.forEach(label => selected.add(norm(label)));
-        } else {
-          selected.clear();
-        }
+      function clearAll(){
+        selected.clear();
         draw(searchEl.value);
         onChange();
       }
 
       searchEl.addEventListener("input", () => draw(searchEl.value));
-      allBtn.addEventListener("click", () => setAll(true));
-      noneBtn.addEventListener("click", () => setAll(false));
+      noneBtn.addEventListener("click", clearAll);
 
       draw("");
 
@@ -320,19 +299,17 @@
     }
 
     function renderCard(row, f){
-      // Titre
       let title = f.nameField ? row[f.nameField] : "";
       if(!title){
         const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
         title = firstNonEmpty ?? "Fiche";
       }
 
-      // Sous-titre: uniquement le parc (pas l'année)
+      // Sous-titre: uniquement le parc
       const subParts = [];
       if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
       const sub = subParts.join(" • ");
 
-      // Champs affichés
       const show = [];
       const pushIf = (label, field) => {
         if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
@@ -354,7 +331,6 @@
       pushIf("Longueur", f.lengthField);
       pushIf("Inversions", f.inversionsField);
 
-      // Fallback
       if(show.length === 0){
         Object.entries(row).slice(0, 8).forEach(([k,v]) => {
           if (String(v??"").trim() !== "") show.push([titleize(k), v]);
@@ -391,7 +367,7 @@
       if(mode === "name_desc"){
         return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
       }
-      return list; // relevance
+      return list;
     }
 
     function parseYearInput(el){
@@ -401,7 +377,6 @@
       return Number.isFinite(n) ? Math.trunc(n) : null;
     }
 
-    // ---- App
     (async function init(){
       const grid = document.getElementById("grid");
       const countEl = document.getElementById("count");
@@ -415,12 +390,10 @@
 
       const makerSearch = document.getElementById("makerSearch");
       const makerList = document.getElementById("makerList");
-      const makerAll = document.getElementById("makerAll");
       const makerNone = document.getElementById("makerNone");
 
       const parkSearch = document.getElementById("parkSearch");
       const parkList = document.getElementById("parkList");
-      const parkAll = document.getElementById("parkAll");
       const parkNone = document.getElementById("parkNone");
 
       const makerBox = document.getElementById("makerBox");
@@ -430,28 +403,17 @@
 
       try{
         const res = await fetch(dataUrl, { cache: "no-store" });
-        if(!res.ok){
-          throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
-        }
+        if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
 
         let rows;
-        try{
-          rows = await res.json();
-        } catch(e){
-          throw new Error("JSON invalide (impossible de parser). Vérifie le fichier data/coasters_clean.json.");
-        }
+        try { rows = await res.json(); }
+        catch { throw new Error("JSON invalide (impossible de parser). Vérifie data/coasters_clean.json."); }
 
-        if(!Array.isArray(rows)){
-          throw new Error("Le JSON doit être un tableau d’objets (format: [ {..}, {..} ] ).");
-        }
-        if(rows.length === 0){
-          grid.innerHTML = `<div class="empty">Le fichier JSON est vide.</div>`;
-          return;
-        }
+        if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau d’objets: [ {..}, {..} ]");
+        if(rows.length === 0){ grid.innerHTML = `<div class="empty">Le fichier JSON est vide.</div>`; return; }
 
         const sample = rows[0] || {};
 
-        // Champs FR
         const f = {
           nameField: pickField(sample, ["Nom", "Coaster", "Name", "name", "coaster", "ride", "attraction"]),
           parkField: pickField(sample, ["Parc", "Park", "park", "parc", "location"]),
@@ -464,9 +426,7 @@
         };
 
         console.log("Champs détectés:", f);
-        console.log("Exemple première ligne:", sample);
 
-        // Build checklists
         let makerCtl = null;
         let parkCtl = null;
 
@@ -475,7 +435,6 @@
           makerCtl = buildChecklist({
             containerEl: makerList,
             searchEl: makerSearch,
-            allBtn: makerAll,
             noneBtn: makerNone,
             labels: makerLabels,
             onChange: () => render()
@@ -489,7 +448,6 @@
           parkCtl = buildChecklist({
             containerEl: parkList,
             searchEl: parkSearch,
-            allBtn: parkAll,
             noneBtn: parkNone,
             labels: parkLabels,
             onChange: () => render()
@@ -553,6 +511,7 @@
               grid.innerHTML = `<div class="empty">Aucun résultat. Essaie d’enlever un filtre.</div>`;
               return;
             }
+
             grid.innerHTML = filtered.map(r => renderCard(r, f)).join("");
           } catch(e){
             console.error(e);
@@ -560,7 +519,6 @@
           }
         }
 
-        // Events
         qEl.addEventListener("input", render);
         yearMinEl.addEventListener("input", render);
         yearMaxEl.addEventListener("input", render);
@@ -584,7 +542,6 @@
           render();
         });
 
-        // First render
         render();
 
       } catch(e){
@@ -592,7 +549,7 @@
         showError(
           "La page n’a pas pu charger les données.\n\n" +
           (e?.message ?? String(e)) +
-          "\n\nÀ vérifier:\n- le fichier existe bien: /data/coasters_clean.json\n- le JSON est valide (format tableau)\n- tu n’ouvres pas la page en file:// (utilise GitHub Pages)"
+          "\n\nÀ vérifier:\n- le fichier existe bien: /data/coasters_clean.json\n- le JSON est valide (format tableau)\n- tu consultes via GitHub Pages (pas file://)"
         );
       }
     })();

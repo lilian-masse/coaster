@@ -235,7 +235,6 @@ const NUM_SPECS = [
   { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:0.1 },
   { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
 
-  /* ✅ FIX: Excel columns were named "Sièges" and "Rangées" */
   { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
   { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
 
@@ -452,8 +451,9 @@ function sortRows(list, mode1, mode2, f){
 
       sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
 
-      minEl.addEventListener("input", ()=>{ clampSwap(minEl,maxEl); enforceSeatConstraints(); render(); });
-      maxEl.addEventListener("input", ()=>{ clampSwap(minEl,maxEl); enforceSeatConstraints(); render(); });
+      // ✅ NEW: prevent zero-result states from numeric sliders
+      minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id, "min"));
+      maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id, "max"));
     }
   }
 
@@ -496,7 +496,6 @@ function sortRows(list, mode1, mode2, f){
       ui.minEl.step = String(step);
       ui.maxEl.step = String(step);
 
-      // default full span
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -552,7 +551,7 @@ function sortRows(list, mode1, mode2, f){
     return passesSearch(row) && passesSliders(row) && passesFacets(row) && passesWater(row);
   }
 
-  function filterRowsExcludingFacet(excludeFacetId){
+  function baseRowsExcludingFacet(excludeFacetId){
     return allRows.filter(r=>{
       const n = String(r[fields.name] ?? "").trim();
       if(!n) return false;
@@ -576,10 +575,8 @@ function sortRows(list, mode1, mode2, f){
   function computeFacetCounts(facetId){
     const key = fields[facetId];
     if(!key) return new Map();
-
-    const base = filterRowsExcludingFacet(facetId);
+    const base = baseRowsExcludingFacet(facetId);
     const m = new Map();
-
     for(const r of base){
       const v = normalizeFacetValue(facetId, r[key]);
       if(!v) continue;
@@ -602,7 +599,6 @@ function sortRows(list, mode1, mode2, f){
     return c;
   }
 
-  /* ✅ NEW: sort each filter by count desc, then alpha */
   function sortOptionsByCountsDesc(options, counts){
     return options.slice().sort((a,b)=>{
       const ca = counts.get(a) || 0;
@@ -624,17 +620,11 @@ function sortRows(list, mode1, mode2, f){
 
     const q = norm(ui.searchEl.value);
     const selectedSet = selected[facetId];
-
     const counts = computeFacetCounts(facetId);
 
-    // Build options from counts keys + currently selected (so selected values never disappear)
     const optSet = new Set([...counts.keys(), ...Array.from(selectedSet)]);
     let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
-
-    // ✅ sort by counts desc
     options = sortOptionsByCountsDesc(options, counts);
-
-    // search filter after sorting
     const shown = options.filter(v => norm(v).includes(q));
 
     ui.listEl.innerHTML = shown.map(v=>{
@@ -662,7 +652,6 @@ function sortRows(list, mode1, mode2, f){
 
   function updateAllFacetUIs(){
     for(const spec of FACET_SPECS) drawFacetList(spec.id);
-
     const c = computeWaterCount();
     waterCountEl.textContent = String(c);
     waterOnlyEl.disabled = (c === 0 && !waterOnly);
@@ -695,17 +684,9 @@ function sortRows(list, mode1, mode2, f){
       const bmin = Math.max(1, Math.floor(B.min));
       const bmax = Math.max(1, Math.floor(B.max));
 
-      const A_low = Math.ceil(cmin / Math.max(1, bmax));
-      const A_high = Math.floor(cmax / Math.max(1, bmin));
-      setDyn("seatsPerRow", A_low, A_high);
-
-      const B_low = Math.ceil(cmin / Math.max(1, amax));
-      const B_high = Math.floor(cmax / Math.max(1, amin));
-      setDyn("rowsPerCar", B_low, B_high);
-
-      const C_low = amin * bmin;
-      const C_high = amax * bmax;
-      setDyn("seatsPerCar", C_low, C_high);
+      setDyn("seatsPerRow", Math.ceil(cmin / Math.max(1, bmax)), Math.floor(cmax / Math.max(1, bmin)));
+      setDyn("rowsPerCar", Math.ceil(cmin / Math.max(1, amax)), Math.floor(cmax / Math.max(1, amin)));
+      setDyn("seatsPerCar", amin * bmin, amax * bmax);
 
       updateDualUI("seatsPerRow");
       updateDualUI("rowsPerCar");
@@ -728,13 +709,8 @@ function sortRows(list, mode1, mode2, f){
       const cur = sliderDyn["seatsPerCar"] || sliderAbs["seatsPerCar"];
       setDyn("seatsPerCar", Math.max(cur.min, C_low2), Math.min(cur.max, C_high2));
 
-      const D_low = Math.ceil(emin / Math.max(1, cmax2));
-      const D_high = Math.floor(emax / Math.max(1, cmin2));
-      setDyn("carsPerTrain", D_low, D_high);
-
-      const E_low = cmin2 * dmin;
-      const E_high = cmax2 * dmax;
-      setDyn("seatsPerTrain", E_low, E_high);
+      setDyn("carsPerTrain", Math.ceil(emin / Math.max(1, cmax2)), Math.floor(emax / Math.max(1, cmin2)));
+      setDyn("seatsPerTrain", cmin2 * dmin, cmax2 * dmax);
 
       updateDualUI("seatsPerCar");
       updateDualUI("carsPerTrain");
@@ -822,7 +798,68 @@ function sortRows(list, mode1, mode2, f){
     if(e.key==="ArrowRight"){ e.preventDefault(); nextModal(); return; }
   });
 
+  /* ---------------------------------------------------------
+     ✅ NEW: Numeric sliders must never lead to 0 results.
+     Strategy:
+     - On slider input, try apply change.
+     - If it yields 0 results (with all other filters active),
+       we revert that slider handle to previous value.
+  ---------------------------------------------------------- */
+  const lastGoodSliderValue = {}; // id -> {min,max}
+
+  function countResults(){
+    let c = 0;
+    for(const r of allRows) if(passesAll(r)) c++;
+    return c;
+  }
+
+  function snapshotSlider(id){
+    const ui = sliderUI[id];
+    if(!ui || ui.minEl.disabled) return null;
+    return {min:Number(ui.minEl.value), max:Number(ui.maxEl.value)};
+  }
+
+  function restoreSlider(id, snap){
+    if(!snap) return;
+    const ui = sliderUI[id];
+    if(!ui || ui.minEl.disabled) return;
+    ui.minEl.value = String(snap.min);
+    ui.maxEl.value = String(snap.max);
+    updateDualUI(id);
+  }
+
+  function onNumericSliderAttempt(id, which){
+    const ui = sliderUI[id];
+    const abs = sliderAbs[id];
+    if(!ui || !abs || ui.minEl.disabled) return;
+
+    // keep min<=max
+    clampSwap(ui.minEl, ui.maxEl);
+
+    // update internal state for this slider
+    updateDualUI(id);
+
+    // seats constraints may adjust other sliders; apply them before testing
+    enforceSeatConstraints();
+
+    // test
+    const n = countResults();
+    if(n === 0){
+      // revert to last known good for this slider
+      restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
+      enforceSeatConstraints();
+      // update UI lists/cards based on restored state
+      render();
+      return;
+    }
+
+    // accept: save as good state and render
+    lastGoodSliderValue[id] = snapshotSlider(id) || {min:abs.min, max:abs.max};
+    render();
+  }
+
   function render(){
+    // tri anti-conflit
     const fam1 = sortFamily(sortSel.value);
     for(const opt of Array.from(sort2Sel.options)){
       opt.disabled = (sortFamily(opt.value) === fam1);
@@ -845,6 +882,8 @@ function sortRows(list, mode1, mode2, f){
     lastRendered = filtered;
 
     if(filtered.length === 0){
+      // Should be impossible due to numeric slider guard,
+      // but keep fallback for non-numeric filters.
       grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
     } else {
       grid.innerHTML = filtered.map((r,i)=>cardHTML(r,i)).join("");
@@ -898,6 +937,14 @@ function sortRows(list, mode1, mode2, f){
     initSlidersFromData();
     enforceSeatConstraints();
 
+    // init lastGoodSliderValue to defaults (full span)
+    for(const spec of NUM_SPECS){
+      const abs = sliderAbs[spec.id];
+      const ui = sliderUI[spec.id];
+      if(!abs || !ui || ui.minEl.disabled) continue;
+      lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
+    }
+
     qEl.addEventListener("input", render);
 
     let prevPrimary = sortSel.value;
@@ -930,6 +977,7 @@ function sortRows(list, mode1, mode2, f){
         ui.minEl.value = String(abs.min);
         ui.maxEl.value = String(abs.max);
         updateDualUI(spec.id);
+        lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
       }
       enforceSeatConstraints();
 
@@ -940,18 +988,6 @@ function sortRows(list, mode1, mode2, f){
       closeModal();
       render();
     });
-
-    // force full span at load
-    for(const spec of NUM_SPECS){
-      const abs = sliderAbs[spec.id];
-      const ui = sliderUI[spec.id];
-      if(!abs || !ui || ui.minEl.disabled) continue;
-      ui.minEl.value = String(abs.min);
-      ui.maxEl.value = String(abs.max);
-      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
-      updateDualUI(spec.id);
-    }
-    enforceSeatConstraints();
 
     render();
 

@@ -15,6 +15,7 @@
     .field.wide { grid-column: span 6; }
     .field.small { grid-column: span 2; }
     .field.actions { grid-column: span 2; display: flex; gap: 10px; align-items: end; }
+
     label { display:block; font-size: 14px; margin-bottom: 6px; }
     input, select, button { padding: 10px 12px; font-size: 14px; width: 100%; box-sizing: border-box; }
     button { cursor: pointer; }
@@ -28,7 +29,7 @@
     }
     .multibox .search { margin-bottom: 8px; }
     .multibox .list {
-      max-height: 200px;
+      max-height: 220px;
       overflow: auto;
       border-top: 1px solid #eee;
       padding-top: 8px;
@@ -100,14 +101,14 @@
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Fiches avec recherche + filtres multi (Fabricants / Parcs), ouverture min/max, tri et pagination.
+    Fiches avec recherche + filtres multi (Fabricants / Parcs), ouverture min/max (année), tri et pagination.
     <span id="count" class="pill">…</span>
   </div>
 
   <div class="bar">
     <div class="field wide">
       <label for="q">Recherche (tous champs)</label>
-      <input id="q" type="text" placeholder="ex: Intamin, 2005, wood, vitesse..." />
+      <input id="q" type="text" placeholder="ex: Intamin, Disneyland, wood, vitesse..." />
     </div>
 
     <div class="field">
@@ -135,12 +136,12 @@
     </div>
 
     <div class="field small">
-      <label for="yearMin">Ouverture min</label>
+      <label for="yearMin">Ouverture min (année)</label>
       <input id="yearMin" type="number" inputmode="numeric" placeholder="ex: 1990" />
     </div>
 
     <div class="field small">
-      <label for="yearMax">Ouverture max</label>
+      <label for="yearMax">Ouverture max (année)</label>
       <input id="yearMax" type="number" inputmode="numeric" placeholder="ex: 2010" />
     </div>
 
@@ -185,6 +186,8 @@
   </div>
 
   <script>
+    // IMPORTANT: ton JSON doit être ici dans ton repo:
+    // /data/coasters_clean.json
     const dataUrl = "./data/coasters_clean.json";
 
     // ---- Helpers
@@ -213,62 +216,43 @@
       return null;
     }
 
-    function toInt(v){
-      const n = parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
+    function toNumber(v){
+      const s = String(v ?? "").trim();
+      if(!s) return null;
+      const cleaned = s.replace(/[^0-9.\-]/g, "");
+      const n = Number(cleaned);
       return Number.isFinite(n) ? n : null;
+    }
+
+    // Convertit "Ouverture" en année:
+    // - si déjà une année (1800-2200) => retourne cette année
+    // - si timestamp ms (ex: 305078400000) => date UTC => année
+    // - si timestamp seconds => *1000 => année
+    function toYear(v){
+      const n = toNumber(v);
+      if(n === null) return null;
+
+      if(n >= 1800 && n <= 2200) return Math.trunc(n);
+
+      if(n > 1e11){
+        const d = new Date(n);
+        const y = d.getUTCFullYear();
+        return Number.isFinite(y) ? y : null;
+      }
+
+      if(n > 1e9){
+        const d = new Date(n * 1000);
+        const y = d.getUTCFullYear();
+        return Number.isFinite(y) ? y : null;
+      }
+
+      return null;
     }
 
     function matchesQuery(row, q){
       if(!q) return true;
       const text = Object.values(row).map(v => String(v ?? "")).join(" ").toLowerCase();
       return text.includes(q);
-    }
-
-    function renderCard(row, f){
-      let title = f.nameField ? row[f.nameField] : "";
-      if(!title){
-        const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
-        title = firstNonEmpty ?? "Fiche";
-      }
-
-      const subParts = [];
-      if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
-      if (f.yearField && row[f.yearField]) subParts.push("Ouverture: " + row[f.yearField]);
-      const sub = subParts.join(" • ");
-
-      const show = [];
-      const pushIf = (label, field) => {
-        if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
-          show.push([label, row[field]]);
-        }
-      };
-
-      pushIf("Fabricant", f.makerField);
-      pushIf("Parc", f.parkField);
-      pushIf("Ouverture", f.yearField);
-      pushIf("Vitesse", f.speedField);
-      pushIf("Hauteur", f.heightField);
-      pushIf("Longueur", f.lengthField);
-      pushIf("Inversions", f.inversionsField);
-
-      if(show.length === 0){
-        Object.entries(row).slice(0, 8).forEach(([k,v]) => {
-          if (String(v??"").trim() !== "") show.push([titleize(k), v]);
-        });
-      }
-
-      return `
-        <article class="card">
-          <h2 class="title">${escapeHtml(title)}</h2>
-          ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ""}
-          <div class="kv">
-            ${show.map(([k,v]) => `
-              <div class="k">${escapeHtml(k)}</div>
-              <div class="v">${escapeHtml(v)}</div>
-            `).join("")}
-          </div>
-        </article>
-      `;
     }
 
     function uniqueSortedLabels(values){
@@ -279,7 +263,6 @@
     }
 
     function buildChecklist({containerEl, searchEl, allBtn, noneBtn, labels, onChange}){
-      // value normalisée (norm(label)), label affiché (label)
       function draw(filterText){
         const ft = norm(filterText);
         const shown = labels.filter(l => norm(l).includes(ft));
@@ -294,7 +277,6 @@
           `;
         }).join("");
 
-        // hook change
         containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
           cb.addEventListener("change", onChange);
         });
@@ -320,13 +302,71 @@
       return set;
     }
 
-    function countChecked(listEl){
-      return listEl.querySelectorAll('input[type="checkbox"]:checked').length;
+    function renderCard(row, f){
+      // Titre
+      let title = f.nameField ? row[f.nameField] : "";
+      if(!title){
+        const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
+        title = firstNonEmpty ?? "Fiche";
+      }
+
+      // Sous-titre
+      const subParts = [];
+      if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
+
+      if (f.yearField && row[f.yearField] !== null && row[f.yearField] !== undefined && String(row[f.yearField]).trim() !== ""){
+        const y = toYear(row[f.yearField]);
+        subParts.push("Ouverture: " + (y ?? row[f.yearField]));
+      }
+
+      const sub = subParts.join(" • ");
+
+      // Champs affichés
+      const show = [];
+      const pushIf = (label, field) => {
+        if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
+          show.push([label, row[field]]);
+        }
+      };
+
+      pushIf("Fabricant", f.makerField);
+      pushIf("Parc", f.parkField);
+
+      if (f.yearField){
+        const y = toYear(row[f.yearField]);
+        if (y !== null) show.push(["Ouverture", y]);
+        else pushIf("Ouverture", f.yearField);
+      }
+
+      pushIf("Vitesse", f.speedField);
+      pushIf("Hauteur", f.heightField);
+      pushIf("Longueur", f.lengthField);
+      pushIf("Inversions", f.inversionsField);
+
+      // Fallback
+      if(show.length === 0){
+        Object.entries(row).slice(0, 8).forEach(([k,v]) => {
+          if (String(v??"").trim() !== "") show.push([titleize(k), v]);
+        });
+      }
+
+      return `
+        <article class="card">
+          <h2 class="title">${escapeHtml(title)}</h2>
+          ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ""}
+          <div class="kv">
+            ${show.map(([k,v]) => `
+              <div class="k">${escapeHtml(k)}</div>
+              <div class="v">${escapeHtml(v)}</div>
+            `).join("")}
+          </div>
+        </article>
+      `;
     }
 
     function sortRows(list, state, f){
       const mode = state.sort;
-      const getYear = (r) => f.yearField ? toInt(r[f.yearField]) : null;
+      const getYear = (r) => f.yearField ? toYear(r[f.yearField]) : null;
       const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
 
       if(mode === "year_desc"){
@@ -341,6 +381,7 @@
       if(mode === "name_desc"){
         return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
       }
+      // relevance: ordre d'origine
       return list;
     }
 
@@ -378,7 +419,7 @@
       const rows = await res.json();
       const sample = rows[0] || {};
 
-      // Champs adaptés à ton JSON FR
+      // Champs adaptés à ton JSON FR (ajuste ici si besoin)
       const f = {
         nameField: pickField(sample, ["Nom", "Coaster", "Name", "name", "coaster", "ride", "attraction"]),
         parkField: pickField(sample, ["Parc", "Park", "park", "parc", "location"]),
@@ -390,7 +431,9 @@
         inversionsField: pickField(sample, ["Inversions", "inversions", "nb_inversions"]),
       };
 
-      // Construire les listes multi
+      const makerBox = document.getElementById("makerBox");
+      const parkBox  = document.getElementById("parkBox");
+
       const makerLabels = f.makerField ? uniqueSortedLabels(rows.map(r => r[f.makerField])) : [];
       const parkLabels  = f.parkField  ? uniqueSortedLabels(rows.map(r => r[f.parkField]))  : [];
 
@@ -399,6 +442,13 @@
       function getPageSize(){
         const n = parseInt(pageSizeSel.value, 10);
         return Number.isFinite(n) && n > 0 ? n : 24;
+      }
+
+      function parseYearInput(el){
+        const s = String(el.value ?? "").trim();
+        if(!s) return null;
+        const n = Number(s);
+        return Number.isFinite(n) ? Math.trunc(n) : null;
       }
 
       function activeFiltersText(state){
@@ -419,8 +469,8 @@
           q: norm(qEl.value),
           makers: makersSet,
           parks: parksSet,
-          ymin: yearMinEl.value === "" ? null : toInt(yearMinEl.value),
-          ymax: yearMaxEl.value === "" ? null : toInt(yearMaxEl.value),
+          ymin: parseYearInput(yearMinEl),
+          ymax: parseYearInput(yearMaxEl),
           sort: sortSel.value,
         };
 
@@ -435,11 +485,12 @@
           }
 
           if(f.yearField && (state.ymin !== null || state.ymax !== null)){
-            const y = toInt(r[f.yearField]);
+            const y = toYear(r[f.yearField]);
             if(y === null) return false;
             if(state.ymin !== null && y < state.ymin) return false;
             if(state.ymax !== null && y > state.ymax) return false;
           }
+
           return true;
         });
 
@@ -468,7 +519,7 @@
         grid.innerHTML = slice.map(r => renderCard(r, f)).join("");
       }
 
-      // Build checklists (calls render on change)
+      // Build checklists
       if(f.makerField){
         buildChecklist({
           containerEl: makerList,
@@ -479,7 +530,7 @@
           onChange: () => { page = 1; render(); }
         });
       } else {
-        document.getElementById("makerBox").innerHTML = `<div class="empty">Champ "Fabricant" non trouvé dans les données.</div>`;
+        makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé dans les données.</div>`;
       }
 
       if(f.parkField){
@@ -492,7 +543,7 @@
           onChange: () => { page = 1; render(); }
         });
       } else {
-        document.getElementById("parkBox").innerHTML = `<div class="empty">Champ "Parc" non trouvé dans les données.</div>`;
+        parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé dans les données.</div>`;
       }
 
       // Events
@@ -511,9 +562,33 @@
         yearMaxEl.value = "";
         sortSel.value = "relevance";
 
-        // décocher tout
         makerList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         parkList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+        // reset recherches dans listes
+        makerSearch.value = "";
+        parkSearch.value = "";
+        // redessiner listes
+        if(f.makerField){
+          buildChecklist({
+            containerEl: makerList,
+            searchEl: makerSearch,
+            allBtn: makerAll,
+            noneBtn: makerNone,
+            labels: makerLabels,
+            onChange: () => { page = 1; render(); }
+          });
+        }
+        if(f.parkField){
+          buildChecklist({
+            containerEl: parkList,
+            searchEl: parkSearch,
+            allBtn: parkAll,
+            noneBtn: parkNone,
+            labels: parkLabels,
+            onChange: () => { page = 1; render(); }
+          });
+        }
 
         page = 1;
         render();

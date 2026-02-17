@@ -6,10 +6,7 @@
 <title>Coasters — Fiches</title>
 
 <style>
-  :root{
-    --b:#e6e6e6; --bg:#fff; --muted:rgba(0,0,0,.65);
-    --shadow:0 1px 6px rgba(0,0,0,.04);
-  }
+  :root{--b:#e6e6e6;--bg:#fff;--shadow:0 1px 6px rgba(0,0,0,.04)}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
   h1{margin:0 0 10px}
   .bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:22px;align-items:start}
@@ -48,10 +45,7 @@
   .rangeMeta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-  .card{
-    border:1px solid var(--b);border-radius:14px;background:#fff;
-    box-shadow:var(--shadow);padding:14px;cursor:pointer;
-  }
+  .card{border:1px solid var(--b);border-radius:14px;background:#fff;box-shadow:var(--shadow);padding:14px;cursor:pointer}
   .card:focus{outline:2px solid #cfcfcf;outline-offset:2px}
   .title{font-weight:750;margin:0 0 6px;font-size:16px}
   .sub{opacity:.75;margin:0 0 10px;font-size:13px}
@@ -62,22 +56,10 @@
   .empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.85}
   .error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px 12px;border-radius:12px;margin:12px 0}
 
-  /* MODALE */
-  .modalOverlay{
-    position:fixed;inset:0;
-    background:rgba(0,0,0,.45);
-    display:none;
-    align-items:center;
-    justify-content:center;
-    padding:18px;
-    z-index:1000;
-  }
+  .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}
   .modalOverlay.open{display:flex}
   .modalWrap{position:relative;width:min(820px, 100%);display:flex;align-items:center;justify-content:center}
-  .modal{
-    width:100%;max-height:min(82vh, 820px);overflow:auto;background:#fff;border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid #eee;
-  }
+  .modal{width:100%;max-height:min(82vh, 820px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid #eee}
   .modalHeader{position:sticky;top:0;background:#fff;border-bottom:1px solid #eee;padding:14px 16px}
   .modalTitle{font-weight:800;margin:0;font-size:18px;line-height:1.25}
   .modalSub{margin:4px 0 0;opacity:.7;font-size:13px}
@@ -87,7 +69,6 @@
   .modalV{word-break:break-word}
   @media (max-width:560px){ .modalGrid{grid-template-columns:1fr;gap:6px} }
 
-  /* Flèches */
   .navArrow{
     position:absolute;top:50%;transform:translateY(-50%);
     width:46px;height:46px;border-radius:999px;
@@ -159,7 +140,6 @@
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
-<!-- MODALE -->
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="modalWrap">
     <button id="navLeft" class="navArrow navLeft" type="button" aria-label="Précédent">‹</button>
@@ -179,8 +159,6 @@
 
 <script>
 const dataUrl = "./data/coasters_clean.json";
-
-/* ---------- Utils ---------- */
 const $ = (id)=>document.getElementById(id);
 
 function showError(msg){ $("err").style.display="block"; $("err").textContent = msg; }
@@ -189,7 +167,7 @@ function clearError(){ $("err").style.display="none"; $("err").textContent = "";
 function norm(s){
   return String(s ?? "")
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // accents
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .replace(/\s+/g," ")
     .trim();
 }
@@ -205,7 +183,6 @@ function toNumber(v){
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
-// timestamps positifs & négatifs, ou année déjà
 function toYear(v){
   const n = toNumber(v);
   if(n === null) return null;
@@ -222,16 +199,13 @@ function titleizeKey(k){
 }
 function sortFamily(mode){ return String(mode||"").split("_")[0]; }
 
-/* ---------- Field detection (robuste) ---------- */
 function pickField(obj, candidates){
   const keys = Object.keys(obj || {});
   const map = new Map(keys.map(k => [norm(k), k]));
-  // exact normalized
   for(const c of candidates){
     const hit = map.get(norm(c));
     if(hit) return hit;
   }
-  // contains
   for(const k of keys){
     const nk = norm(k);
     if(candidates.some(c => nk.includes(norm(c)))) return k;
@@ -239,11 +213,10 @@ function pickField(obj, candidates){
   return null;
 }
 
-/* ---------- Config demanded by user ---------- */
+/* ---------- Specs ---------- */
 const FACET_SPECS = [
   { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
   { id:"park", label:"Parc", candidates:["Parc","Park"] },
-
   { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
   { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"] },
   { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"] },
@@ -255,19 +228,17 @@ const FACET_SPECS = [
 ];
 
 const NUM_SPECS = [
-  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1 },
+  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
   { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:0.1 },
   { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:0.1 },
   { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
   { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1 },
   { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:0.1 },
-  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1 },
+  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
 
-  // sièges / trains (avec contraintes)
   { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
   { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
   { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"], step:1, integer:true },
-
   { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
   { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"], step:1, integer:true },
 ];
@@ -288,7 +259,6 @@ function createFacetBox(spec){
   `;
   return box;
 }
-
 function createDualSlider(spec){
   const wrap = document.createElement("div");
   wrap.className = "rangeWrap";
@@ -297,7 +267,7 @@ function createDualSlider(spec){
       <span class="name">${esc(spec.label)}</span>
       <span class="pill" id="pill_${spec.id}">—</span>
     </div>
-    <div class="dual" id="dual_${spec.id}">
+    <div class="dual">
       <div class="track"></div>
       <div class="fill" id="fill_${spec.id}"></div>
       <input id="${spec.id}_min" type="range" aria-label="${esc(spec.label)} min">
@@ -331,11 +301,9 @@ function sortRows(list, mode1, mode2, f){
   });
 }
 
-/* ---------- Main ---------- */
 (async function(){
   clearError();
 
-  // DOM refs
   const facetBar = $("facetBar");
   const sliderBar = $("sliderBar");
   const grid = $("grid");
@@ -344,6 +312,7 @@ function sortRows(list, mode1, mode2, f){
   const sort2Sel = $("sort2");
   const waterOnlyEl = $("waterOnly");
   const waterCountEl = $("waterCount");
+
   const navLeftBtn = $("navLeft");
   const navRightBtn = $("navRight");
   const modalOverlay = $("modalOverlay");
@@ -352,76 +321,49 @@ function sortRows(list, mode1, mode2, f){
   const modalGridEl = $("modalGrid");
 
   let allRows = [];
-  let fields = {};        // mapping specId -> real key in JSON (or null)
-  let numFields = {};     // id -> key
-  let waterField = null;  // key for water boolean OR null (we'll derive)
+  let fields = {};
+  let numFields = {};
+  let waterField = null;
 
-  // state
-  const selected = {};          // facetId -> Set
-  const facetOptions = {};      // facetId -> [labels]
-  const facetUI = {};           // facetId -> {listEl, searchEl, clearBtn}
-  const sliderUI = {};          // numId -> refs
-  const sliderAbs = {};         // numId -> {min,max,step,integer}
-  const sliderDyn = {};         // numId -> {min,max} dynamic bounds
-  const sliderVal = {};         // numId -> {min,max} current chosen
+  const selected = {};
+  const facetOptions = {};
+  const facetUI = {};
+  const sliderUI = {};
+  const sliderAbs = {};
+  const sliderDyn = {};
+  const sliderVal = {};
   let waterOnly = false;
 
-  // modal nav
   let lastRendered = [];
   let currentIndex = -1;
 
-  function detectAllFields(sample){
-    const out = {};
-    for(const spec of FACET_SPECS){
-      out[spec.id] = pickField(sample, spec.candidates);
-    }
-    const numOut = {};
-    for(const spec of NUM_SPECS){
-      numOut[spec.id] = pickField(sample, spec.candidates);
-    }
-    // water field (optional)
-    waterField = pickField(sample, WATER_CANDIDATES);
-    return { out, numOut };
-  }
-
   function parseWater(row){
-    // If explicit field exists:
     if(waterField){
-      const v = row[waterField];
-      const s = norm(v);
+      const s = norm(row[waterField]);
       if(!s) return false;
       return ["1","true","oui","yes","y","water","eau","splash"].some(t => s === t || s.includes(t));
     }
-    // Otherwise: try infer from "Particularité" or "Modèle" or any string field
     const blob = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
     return blob.includes("eau") || blob.includes("water") || blob.includes("splash");
   }
 
   function computeDerivedSeats(row){
-    // Try reading numeric values from detected fields (if exist)
     const aKey = numFields.seatsPerRow;
     const bKey = numFields.rowsPerCar;
     const cKey = numFields.seatsPerCar;
-
     const dKey = numFields.carsPerTrain;
     const eKey = numFields.seatsPerTrain;
 
     const a = aKey ? toNumber(row[aKey]) : null;
     const b = bKey ? toNumber(row[bKey]) : null;
     const c = cKey ? toNumber(row[cKey]) : null;
-
     const d = dKey ? toNumber(row[dKey]) : null;
     const e = eKey ? toNumber(row[eKey]) : null;
 
-    // Derivations requested:
-    // seats/row * rows/car = seats/car
-    if((cKey && (c === null)) && (a !== null && b !== null)){
-      row[cKey] = a * b;
-    }
-    // seats/car * cars/train = seats/train
-    if((eKey && (e === null)) && (d !== null) && ((cKey ? toNumber(row[cKey]) : c) !== null)){
-      row[eKey] = (toNumber(row[cKey]) ?? c) * d;
-    }
+    if(cKey && c === null && a !== null && b !== null) row[cKey] = a * b;
+
+    const cNow = cKey ? toNumber(row[cKey]) : null;
+    if(eKey && e === null && d !== null && cNow !== null) row[eKey] = cNow * d;
   }
 
   function clampSwap(minEl, maxEl){
@@ -435,18 +377,19 @@ function sortRows(list, mode1, mode2, f){
     return {min:a, max:b};
   }
 
+  // ✅ FIX: safe guard
   function updateDualUI(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
+    if(!ui || !abs || ui.minEl.disabled || ui.maxEl.disabled) return;
+
     const dyn = sliderDyn[id] || abs;
 
-    // apply dynamic bounds
     ui.minEl.min = String(dyn.min);
     ui.maxEl.min = String(dyn.min);
     ui.minEl.max = String(dyn.max);
     ui.maxEl.max = String(dyn.max);
 
-    // clamp values within bounds
     let minV = Number(ui.minEl.value);
     let maxV = Number(ui.maxEl.value);
     minV = Math.max(dyn.min, Math.min(dyn.max, minV));
@@ -457,24 +400,20 @@ function sortRows(list, mode1, mode2, f){
 
     sliderVal[id] = {min:minV, max:maxV};
 
-    // fill
     const total = (dyn.max - dyn.min) || 1;
     const left = ((minV - dyn.min) / total) * 100;
     const right = ((maxV - dyn.min) / total) * 100;
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
-    // labels
     ui.labMin.textContent = String(minV);
     ui.labMax.textContent = String(maxV);
     ui.pill.textContent = `${minV} → ${maxV}`;
   }
 
-  function buildFacetUI(){
+  function createFacetUI(){
     facetBar.innerHTML = "";
     for(const spec of FACET_SPECS){
-      const key = fields[spec.id];
-      // If column not found, we still show box but with message
       const box = createFacetBox(spec);
       facetBar.appendChild(box);
 
@@ -483,19 +422,17 @@ function sortRows(list, mode1, mode2, f){
       const clearBtn = box.querySelector(`#clear_${spec.id}`);
 
       facetUI[spec.id] = {searchEl, listEl, clearBtn};
-
       selected[spec.id] = new Set();
 
       clearBtn.addEventListener("click", ()=>{
         selected[spec.id].clear();
         render();
       });
-
       searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
     }
   }
 
-  function buildSliderUI(){
+  function createSliderUI(){
     sliderBar.innerHTML = "";
     for(const spec of NUM_SPECS){
       const wrap = createDualSlider(spec);
@@ -510,16 +447,8 @@ function sortRows(list, mode1, mode2, f){
 
       sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
 
-      minEl.addEventListener("input", ()=>{
-        clampSwap(minEl,maxEl);
-        enforceSeatConstraints(); // may adjust bounds
-        render();
-      });
-      maxEl.addEventListener("input", ()=>{
-        clampSwap(minEl,maxEl);
-        enforceSeatConstraints();
-        render();
-      });
+      minEl.addEventListener("input", ()=>{ clampSwap(minEl,maxEl); enforceSeatConstraints(); render(); });
+      maxEl.addEventListener("input", ()=>{ clampSwap(minEl,maxEl); enforceSeatConstraints(); render(); });
     }
   }
 
@@ -528,7 +457,6 @@ function sortRows(list, mode1, mode2, f){
       const key = numFields[spec.id];
       const ui = sliderUI[spec.id];
 
-      // if key missing, disable the control (but keep visible)
       if(!key){
         ui.minEl.disabled = true;
         ui.maxEl.disabled = true;
@@ -553,22 +481,15 @@ function sortRows(list, mode1, mode2, f){
 
       let min = Math.min(...values);
       let max = Math.max(...values);
-
-      // normalize for integer/steps
       const step = spec.step ?? 1;
       const integer = !!spec.integer || step === 1;
-
-      if(integer){
-        min = Math.floor(min);
-        max = Math.ceil(max);
-      }
+      if(integer){ min = Math.floor(min); max = Math.ceil(max); }
 
       sliderAbs[spec.id] = {min, max, step, integer};
       sliderDyn[spec.id] = {min, max};
 
       ui.minEl.step = String(step);
       ui.maxEl.step = String(step);
-
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -576,14 +497,12 @@ function sortRows(list, mode1, mode2, f){
     }
   }
 
-  /* ---------- Filtering logic ---------- */
   function passesSearch(row){
     const q = norm(qEl.value);
     if(!q) return true;
     const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
     return text.includes(q);
   }
-
   function passesFacets(row){
     for(const spec of FACET_SPECS){
       const set = selected[spec.id];
@@ -594,17 +513,15 @@ function sortRows(list, mode1, mode2, f){
     }
     return true;
   }
-
   function passesSliders(row){
     for(const spec of NUM_SPECS){
       const key = numFields[spec.id];
       const ui = sliderUI[spec.id];
-      if(!key || ui.minEl.disabled) continue;
+      if(!key || !ui || ui.minEl.disabled) continue;
 
       const {min, max} = sliderVal[spec.id] || sliderAbs[spec.id];
       const val = spec.isYear ? toYear(row[key]) : toNumber(row[key]);
 
-      // If null -> keep only if full range (same logic as before)
       if(val === null){
         const abs = sliderAbs[spec.id];
         if(min !== abs.min || max !== abs.max) return false;
@@ -614,33 +531,23 @@ function sortRows(list, mode1, mode2, f){
     }
     return true;
   }
-
   function passesWater(row){
     if(!waterOnly) return true;
     return !!row.__water;
   }
-
   function passesAll(row){
-    // exclude cards without coaster name
-    const nameKey = numFields.name || fields.name; // not used; we detect separately below
     const n = String(row[fields.name] ?? "").trim();
     if(!n) return false;
-
     return passesSearch(row) && passesSliders(row) && passesFacets(row) && passesWater(row);
   }
 
-  /* ---------- Faceted disabling (counts) ---------- */
   function filterRowsExcludingFacet(excludeFacetId){
     return allRows.filter(r=>{
-      // always exclude empty-name rows
       const n = String(r[fields.name] ?? "").trim();
       if(!n) return false;
-
       if(!passesSearch(r)) return false;
       if(!passesSliders(r)) return false;
       if(!passesWater(r)) return false;
-
-      // apply all facets except excludeFacetId
       for(const spec of FACET_SPECS){
         if(spec.id === excludeFacetId) continue;
         const set = selected[spec.id];
@@ -668,7 +575,6 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function computeWaterCount(){
-    // count water==true excluding waterOnly filter itself
     const base = allRows.filter(r=>{
       const n = String(r[fields.name] ?? "").trim();
       if(!n) return false;
@@ -701,12 +607,8 @@ function sortRows(list, mode1, mode2, f){
 
     ui.listEl.innerHTML = shown.map(v=>{
       const c = counts.get(v) || 0;
-
-      // ✅ empêcher de choisir une option qui ne compte aucun coaster (quand filtres actifs)
-      // - on désactive si c==0 ET non sélectionné, pour pouvoir décocher si déjà sélectionné
       const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
       const checked = selectedSet.has(v) ? "checked" : "";
-
       return `
         <label class="row">
           <input type="checkbox" value="${esc(v)}" ${checked} ${disabled}>
@@ -727,41 +629,32 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function updateAllFacetUIs(){
-    for(const spec of FACET_SPECS){
-      drawFacetList(spec.id);
-    }
+    for(const spec of FACET_SPECS) drawFacetList(spec.id);
 
-    // water availability
     const c = computeWaterCount();
     waterCountEl.textContent = String(c);
-
-    const shouldDisable = (c === 0 && !waterOnly);
-    waterOnlyEl.disabled = shouldDisable;
+    waterOnlyEl.disabled = (c === 0 && !waterOnly);
   }
 
-  /* ---------- Seat constraint enforcement ---------- */
   function getRange(id){
     const abs = sliderAbs[id];
     const ui = sliderUI[id];
     if(!abs || !ui || ui.minEl.disabled) return null;
     const {min, max} = sliderVal[id] || abs;
-    return {min:Number(min), max:Number(max), absMin:abs.min, absMax:abs.max};
+    return {min:Number(min), max:Number(max)};
   }
-
   function setDyn(id, dynMin, dynMax){
-    if(!sliderAbs[id]) return;
     const abs = sliderAbs[id];
+    if(!abs) return;
     const dmin = Math.max(abs.min, Math.min(abs.max, dynMin));
     const dmax = Math.max(abs.min, Math.min(abs.max, dynMax));
     sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
   }
 
   function enforceSeatConstraints(){
-    // Group 1: seatsPerRow (A), rowsPerCar (B), seatsPerCar (C) where C = A*B
     const A = getRange("seatsPerRow");
     const B = getRange("rowsPerCar");
     const C = getRange("seatsPerCar");
-
     if(A && B && C){
       const cmin = Math.max(1, Math.floor(C.min));
       const cmax = Math.max(1, Math.floor(C.max));
@@ -770,18 +663,14 @@ function sortRows(list, mode1, mode2, f){
       const bmin = Math.max(1, Math.floor(B.min));
       const bmax = Math.max(1, Math.floor(B.max));
 
-      // Compute dynamic bounds (conservateurs mais cohérents)
-      // A bounds based on C and B
       const A_low = Math.ceil(cmin / Math.max(1, bmax));
       const A_high = Math.floor(cmax / Math.max(1, bmin));
       setDyn("seatsPerRow", A_low, A_high);
 
-      // B bounds based on C and A
       const B_low = Math.ceil(cmin / Math.max(1, amax));
       const B_high = Math.floor(cmax / Math.max(1, amin));
       setDyn("rowsPerCar", B_low, B_high);
 
-      // C bounds based on A and B
       const C_low = amin * bmin;
       const C_high = amax * bmax;
       setDyn("seatsPerCar", C_low, C_high);
@@ -791,11 +680,9 @@ function sortRows(list, mode1, mode2, f){
       updateDualUI("seatsPerCar");
     }
 
-    // Group 2: seatsPerCar (C), carsPerTrain (D), seatsPerTrain (E) where E = C*D
     const C2 = getRange("seatsPerCar");
     const D = getRange("carsPerTrain");
     const E = getRange("seatsPerTrain");
-
     if(C2 && D && E){
       const emin = Math.max(1, Math.floor(E.min));
       const emax = Math.max(1, Math.floor(E.max));
@@ -804,19 +691,15 @@ function sortRows(list, mode1, mode2, f){
       const dmin = Math.max(1, Math.floor(D.min));
       const dmax = Math.max(1, Math.floor(D.max));
 
-      // C bounds based on E and D
       const C_low2 = Math.ceil(emin / Math.max(1, dmax));
       const C_high2 = Math.floor(emax / Math.max(1, dmin));
-      // intersect with current dyn from group 1 if exists
-      const curDynC = sliderDyn["seatsPerCar"] || sliderAbs["seatsPerCar"];
-      setDyn("seatsPerCar", Math.max(curDynC.min, C_low2), Math.min(curDynC.max, C_high2));
+      const cur = sliderDyn["seatsPerCar"] || sliderAbs["seatsPerCar"];
+      setDyn("seatsPerCar", Math.max(cur.min, C_low2), Math.min(cur.max, C_high2));
 
-      // D bounds based on E and C
       const D_low = Math.ceil(emin / Math.max(1, cmax2));
       const D_high = Math.floor(emax / Math.max(1, cmin2));
       setDyn("carsPerTrain", D_low, D_high);
 
-      // E bounds based on C and D
       const E_low = cmin2 * dmin;
       const E_high = cmax2 * dmax;
       setDyn("seatsPerTrain", E_low, E_high);
@@ -827,7 +710,6 @@ function sortRows(list, mode1, mode2, f){
     }
   }
 
-  /* ---------- Rendering cards + modal ---------- */
   function cardHTML(r, idx){
     const name = String(r[fields.name] ?? "").trim();
     const park = fields.park ? String(r[fields.park] ?? "").trim() : "";
@@ -854,9 +736,7 @@ function sortRows(list, mode1, mode2, f){
   function updateArrowsState(){
     const n = lastRendered.length;
     if(n <= 1){
-      navLeftBtn.disabled = true;
-      navRightBtn.disabled = true;
-      return;
+      navLeftBtn.disabled = true; navRightBtn.disabled = true; return;
     }
     navLeftBtn.disabled = (currentIndex <= 0);
     navRightBtn.disabled = (currentIndex >= n - 1);
@@ -878,7 +758,6 @@ function sortRows(list, mode1, mode2, f){
     const pairs = Object.entries(row)
       .filter(([k,v]) => !excludeKeys.has(k) && !String(k).startsWith("__") && String(v ?? "").trim() !== "")
       .map(([k,v]) => {
-        // year formatting
         if(numFields.year && k === numFields.year){
           const yy = toYear(v);
           return [titleizeKey(k), (yy ?? v)];
@@ -900,57 +779,42 @@ function sortRows(list, mode1, mode2, f){
     modalOverlay.setAttribute("aria-hidden","true");
     currentIndex = -1;
   }
+  function prevModal(){ if(!navLeftBtn.disabled) openModalAtIndex(currentIndex - 1); }
+  function nextModal(){ if(!navRightBtn.disabled) openModalAtIndex(currentIndex + 1); }
 
-  function prevModal(){
-    if(navLeftBtn.disabled) return;
-    openModalAtIndex(currentIndex - 1);
-  }
-  function nextModal(){
-    if(navRightBtn.disabled) return;
-    openModalAtIndex(currentIndex + 1);
-  }
-
-  navLeftBtn.addEventListener("click", (e)=>{ e.stopPropagation(); prevModal(); });
-  navRightBtn.addEventListener("click", (e)=>{ e.stopPropagation(); nextModal(); });
-
-  modalOverlay.addEventListener("click", (e)=>{ if(e.target === modalOverlay) closeModal(); });
-  document.addEventListener("keydown", (e)=>{
-    const open = modalOverlay.classList.contains("open");
-    if(!open) return;
-    if(e.key === "Escape"){ closeModal(); return; }
-    if(e.key === "ArrowLeft"){ e.preventDefault(); prevModal(); return; }
-    if(e.key === "ArrowRight"){ e.preventDefault(); nextModal(); return; }
+  navLeftBtn.addEventListener("click",(e)=>{e.stopPropagation();prevModal();});
+  navRightBtn.addEventListener("click",(e)=>{e.stopPropagation();nextModal();});
+  modalOverlay.addEventListener("click",(e)=>{ if(e.target===modalOverlay) closeModal(); });
+  document.addEventListener("keydown",(e)=>{
+    if(!modalOverlay.classList.contains("open")) return;
+    if(e.key==="Escape"){ closeModal(); return; }
+    if(e.key==="ArrowLeft"){ e.preventDefault(); prevModal(); return; }
+    if(e.key==="ArrowRight"){ e.preventDefault(); nextModal(); return; }
   });
 
-  /* ---------- Main render ---------- */
   function render(){
-    // keep tri anti-conflit
     const fam1 = sortFamily(sortSel.value);
     for(const opt of Array.from(sort2Sel.options)){
       opt.disabled = (sortFamily(opt.value) === fam1);
     }
     if(sortFamily(sort2Sel.value) === fam1){
-      // pick first valid
       const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
       if(firstValid) sort2Sel.value = firstValid.value;
     }
 
     waterOnly = !!waterOnlyEl.checked;
 
-    // update all slider UIs (basic)
+    // ✅ FIX: call updateDualUI only for valid sliders
     for(const spec of NUM_SPECS){
-      if(sliderUI[spec.id]) updateDualUI(spec.id);
+      const ui = sliderUI[spec.id];
+      if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
     }
-    // enforce cross-slider constraints for seats
     enforceSeatConstraints();
 
-    // compute filtered
     let filtered = allRows.filter(passesAll);
     filtered = sortRows(filtered, sortSel.value, sort2Sel.value, {year:numFields.year, park:fields.park});
-
     lastRendered = filtered;
 
-    // cards
     if(filtered.length === 0){
       grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
     } else {
@@ -958,8 +822,8 @@ function sortRows(list, mode1, mode2, f){
       grid.querySelectorAll(".card").forEach(card=>{
         const idx = Number(card.getAttribute("data-idx"));
         card.addEventListener("click", ()=> openModalAtIndex(idx));
-        card.addEventListener("keydown", (e)=>{
-          if(e.key === "Enter" || e.key === " "){
+        card.addEventListener("keydown",(e)=>{
+          if(e.key==="Enter" || e.key===" "){
             e.preventDefault();
             openModalAtIndex(idx);
           }
@@ -967,10 +831,8 @@ function sortRows(list, mode1, mode2, f){
       });
     }
 
-    // facet disabling + water disabling
     updateAllFacetUIs();
 
-    // if modal open, keep arrows correct / clamp index
     if(modalOverlay.classList.contains("open")){
       if(lastRendered.length === 0){ closeModal(); return; }
       if(currentIndex >= lastRendered.length) currentIndex = lastRendered.length - 1;
@@ -978,43 +840,33 @@ function sortRows(list, mode1, mode2, f){
     }
   }
 
-  /* ---------- Init ---------- */
   try{
     const res = await fetch(dataUrl, { cache:"no-store" });
     if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
-
     const rows = await res.json();
     if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
-    if(rows.length === 0){
-      grid.innerHTML = `<div class="empty">Aucune donnée.</div>`;
-      return;
-    }
+    if(rows.length === 0){ grid.innerHTML = `<div class="empty">Aucune donnée.</div>`; return; }
 
-    // detect base must-have: coaster name
     const sample = rows[0];
-    // name field: try common
+
     fields.name = pickField(sample, ["Nom","Name","Coaster","Attraction","Ride"]);
     if(!fields.name) throw new Error("Champ 'Nom de coaster' introuvable (Nom/Name/Coaster…).");
 
-    // detect requested facets + numerics
-    const det = detectAllFields(sample);
-    Object.assign(fields, det.out);
-    Object.assign(numFields, det.numOut);
+    for(const spec of FACET_SPECS) fields[spec.id] = pickField(sample, spec.candidates);
+    for(const spec of NUM_SPECS) numFields[spec.id] = pickField(sample, spec.candidates);
+    waterField = pickField(sample, WATER_CANDIDATES);
 
-    // Build UI
-    buildFacetUI();
-    buildSliderUI();
+    createFacetUI();
+    createSliderUI();
 
-    // Prepare rows: derive water + seat formulas
     allRows = rows.map(r=>{
       const rr = {...r};
       rr.__water = parseWater(rr);
-      // derive seats if possible
       computeDerivedSeats(rr);
       return rr;
     });
 
-    // Compute facet options (unique sorted)
+    // facet options
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
       if(!key){ facetOptions[spec.id] = []; continue; }
@@ -1024,15 +876,11 @@ function sortRows(list, mode1, mode2, f){
       facetOptions[spec.id] = Array.from(new Set(opts)).sort((a,b)=>a.localeCompare(b,"fr"));
     }
 
-    // Init sliders from data
     initSlidersFromData();
-    // One pass for seat constraint bounds
     enforceSeatConstraints();
 
-    // Wire controls
     qEl.addEventListener("input", render);
 
-    // sort swap logic (au sens près)
     let prevPrimary = sortSel.value;
     sortSel.addEventListener("change", ()=>{
       const newPrimary = sortSel.value;
@@ -1050,18 +898,15 @@ function sortRows(list, mode1, mode2, f){
       qEl.value = "";
       waterOnlyEl.checked = false;
 
-      // clear facet selections + searches
       for(const spec of FACET_SPECS){
         selected[spec.id].clear();
-        const ui = facetUI[spec.id];
-        ui.searchEl.value = "";
+        facetUI[spec.id].searchEl.value = "";
       }
 
-      // reset sliders to abs bounds
       for(const spec of NUM_SPECS){
         const abs = sliderAbs[spec.id];
         const ui = sliderUI[spec.id];
-        if(!abs || ui.minEl.disabled) continue;
+        if(!abs || !ui || ui.minEl.disabled) continue;
         sliderDyn[spec.id] = {min:abs.min, max:abs.max};
         ui.minEl.value = String(abs.min);
         ui.maxEl.value = String(abs.max);
@@ -1077,7 +922,6 @@ function sortRows(list, mode1, mode2, f){
       render();
     });
 
-    // initial render
     render();
 
   } catch(e){

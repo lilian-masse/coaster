@@ -253,25 +253,20 @@
     <div class="field">
       <label for="sort">Tri</label>
       <select id="sort">
+        <!-- plus de Z->A, plus de tri par nom de coaster -->
         <option value="park_asc" selected>Parc A→Z</option>
-        <option value="park_desc">Parc Z→A</option>
-        <option value="name_asc">Nom A→Z</option>
-        <option value="name_desc">Nom Z→A</option>
-        <option value="year_desc">Ouverture ↓</option>
         <option value="year_asc">Ouverture ↑</option>
+        <option value="year_desc">Ouverture ↓</option>
       </select>
     </div>
 
     <div class="field">
       <label for="sort2">Tri secondaire</label>
       <select id="sort2">
-        <!-- plus de "Aucun" -->
+        <!-- plus de Z->A, plus de tri par nom de coaster -->
         <option value="year_asc" selected>Ouverture ↑</option>
         <option value="year_desc">Ouverture ↓</option>
-        <option value="name_asc">Nom A→Z</option>
-        <option value="name_desc">Nom Z→A</option>
         <option value="park_asc">Parc A→Z</option>
-        <option value="park_desc">Parc Z→A</option>
       </select>
     </div>
 
@@ -465,9 +460,15 @@
       `;
     }
 
+    // Normalise "au sens près" : on ignore l'ordre (asc/desc) et on garde uniquement la famille du tri
+    // ex: year_asc et year_desc => même sens (year)
+    //     park_asc => park
+    function sortFamily(mode){
+      return String(mode || "").split("_")[0]; // "year" ou "park"
+    }
+
     function sortRows(list, mode1, mode2, f){
       const getYear = (r) => f.yearField ? (toYear(r[f.yearField]) ?? null) : null;
-      const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
       const getPark = (r) => f.parkField ? String(r[f.parkField] ?? "") : "";
 
       function cmp(mode, a, b){
@@ -477,22 +478,12 @@
         if(mode === "year_asc"){
           return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
         }
-        if(mode === "name_asc"){
-          return getName(a).localeCompare(getName(b), "fr");
-        }
-        if(mode === "name_desc"){
-          return getName(b).localeCompare(getName(a), "fr");
-        }
         if(mode === "park_asc"){
           return getPark(a).localeCompare(getPark(b), "fr");
-        }
-        if(mode === "park_desc"){
-          return getPark(b).localeCompare(getPark(a), "fr");
         }
         return 0;
       }
 
-      // Tri multi-niveaux : 1) principal, 2) secondaire, 3) fallback (nom)
       return list.slice().sort((a,b) => {
         let c = cmp(mode1, a, b);
         if(c !== 0) return c;
@@ -500,7 +491,10 @@
         c = cmp(mode2, a, b);
         if(c !== 0) return c;
 
-        return getName(a).localeCompare(getName(b), "fr");
+        // fallback stable : parc puis année
+        c = cmp("park_asc", a, b);
+        if(c !== 0) return c;
+        return cmp("year_asc", a, b);
       });
     }
 
@@ -623,7 +617,7 @@
         }
 
         if(f.parkField){
-          const parkLabels = uniqueSortedLabels(rows.map(r => r[f.parkField]));
+          const parkLabels = uniqueSortedLabels(rows.map r => r[f.parkField]));
           parkCtl = buildChecklist({
             containerEl: parkList,
             searchEl: parkSearch,
@@ -635,30 +629,50 @@
           parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé.</div>`;
         }
 
-        // --- règle anti-identique ---
-        // Quand le tri principal devient identique au tri secondaire,
-        // on met le tri secondaire à la valeur de l'ancien tri principal.
+        // --- règle anti-identique (au sens près) + désactivation des options secondaires ---
+        // Quand le principal devient identique au secondaire AU SENS PRÈS (famille),
+        // on met le secondaire à la valeur de l'ancien principal (exacte).
         let prevPrimary = sortSel.value;
-        sortSel.addEventListener("change", () => {
-          const newPrimary = sortSel.value;
-          if(newPrimary === sort2Sel.value){
-            // mettre le secondaire sur l'ancien principal
+
+        function updateSecondaryOptions(){
+          const fam1 = sortFamily(sortSel.value);
+          Array.from(sort2Sel.options).forEach(opt => {
+            opt.disabled = (sortFamily(opt.value) === fam1);
+          });
+
+          // si l'option actuellement sélectionnée devient invalide, basculer sur la première option valide
+          if(sortFamily(sort2Sel.value) === fam1){
+            const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
+            if(firstValid) sort2Sel.value = firstValid.value;
+          }
+        }
+
+        function enforceSwapIfSameFamily(newPrimary){
+          const famP = sortFamily(newPrimary);
+          const famS = sortFamily(sort2Sel.value);
+          if(famP === famS){
+            // mettre le secondaire à l'ancien principal (exact)
             sort2Sel.value = prevPrimary;
           }
           prevPrimary = newPrimary;
+        }
+
+        // init: empêcher secondaire d'être "park" si principal "park"
+        updateSecondaryOptions();
+        // si malgré tout principal et secondaire sont en conflit, on corrige
+        enforceSwapIfSameFamily(sortSel.value);
+        updateSecondaryOptions();
+
+        sortSel.addEventListener("change", () => {
+          const newPrimary = sortSel.value;
+          enforceSwapIfSameFamily(newPrimary);
+          updateSecondaryOptions();
           render();
         });
 
-        // (optionnel) si l'utilisateur met secondaire identique au principal,
-        // on inverse aussi avec l'ancien secondaire (UX plus propre).
-        let prevSecondary = sort2Sel.value;
         sort2Sel.addEventListener("change", () => {
-          const newSecondary = sort2Sel.value;
-          if(newSecondary === sortSel.value){
-            sortSel.value = prevSecondary;
-            prevPrimary = sortSel.value;
-          }
-          prevSecondary = newSecondary;
+          // le menu empêche normalement, mais on sécurise
+          updateSecondaryOptions();
           render();
         });
 
@@ -735,26 +749,23 @@
           }
         }
 
-        // Recherche + slider
         qEl.addEventListener("input", render);
         yearMinEl.addEventListener("input", render);
         yearMaxEl.addEventListener("input", render);
 
-        // Valeurs par défaut demandées :
-        // principal: Parc A→Z (déjà selected dans HTML)
-        // secondaire: Ouverture ↑ (déjà selected dans HTML)
+        // Defaults demandés : principal=park A→Z, secondaire=ouverture ↑
+        sortSel.value = "park_asc";
+        sort2Sel.value = "year_asc";
         prevPrimary = sortSel.value;
-        prevSecondary = sort2Sel.value;
+        updateSecondaryOptions();
 
-        // Reset
         document.getElementById("clear").addEventListener("click", () => {
           qEl.value = "";
 
-          // defaults
           sortSel.value = "park_asc";
           sort2Sel.value = "year_asc";
           prevPrimary = sortSel.value;
-          prevSecondary = sort2Sel.value;
+          updateSecondaryOptions();
 
           if(makerCtl) makerCtl.clear();
           if(parkCtl) parkCtl.clear();

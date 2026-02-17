@@ -3,169 +3,250 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Base de données — Coasters</title>
-
-  <!-- Tabulator (table + tri + filtres + pagination) -->
-  <link href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator.min.css" rel="stylesheet">
-
+  <title>Coasters — Fiches</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
-    h1 { margin: 0 0 8px; }
-    .muted { opacity: 0.75; margin-bottom: 16px; }
-    .bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin: 16px 0; }
-    label { display: block; font-size: 14px; margin-bottom: 6px; }
-    input, select { padding: 10px 12px; font-size: 14px; min-width: 220px; }
-    button { padding: 10px 12px; font-size: 14px; cursor: pointer; }
-    #table { margin-top: 12px; }
+    h1 { margin: 0 0 6px; }
+    .muted { opacity: .75; margin-bottom: 16px; }
+    .bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin: 16px 0 18px; }
+    label { display:block; font-size: 14px; margin-bottom: 6px; }
+    input, select, button { padding: 10px 12px; font-size: 14px; }
+    input, select { min-width: 220px; }
+    button { cursor: pointer; }
     .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      border: 1px solid #e6e6e6;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.04);
+      background: #fff;
+    }
+    .title { font-weight: 700; font-size: 16px; margin: 0 0 8px; }
+    .sub { opacity: .8; margin: 0 0 10px; font-size: 13px; }
+    .kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 10px; font-size: 13px; }
+    .k { opacity: .65; }
+    .v { word-break: break-word; }
+    .empty { padding: 18px; border: 1px dashed #ddd; border-radius: 16px; opacity: .8; }
   </style>
 </head>
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Recherche globale, filtres par colonne, tri, pagination.
+    Affichage en fiches avec recherche + filtres.
     <span id="count" class="pill">…</span>
   </div>
 
   <div class="bar">
     <div>
-      <label for="q">Recherche (toutes colonnes)</label>
-      <input id="q" type="text" placeholder="ex: Intamin, 2005, vitesse..." />
+      <label for="q">Recherche (tous champs)</label>
+      <input id="q" type="text" placeholder="ex: Intamin, 2005, USA..." />
     </div>
 
     <div>
-      <label for="col">Colonne</label>
-      <select id="col"></select>
+      <label for="country">Pays</label>
+      <select id="country">
+        <option value="">Tous</option>
+      </select>
     </div>
 
     <div>
-      <label for="val">Filtre (contient)</label>
-      <input id="val" type="text" placeholder="ex: USA" />
+      <label for="maker">Constructeur</label>
+      <select id="maker">
+        <option value="">Tous</option>
+      </select>
     </div>
 
     <div>
-      <button id="clear">Réinitialiser filtres</button>
+      <button id="clear">Réinitialiser</button>
     </div>
   </div>
 
-  <div id="table"></div>
+  <div id="grid" class="grid"></div>
 
-  <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
   <script>
     const dataUrl = "./data/coasters_clean.json";
 
-    function toTitle(s){
-      return (s || "")
-        .replace(/_/g," ")
-        .replace(/\b\w/g, c => c.toUpperCase());
+    // Helpers
+    const norm = (v) => String(v ?? "").trim().toLowerCase();
+    const titleize = (s) => (s||"").replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+
+    // Essaie de deviner les champs (les noms peuvent varier selon ton Excel)
+    function pickField(obj, candidates){
+      const keys = Object.keys(obj || {});
+      const lower = new Map(keys.map(k => [k.toLowerCase(), k]));
+      for (const c of candidates){
+        const hit = lower.get(c.toLowerCase());
+        if (hit) return hit;
+      }
+      return null;
     }
 
-    function guessColumns(rows){
-      const keys = rows.length ? Object.keys(rows[0]) : [];
-      return keys.map(k => ({
-        title: toTitle(k),
-        field: k,
-        headerFilter: true,        // filtre par colonne
-        headerFilterLiveFilter: true,
-        headerSort: true,
-      }));
+    function buildOptions(selectEl, values){
+      const uniq = Array.from(new Set(values.filter(v => v && String(v).trim() !== "")))
+        .map(v => String(v).trim())
+        .sort((a,b)=>a.localeCompare(b, "fr"));
+      uniq.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function cardHTML(row, fields){
+      // Titre: on prend "name" si existe, sinon le 1er champ texte non vide
+      const nameField = fields.nameField;
+      let title = nameField ? row[nameField] : "";
+      if(!title){
+        const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
+        title = firstNonEmpty ?? "Fiche";
+      }
+
+      const subParts = [];
+      if (fields.parkField && row[fields.parkField]) subParts.push(row[fields.parkField]);
+      if (fields.countryField && row[fields.countryField]) subParts.push(row[fields.countryField]);
+      const sub = subParts.join(" • ");
+
+      // Champs affichés dans la fiche (ajuste si tu veux)
+      const show = [];
+      const pushIf = (label, field) => {
+        if (field && row[field] !== null && row[field] !== undefined && String(row[field]).trim() !== "") {
+          show.push([label, row[field]]);
+        }
+      };
+
+      pushIf("Constructeur", fields.makerField);
+      pushIf("Parc", fields.parkField);
+      pushIf("Pays", fields.countryField);
+      pushIf("Ouvert", fields.yearField);
+      pushIf("Vitesse", fields.speedField);
+      pushIf("Hauteur", fields.heightField);
+      pushIf("Longueur", fields.lengthField);
+      pushIf("Inversions", fields.inversionsField);
+
+      // Si aucun des champs “connus” n’existe, on affiche quelques champs génériques
+      if(show.length === 0){
+        const entries = Object.entries(row).slice(0, 8);
+        entries.forEach(([k,v]) => {
+          if (String(v??"").trim() !== "") show.push([titleize(k), v]);
+        });
+      }
+
+      return `
+        <article class="card">
+          <h2 class="title">${escapeHtml(String(title))}</h2>
+          ${sub ? `<p class="sub">${escapeHtml(sub)}</p>` : ""}
+          <div class="kv">
+            ${show.map(([k,v]) => `
+              <div class="k">${escapeHtml(String(k))}</div>
+              <div class="v">${escapeHtml(String(v))}</div>
+            `).join("")}
+          </div>
+        </article>
+      `;
+    }
+
+    function escapeHtml(str){
+      return str
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function matchesQuery(row, q){
+      if(!q) return true;
+      const text = Object.values(row).map(v => String(v ?? "")).join(" ").toLowerCase();
+      return text.includes(q);
     }
 
     (async function init(){
       const res = await fetch(dataUrl);
       if(!res.ok){
-        document.body.innerHTML = "<p>Impossible de charger les données. Vérifie le chemin: <code>"+dataUrl+"</code></p>";
+        document.getElementById("grid").innerHTML =
+          `<div class="empty">Impossible de charger <code>${dataUrl}</code>. Vérifie que le fichier existe bien dans <code>/data/</code>.</div>`;
         return;
       }
+
       const rows = await res.json();
+      const sample = rows[0] || {};
 
-      // Table
-      const table = new Tabulator("#table", {
-        data: rows,
-        layout: "fitDataStretch",
-        pagination: true,
-        paginationSize: 25,
-        paginationSizeSelector: [10, 25, 50, 100],
-        movableColumns: true,
-        columns: guessColumns(rows),
-      });
-
-      // compteur
-      const countEl = document.getElementById("count");
-      const updateCount = () => {
-        const n = table.getDataCount("active"); // après filtres
-        countEl.textContent = n + " résultat(s)";
+      // Détection des champs possibles (tu peux enrichir la liste de candidats)
+      const fields = {
+        nameField: pickField(sample, ["name","coaster","coaster_name","ride","ride_name","attraction"]),
+        parkField: pickField(sample, ["park","amusement_park","location","parc"]),
+        countryField: pickField(sample, ["country","pays","nation"]),
+        makerField: pickField(sample, ["manufacturer","maker","constructeur","builder"]),
+        yearField: pickField(sample, ["year","opened","opening_year","ouvert","année"]),
+        speedField: pickField(sample, ["speed","top_speed","vitesse"]),
+        heightField: pickField(sample, ["height","hauteur"]),
+        lengthField: pickField(sample, ["length","longueur"]),
+        inversionsField: pickField(sample, ["inversions","nb_inversions"]),
       };
-      table.on("dataFiltered", updateCount);
-      updateCount();
 
-      // UI colonnes
-      const colSel = document.getElementById("col");
-      const cols = table.getColumns().map(c => c.getField()).filter(Boolean);
-      cols.forEach(f => {
-        const opt = document.createElement("option");
-        opt.value = f;
-        opt.textContent = toTitle(f);
-        colSel.appendChild(opt);
-      });
+      // Remplir les filtres (si champs existants)
+      const countrySel = document.getElementById("country");
+      const makerSel = document.getElementById("maker");
 
-      // Recherche globale (toutes colonnes): on construit un filtre OR sur chaque champ
-      const q = document.getElementById("q");
-      q.addEventListener("input", () => {
-        const term = q.value.trim().toLowerCase();
-        table.clearFilter(true);
+      if(fields.countryField){
+        buildOptions(countrySel, rows.map(r => r[fields.countryField]));
+      } else {
+        countrySel.disabled = true;
+        countrySel.title = "Champ 'pays' non trouvé dans les données";
+      }
 
-        // réappliquer aussi le filtre "colonne contient" si rempli
-        applyColumnFilter(false);
+      if(fields.makerField){
+        buildOptions(makerSel, rows.map(r => r[fields.makerField]));
+      } else {
+        makerSel.disabled = true;
+        makerSel.title = "Champ 'constructeur' non trouvé dans les données";
+      }
 
-        if(!term){
-          updateCount();
+      const grid = document.getElementById("grid");
+      const countEl = document.getElementById("count");
+      const qEl = document.getElementById("q");
+
+      function render(){
+        const q = norm(qEl.value);
+        const country = countrySel.value;
+        const maker = makerSel.value;
+
+        const filtered = rows.filter(r => {
+          if(!matchesQuery(r, q)) return false;
+          if(fields.countryField && country && String(r[fields.countryField] ?? "") !== country) return false;
+          if(fields.makerField && maker && String(r[fields.makerField] ?? "") !== maker) return false;
+          return true;
+        });
+
+        countEl.textContent = `${filtered.length} résultat(s)`;
+
+        if(filtered.length === 0){
+          grid.innerHTML = `<div class="empty">Aucun résultat. Essaie d’enlever un filtre.</div>`;
           return;
         }
 
-        const anyFilters = cols.map(f => {
-          return function(data){
-            const v = data[f];
-            return (v !== null && v !== undefined) &&
-              String(v).toLowerCase().includes(term);
-          };
-        });
-
-        // Tabulator accepte un filtre custom; pour OR, on utilise setFilter avec une fonction
-        table.addFilter(function(rowData){
-          return anyFilters.some(fn => fn(rowData));
-        });
-
-        updateCount();
-      });
-
-      // Filtre colonne "contient"
-      const val = document.getElementById("val");
-      function applyColumnFilter(clearFirst=true){
-        const field = colSel.value;
-        const term = val.value.trim().toLowerCase();
-
-        if(clearFirst) table.clearFilter(true);
-
-        if(term){
-          table.addFilter(function(data){
-            const v = data[field];
-            return (v !== null && v !== undefined) &&
-              String(v).toLowerCase().includes(term);
-          });
-        }
-        updateCount();
+        grid.innerHTML = filtered.map(r => cardHTML(r, fields)).join("");
       }
-      colSel.addEventListener("change", () => applyColumnFilter(true));
-      val.addEventListener("input", () => applyColumnFilter(true));
 
-      // reset
+      qEl.addEventListener("input", render);
+      countrySel.addEventListener("change", render);
+      makerSel.addEventListener("change", render);
+
       document.getElementById("clear").addEventListener("click", () => {
-        q.value = "";
-        val.value = "";
-        table.clearFilter(true);
-        updateCount();
+        qEl.value = "";
+        countrySel.value = "";
+        makerSel.value = "";
+        render();
       });
+
+      render();
     })();
   </script>
 </body>

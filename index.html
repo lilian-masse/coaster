@@ -79,16 +79,9 @@
     background:#fff;
     border-bottom:1px solid #eee;
     padding:14px 16px;
-    display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
   }
-  .modalTitleWrap{min-width:0}
   .modalTitle{font-weight:800;margin:0;font-size:18px;line-height:1.25}
   .modalSub{margin:4px 0 0;opacity:.7;font-size:13px}
-  .modalClose{
-    width:auto;
-    padding:8px 10px;
-    font-size:13px;
-  }
   .modalBody{padding:14px 16px 18px}
   .modalGrid{display:grid;grid-template-columns:160px 1fr;gap:8px 12px;font-size:14px}
   .modalK{opacity:.65}
@@ -170,15 +163,13 @@
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
-<!-- MODALE -->
+<!-- MODALE (sans bouton Fermer) -->
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="modal" role="document">
     <div class="modalHeader">
-      <div class="modalTitleWrap">
-        <h2 id="modalTitle" class="modalTitle">—</h2>
-        <p id="modalSub" class="modalSub"></p>
-      </div>
-      <button id="modalClose" class="modalClose" type="button">Fermer</button>
+      <h2 id="modalTitle" class="modalTitle">—</h2>
+      <p id="modalSub" class="modalSub"></p>
+      <p class="pill" style="margin:10px 0 0;display:inline-block;opacity:.85">Clique en dehors ou appuie sur Échap</p>
     </div>
     <div class="modalBody">
       <div id="modalGrid" class="modalGrid"></div>
@@ -212,7 +203,6 @@ const maxLabel = document.getElementById("maxLabel");
 
 /* Modal */
 const modalOverlay = document.getElementById("modalOverlay");
-const modalCloseBtn = document.getElementById("modalClose");
 const modalTitleEl = document.getElementById("modalTitle");
 const modalSubEl = document.getElementById("modalSub");
 const modalGridEl = document.getElementById("modalGrid");
@@ -249,7 +239,6 @@ function toNumber(v){
   return Number.isFinite(n) ? n : null;
 }
 
-// timestamps positifs & négatifs
 function toYear(v){
   const n = toNumber(v);
   if(n === null) return null;
@@ -379,7 +368,7 @@ function drawChecklist(containerEl, labels, selectedSet, searchEl, onChange){
   };
 }
 
-/* Cards (compact only) */
+/* Cards (compact) */
 function cardHTML(r, f, idx){
   const title = String(r[f.name] ?? "").trim();
   const park = f.park ? String(r[f.park] ?? "").trim() : "";
@@ -411,7 +400,6 @@ function openModalForRow(row, f){
   modalTitleEl.textContent = title || "—";
   modalSubEl.textContent = park || "";
 
-  // toutes les caractéristiques non vides, en évitant doublons (nom/parc)
   const excludeKeys = new Set([f.name, f.park]);
   const pairs = Object.entries(row)
     .filter(([k,v]) => !excludeKeys.has(k) && String(v ?? "").trim() !== "")
@@ -428,16 +416,14 @@ function openModalForRow(row, f){
   ).join("") || `<div class="empty">Aucun détail.</div>`;
 
   modalOverlay.classList.add("open");
-  modalOverlay.setAttribute("aria-hidden", "false");
-  modalCloseBtn.focus();
+  modalOverlay.setAttribute("aria-hidden","false");
 }
 
 function closeModal(){
   modalOverlay.classList.remove("open");
-  modalOverlay.setAttribute("aria-hidden", "true");
+  modalOverlay.setAttribute("aria-hidden","true");
 }
 
-modalCloseBtn.addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", (e)=>{
   if(e.target === modalOverlay) closeModal();
 });
@@ -465,9 +451,7 @@ document.addEventListener("keydown", (e)=>{
       year: pickField(sample, ["Ouverture","Année","Annee","Year","opened","opening_year"]),
     };
 
-    if(!f.name){
-      throw new Error("Champ 'Nom de coaster' introuvable. Vérifie la clé (Nom/Name/Coaster…).");
-    }
+    if(!f.name) throw new Error("Champ 'Nom de coaster' introuvable. Vérifie la clé (Nom/Name/Coaster…).");
     if(!f.maker) makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé.</div>`;
     if(!f.park)  parkBox.innerHTML  = `<div class="empty">Champ "Parc" non trouvé.</div>`;
 
@@ -551,7 +535,7 @@ document.addEventListener("keydown", (e)=>{
 
     updateSecondaryOptions();
 
-    let lastRendered = []; // tableau des lignes filtrées (pour ouvrir la modale)
+    let lastRendered = [];
 
     function render(){
       const q = norm(qEl.value);
@@ -592,16 +576,11 @@ document.addEventListener("keydown", (e)=>{
 
       grid.innerHTML = filtered.map((r, i) => cardHTML(r, f, i)).join("");
 
-      // clic => modale
       grid.querySelectorAll(".card").forEach(card=>{
         const idx = Number(card.getAttribute("data-idx"));
         const row = lastRendered[idx];
 
-        card.addEventListener("click", ()=>{
-          openModalForRow(row, f);
-        });
-
-        // clavier (Entrée/Espace)
+        card.addEventListener("click", ()=> openModalForRow(row, f));
         card.addEventListener("keydown", (e)=>{
           if(e.key === "Enter" || e.key === " "){
             e.preventDefault();

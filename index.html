@@ -23,7 +23,6 @@
     .bar { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; margin: 16px 0 18px; align-items: start; }
     .field { grid-column: span 3; }
     .field.wide { grid-column: span 6; }
-    .field.small { grid-column: span 2; }
     .field.actions { grid-column: span 2; display: flex; gap: 10px; align-items: end; }
 
     label { display:block; font-size: 14px; margin-bottom: 6px; }
@@ -64,6 +63,96 @@
       font-size: 13px;
     }
 
+    /* --- Double slider (2 poignées) --- */
+    .rangebox{
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0,0,0,.03);
+    }
+    .range-top{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      opacity: .9;
+    }
+    .range-values{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .range-values .pill{ font-size: 12px; }
+    .range-wrap{
+      position: relative;
+      height: 34px;
+    }
+    .range-wrap input[type="range"]{
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background: none;
+      pointer-events: none; /* on active uniquement le thumb */
+      -webkit-appearance: none;
+      appearance: none;
+      height: 18px;
+    }
+    .range-wrap input[type="range"]::-webkit-slider-runnable-track{
+      height: 6px;
+      border-radius: 999px;
+      background: transparent;
+    }
+    .range-wrap input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance: none;
+      appearance: none;
+      pointer-events: auto;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      border: 1px solid #bbb;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0,0,0,.12);
+      cursor: pointer;
+    }
+    .range-wrap input[type="range"]::-moz-range-track{
+      height: 6px;
+      border-radius: 999px;
+      background: transparent;
+    }
+    .range-wrap input[type="range"]::-moz-range-thumb{
+      pointer-events: auto;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      border: 1px solid #bbb;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(0,0,0,.12);
+      cursor: pointer;
+    }
+    .track{
+      position:absolute;
+      left: 0;
+      right: 0;
+      top: 14px;
+      height: 6px;
+      border-radius: 999px;
+      background: #eee;
+    }
+    .range{
+      position:absolute;
+      top: 14px;
+      height: 6px;
+      border-radius: 999px;
+      background: #cfcfcf;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -96,19 +185,18 @@
       .bar { grid-template-columns: repeat(6, minmax(0, 1fr)); }
       .field { grid-column: span 3; }
       .field.wide { grid-column: span 6; }
-      .field.small { grid-column: span 3; }
       .field.actions { grid-column: span 6; }
     }
     @media (max-width: 560px){
       .bar { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-      .field, .field.wide, .field.small, .field.actions { grid-column: span 1; }
+      .field, .field.wide, .field.actions { grid-column: span 1; }
     }
   </style>
 </head>
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Fiches avec recherche + filtres (Fabricants / Parcs) + ouverture min/max (année) + tri.
+    Fiches avec recherche + filtres (Fabricants / Parcs) + ouverture (slider) + tri.
     <span id="count" class="pill">…</span>
   </div>
 
@@ -142,17 +230,27 @@
       </div>
     </div>
 
-    <div class="field small">
-      <label for="yearMin">Ouverture min (année)</label>
-      <input id="yearMin" type="number" inputmode="numeric" placeholder="ex: 1990" />
+    <div class="field">
+      <label>Ouverture (année)</label>
+      <div class="rangebox">
+        <div class="range-top">
+          <div class="range-values">
+            <span class="pill" id="yearMinPill">—</span>
+            <span>→</span>
+            <span class="pill" id="yearMaxPill">—</span>
+          </div>
+          <span class="pill" id="yearSpanPill">—</span>
+        </div>
+        <div class="range-wrap">
+          <div class="track"></div>
+          <div class="range" id="yearRangeFill"></div>
+          <input id="yearMin" type="range" min="1900" max="2025" value="1900" step="1" aria-label="Année minimum">
+          <input id="yearMax" type="range" min="1900" max="2025" value="2025" step="1" aria-label="Année maximum">
+        </div>
+      </div>
     </div>
 
-    <div class="field small">
-      <label for="yearMax">Ouverture max (année)</label>
-      <input id="yearMax" type="number" inputmode="numeric" placeholder="ex: 2010" />
-    </div>
-
-    <div class="field small">
+    <div class="field">
       <label for="sort">Tri</label>
       <select id="sort">
         <option value="relevance">Pertinence</option>
@@ -165,7 +263,7 @@
 
     <div class="field actions">
       <button id="clear" type="button">Réinitialiser</button>
-      <button id="clearYears" type="button">Effacer années</button>
+      <button id="clearYears" type="button">Réinitialiser ouverture</button>
     </div>
   </div>
 
@@ -370,11 +468,35 @@
       return list;
     }
 
-    function parseYearInput(el){
-      const s = String(el.value ?? "").trim();
-      if(!s) return null;
-      const n = Number(s);
-      return Number.isFinite(n) ? Math.trunc(n) : null;
+    function clampMinMax(minEl, maxEl){
+      // Empêche le min de dépasser le max et inversement
+      let a = parseInt(minEl.value, 10);
+      let b = parseInt(maxEl.value, 10);
+      if(a > b){
+        // swap
+        const t = a; a = b; b = t;
+        minEl.value = String(a);
+        maxEl.value = String(b);
+      }
+      return {min: a, max: b};
+    }
+
+    function updateYearUI(minEl, maxEl, yMinAbs, yMaxAbs){
+      const {min, max} = clampMinMax(minEl, maxEl);
+
+      document.getElementById("yearMinPill").textContent = String(min);
+      document.getElementById("yearMaxPill").textContent = String(max);
+      document.getElementById("yearSpanPill").textContent = (min === yMinAbs && max === yMaxAbs)
+        ? "toutes les années"
+        : `${max - min + 1} an(s)`;
+
+      // update fill
+      const fill = document.getElementById("yearRangeFill");
+      const total = (yMaxAbs - yMinAbs) || 1;
+      const leftPct = ((min - yMinAbs) / total) * 100;
+      const rightPct = ((max - yMinAbs) / total) * 100;
+      fill.style.left = leftPct + "%";
+      fill.style.width = Math.max(0, rightPct - leftPct) + "%";
     }
 
     (async function init(){
@@ -384,8 +506,6 @@
       const statusEl = document.getElementById("status");
 
       const qEl = document.getElementById("q");
-      const yearMinEl = document.getElementById("yearMin");
-      const yearMaxEl = document.getElementById("yearMax");
       const sortSel = document.getElementById("sort");
 
       const makerSearch = document.getElementById("makerSearch");
@@ -398,6 +518,9 @@
 
       const makerBox = document.getElementById("makerBox");
       const parkBox  = document.getElementById("parkBox");
+
+      const yearMinEl = document.getElementById("yearMin");
+      const yearMaxEl = document.getElementById("yearMax");
 
       clearError();
 
@@ -426,6 +549,27 @@
         };
 
         console.log("Champs détectés:", f);
+
+        // Déterminer l'intervalle d'années (min/max) à partir des données
+        let yMinAbs = 1900;
+        let yMaxAbs = new Date().getUTCFullYear();
+
+        if(f.yearField){
+          const years = rows.map(r => toYear(r[f.yearField])).filter(y => Number.isFinite(y));
+          if(years.length){
+            yMinAbs = Math.min(...years);
+            yMaxAbs = Math.max(...years);
+          }
+        }
+
+        // Init sliders
+        yearMinEl.min = String(yMinAbs);
+        yearMinEl.max = String(yMaxAbs);
+        yearMaxEl.min = String(yMinAbs);
+        yearMaxEl.max = String(yMaxAbs);
+        yearMinEl.value = String(yMinAbs);
+        yearMaxEl.value = String(yMaxAbs);
+        updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
 
         let makerCtl = null;
         let parkCtl = null;
@@ -461,8 +605,11 @@
           if(state.q) parts.push(`Recherche: “${state.q}”`);
           if(state.makers.size) parts.push(`Fabricants: ${state.makers.size}`);
           if(state.parks.size) parts.push(`Parcs: ${state.parks.size}`);
-          if(state.ymin !== null) parts.push(`Ouverture ≥ ${state.ymin}`);
-          if(state.ymax !== null) parts.push(`Ouverture ≤ ${state.ymax}`);
+
+          // n’affiche l’intervalle que si différent du total
+          if(state.ymin !== yMinAbs || state.ymax !== yMaxAbs){
+            parts.push(`Ouverture: ${state.ymin}–${state.ymax}`);
+          }
           return parts.length ? parts.join(" • ") : "aucun";
         }
 
@@ -471,12 +618,14 @@
             const makersSet = makerCtl ? makerCtl.getSelectedSet() : new Set();
             const parksSet  = parkCtl  ? parkCtl.getSelectedSet()  : new Set();
 
+            const {min: ymin, max: ymax} = clampMinMax(yearMinEl, yearMaxEl);
+            updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
+
             const state = {
               q: norm(qEl.value),
               makers: makersSet,
               parks: parksSet,
-              ymin: parseYearInput(yearMinEl),
-              ymax: parseYearInput(yearMaxEl),
+              ymin, ymax,
               sort: sortSel.value
             };
 
@@ -490,11 +639,14 @@
                 if(!state.parks.has(norm(r[f.parkField]))) return false;
               }
 
-              if(f.yearField && (state.ymin !== null || state.ymax !== null)){
+              if(f.yearField){
                 const y = toYear(r[f.yearField]);
-                if(y === null) return false;
-                if(state.ymin !== null && y < state.ymin) return false;
-                if(state.ymax !== null && y > state.ymax) return false;
+                // Si l'enregistrement n'a pas d'année, on l'exclut seulement si l'utilisateur restreint l'intervalle
+                if(y === null){
+                  if(state.ymin !== yMinAbs || state.ymax !== yMaxAbs) return false;
+                } else {
+                  if(y < state.ymin || y > state.ymax) return false;
+                }
               }
 
               return true;
@@ -519,29 +671,39 @@
           }
         }
 
+        // Events
         qEl.addEventListener("input", render);
+        sortSel.addEventListener("change", render);
+
+        // sliders
         yearMinEl.addEventListener("input", render);
         yearMaxEl.addEventListener("input", render);
-        sortSel.addEventListener("change", render);
 
         document.getElementById("clear").addEventListener("click", () => {
           qEl.value = "";
-          yearMinEl.value = "";
-          yearMaxEl.value = "";
           sortSel.value = "relevance";
+
           if(makerCtl) makerCtl.clear();
           if(parkCtl) parkCtl.clear();
           makerSearch.value = "";
           parkSearch.value = "";
+
+          // reset years
+          yearMinEl.value = String(yMinAbs);
+          yearMaxEl.value = String(yMaxAbs);
+          updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
+
           render();
         });
 
         document.getElementById("clearYears").addEventListener("click", () => {
-          yearMinEl.value = "";
-          yearMaxEl.value = "";
+          yearMinEl.value = String(yMinAbs);
+          yearMaxEl.value = String(yMaxAbs);
+          updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
           render();
         });
 
+        // first render
         render();
 
       } catch(e){

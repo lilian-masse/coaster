@@ -198,7 +198,6 @@ function titleizeKey(k){
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 function sortFamily(mode){ return String(mode||"").split("_")[0]; }
-
 function pickField(obj, candidates){
   const keys = Object.keys(obj || {});
   const map = new Map(keys.map(k => [norm(k), k]));
@@ -285,14 +284,12 @@ function createDualSlider(spec){
 function sortRows(list, mode1, mode2, f){
   const getYear = (r)=> f.year ? (toYear(r[f.year]) ?? null) : null;
   const getPark = (r)=> f.park ? String(r[f.park] ?? "") : "";
-
   function cmp(mode, a, b){
     if(mode === "year_desc") return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
     if(mode === "year_asc")  return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
     if(mode === "park_asc")  return getPark(a).localeCompare(getPark(b), "fr");
     return 0;
   }
-
   return list.slice().sort((a,b)=>{
     let c = cmp(mode1,a,b); if(c!==0) return c;
     c = cmp(mode2,a,b); if(c!==0) return c;
@@ -337,6 +334,17 @@ function sortRows(list, mode1, mode2, f){
   let lastRendered = [];
   let currentIndex = -1;
 
+  /* ---------------- NEW DEFAULTS ----------------
+     - Angle de propulsion vide => "Incliné"
+     - Structure vide => "Acier"
+  ------------------------------------------------ */
+  function normalizeFacetValue(facetId, raw){
+    let v = String(raw ?? "").trim();
+    if(facetId === "launchAngle" && !v) return "Incliné";
+    if(facetId === "structure" && !v) return "Acier";
+    return v;
+  }
+
   function parseWater(row){
     if(waterField){
       const s = norm(row[waterField]);
@@ -377,7 +385,6 @@ function sortRows(list, mode1, mode2, f){
     return {min:a, max:b};
   }
 
-  // ✅ FIX: safe guard
   function updateDualUI(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
@@ -447,8 +454,16 @@ function sortRows(list, mode1, mode2, f){
 
       sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
 
-      minEl.addEventListener("input", ()=>{ clampSwap(minEl,maxEl); enforceSeatConstraints(); render(); });
-      maxEl.addEventListener("input", ()=>{ clampSwap(minEl,maxEl); enforceSeatConstraints(); render(); });
+      minEl.addEventListener("input", ()=>{
+        clampSwap(minEl,maxEl);
+        enforceSeatConstraints();
+        render();
+      });
+      maxEl.addEventListener("input", ()=>{
+        clampSwap(minEl,maxEl);
+        enforceSeatConstraints();
+        render();
+      });
     }
   }
 
@@ -490,6 +505,8 @@ function sortRows(list, mode1, mode2, f){
 
       ui.minEl.step = String(step);
       ui.maxEl.step = String(step);
+
+      // ✅ NEW: default all numeric ranges to full span (min..max)
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -503,16 +520,21 @@ function sortRows(list, mode1, mode2, f){
     const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
     return text.includes(q);
   }
+
   function passesFacets(row){
     for(const spec of FACET_SPECS){
       const set = selected[spec.id];
       if(!set || set.size === 0) continue;
       const key = fields[spec.id];
-      const v = String(row[key] ?? "").trim();
+
+      // ✅ NEW: default values for empty launchAngle/structure
+      const v = normalizeFacetValue(spec.id, row[key]);
+
       if(!set.has(v)) return false;
     }
     return true;
   }
+
   function passesSliders(row){
     for(const spec of NUM_SPECS){
       const key = numFields[spec.id];
@@ -531,10 +553,12 @@ function sortRows(list, mode1, mode2, f){
     }
     return true;
   }
+
   function passesWater(row){
     if(!waterOnly) return true;
     return !!row.__water;
   }
+
   function passesAll(row){
     const n = String(row[fields.name] ?? "").trim();
     if(!n) return false;
@@ -548,12 +572,13 @@ function sortRows(list, mode1, mode2, f){
       if(!passesSearch(r)) return false;
       if(!passesSliders(r)) return false;
       if(!passesWater(r)) return false;
+
       for(const spec of FACET_SPECS){
         if(spec.id === excludeFacetId) continue;
         const set = selected[spec.id];
         if(set && set.size){
           const key = fields[spec.id];
-          const v = String(r[key] ?? "").trim();
+          const v = normalizeFacetValue(spec.id, r[key]);
           if(!set.has(v)) return false;
         }
       }
@@ -564,10 +589,13 @@ function sortRows(list, mode1, mode2, f){
   function computeFacetCounts(facetId){
     const key = fields[facetId];
     if(!key) return new Map();
+
     const base = filterRowsExcludingFacet(facetId);
     const m = new Map();
+
     for(const r of base){
-      const v = String(r[key] ?? "").trim();
+      // ✅ NEW: default values for empty launchAngle/structure
+      const v = normalizeFacetValue(facetId, r[key]);
       if(!v) continue;
       m.set(v, (m.get(v) || 0) + 1);
     }
@@ -735,9 +763,7 @@ function sortRows(list, mode1, mode2, f){
 
   function updateArrowsState(){
     const n = lastRendered.length;
-    if(n <= 1){
-      navLeftBtn.disabled = true; navRightBtn.disabled = true; return;
-    }
+    if(n <= 1){ navLeftBtn.disabled = true; navRightBtn.disabled = true; return; }
     navLeftBtn.disabled = (currentIndex <= 0);
     navRightBtn.disabled = (currentIndex >= n - 1);
   }
@@ -793,6 +819,7 @@ function sortRows(list, mode1, mode2, f){
   });
 
   function render(){
+    // tri anti-conflit
     const fam1 = sortFamily(sortSel.value);
     for(const opt of Array.from(sort2Sel.options)){
       opt.disabled = (sortFamily(opt.value) === fam1);
@@ -804,7 +831,7 @@ function sortRows(list, mode1, mode2, f){
 
     waterOnly = !!waterOnlyEl.checked;
 
-    // ✅ FIX: call updateDualUI only for valid sliders
+    // update only valid sliders
     for(const spec of NUM_SPECS){
       const ui = sliderUI[spec.id];
       if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
@@ -861,18 +888,25 @@ function sortRows(list, mode1, mode2, f){
 
     allRows = rows.map(r=>{
       const rr = {...r};
+
+      // add water
       rr.__water = parseWater(rr);
+
+      // derive seats
       computeDerivedSeats(rr);
+
       return rr;
     });
 
-    // facet options
+    // facet options (with defaults for launchAngle/structure)
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
       if(!key){ facetOptions[spec.id] = []; continue; }
+
       const opts = allRows
-        .map(r => String(r[key] ?? "").trim())
+        .map(r => normalizeFacetValue(spec.id, r[key]))
         .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+
       facetOptions[spec.id] = Array.from(new Set(opts)).sort((a,b)=>a.localeCompare(b,"fr"));
     }
 
@@ -903,6 +937,7 @@ function sortRows(list, mode1, mode2, f){
         facetUI[spec.id].searchEl.value = "";
       }
 
+      // reset sliders to full span
       for(const spec of NUM_SPECS){
         const abs = sliderAbs[spec.id];
         const ui = sliderUI[spec.id];
@@ -921,6 +956,19 @@ function sortRows(list, mode1, mode2, f){
       closeModal();
       render();
     });
+
+    // ✅ NEW: ensure default selection is always full span at load
+    // (in case enforceSeatConstraints narrowed something, we still want full by default)
+    for(const spec of NUM_SPECS){
+      const abs = sliderAbs[spec.id];
+      const ui = sliderUI[spec.id];
+      if(!abs || !ui || ui.minEl.disabled) continue;
+      ui.minEl.value = String(abs.min);
+      ui.maxEl.value = String(abs.max);
+      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+      updateDualUI(spec.id);
+    }
+    enforceSeatConstraints();
 
     render();
 

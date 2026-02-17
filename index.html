@@ -196,7 +196,7 @@
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Fiches avec recherche + filtres (Fabricants / Parcs) + ouverture (slider) + tri.
+    Fiches avec recherche + filtres (Fabricants / Parcs) + ouverture (slider) + tri principal/secondaire.
     <span id="count" class="pill">…</span>
   </div>
 
@@ -253,11 +253,25 @@
     <div class="field">
       <label for="sort">Tri</label>
       <select id="sort">
-        <option value="relevance">Pertinence</option>
-        <option value="year_desc">Ouverture ↓</option>
-        <option value="year_asc">Ouverture ↑</option>
+        <option value="park_asc" selected>Parc A→Z</option>
+        <option value="park_desc">Parc Z→A</option>
         <option value="name_asc">Nom A→Z</option>
         <option value="name_desc">Nom Z→A</option>
+        <option value="year_desc">Ouverture ↓</option>
+        <option value="year_asc">Ouverture ↑</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="sort2">Tri secondaire</label>
+      <select id="sort2">
+        <option value="none" selected>Aucun</option>
+        <option value="park_asc">Parc A→Z</option>
+        <option value="park_desc">Parc Z→A</option>
+        <option value="name_asc">Nom A→Z</option>
+        <option value="name_desc">Nom Z→A</option>
+        <option value="year_desc">Ouverture ↓</option>
+        <option value="year_asc">Ouverture ↑</option>
       </select>
     </div>
 
@@ -395,14 +409,17 @@
       };
     }
 
-    function renderCard(row, f){
-      let title = f.nameField ? row[f.nameField] : "";
-      if(!title){
-        const firstNonEmpty = Object.values(row).find(v => String(v??"").trim() !== "");
-        title = firstNonEmpty ?? "Fiche";
-      }
+    function hasCoasterName(r, f){
+      if(!f.nameField) return false;
+      const n = String(r[f.nameField] ?? "").trim().toLowerCase();
+      if(!n) return false;
+      if(n === "n/a" || n === "na" || n === "unknown" || n === "-" || n === "—") return false;
+      return true;
+    }
 
-      // Sous-titre: uniquement le parc
+    function renderCard(row, f){
+      const title = String(row[f.nameField] ?? "").trim();
+
       const subParts = [];
       if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
       const sub = subParts.join(" • ");
@@ -448,23 +465,45 @@
       `;
     }
 
-    function sortRows(list, mode, f){
-      const getYear = (r) => f.yearField ? toYear(r[f.yearField]) : null;
+    function sortRows(list, mode1, mode2, f){
+      const getYear = (r) => f.yearField ? (toYear(r[f.yearField]) ?? null) : null;
       const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
+      const getPark = (r) => f.parkField ? String(r[f.parkField] ?? "") : "";
 
-      if(mode === "year_desc"){
-        return list.slice().sort((a,b) => (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity));
+      function cmp(mode, a, b){
+        if(mode === "none") return 0;
+
+        if(mode === "year_desc"){
+          return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
+        }
+        if(mode === "year_asc"){
+          return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
+        }
+        if(mode === "name_asc"){
+          return getName(a).localeCompare(getName(b), "fr");
+        }
+        if(mode === "name_desc"){
+          return getName(b).localeCompare(getName(a), "fr");
+        }
+        if(mode === "park_asc"){
+          return getPark(a).localeCompare(getPark(b), "fr");
+        }
+        if(mode === "park_desc"){
+          return getPark(b).localeCompare(getPark(a), "fr");
+        }
+        return 0;
       }
-      if(mode === "year_asc"){
-        return list.slice().sort((a,b) => (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity));
-      }
-      if(mode === "name_asc"){
-        return list.slice().sort((a,b) => getName(a).localeCompare(getName(b), "fr"));
-      }
-      if(mode === "name_desc"){
-        return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
-      }
-      return list;
+
+      // Tri stable multi-niveaux : 1) principal, 2) secondaire, 3) fallback (nom)
+      return list.slice().sort((a,b) => {
+        let c = cmp(mode1, a, b);
+        if(c !== 0) return c;
+
+        c = cmp(mode2, a, b);
+        if(c !== 0) return c;
+
+        return getName(a).localeCompare(getName(b), "fr");
+      });
     }
 
     function clampMinMax(minEl, maxEl){
@@ -503,6 +542,7 @@
 
       const qEl = document.getElementById("q");
       const sortSel = document.getElementById("sort");
+      const sort2Sel = document.getElementById("sort2");
 
       const makerSearch = document.getElementById("makerSearch");
       const makerList = document.getElementById("makerList");
@@ -546,10 +586,14 @@
 
         console.log("Champs détectés:", f);
 
+        // IMPORTANT: sans champ de nom, on ne peut pas afficher de fiches (tu as demandé: pas de nom => pas de fiche)
+        if(!f.nameField){
+          throw new Error("Champ 'Nom de coaster' introuvable dans le JSON. Vérifie la clé (ex: 'Nom' ou 'Coaster').");
+        }
+
         // Intervalle d'années global
         let yMinAbs = 1900;
         let yMaxAbs = new Date().getUTCFullYear();
-
         if(f.yearField){
           const years = rows.map(r => toYear(r[f.yearField])).filter(y => Number.isFinite(y));
           if(years.length){
@@ -604,7 +648,11 @@
           if(state.ymin !== yMinAbs || state.ymax !== yMaxAbs){
             parts.push(`Ouverture: ${state.ymin}–${state.ymax}`);
           }
-          return parts.length ? parts.join(" • ") : "aucun";
+          parts.push(`Tri: ${sortSel.options[sortSel.selectedIndex].textContent}`);
+          if(state.sort2 !== "none"){
+            parts.push(`Puis: ${sort2Sel.options[sort2Sel.selectedIndex].textContent}`);
+          }
+          return parts.join(" • ");
         }
 
         function render(){
@@ -615,9 +663,19 @@
             const {min: ymin, max: ymax} = clampMinMax(yearMinEl, yearMaxEl);
             updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
 
-            const state = { q: norm(qEl.value), makers: makersSet, parks: parksSet, ymin, ymax, sort: sortSel.value };
+            const state = {
+              q: norm(qEl.value),
+              makers: makersSet,
+              parks: parksSet,
+              ymin, ymax,
+              sort: sortSel.value,
+              sort2: sort2Sel.value
+            };
 
             let filtered = rows.filter(r => {
+              // ne garde que les fiches avec un nom de coaster valide
+              if(!hasCoasterName(r, f)) return false;
+
               if(!matchesQuery(r, state.q)) return false;
 
               if(f.makerField && state.makers.size){
@@ -639,7 +697,7 @@
               return true;
             });
 
-            filtered = sortRows(filtered, state.sort, f);
+            filtered = sortRows(filtered, state.sort, state.sort2, f);
 
             const total = filtered.length;
             countEl.textContent = `${total} résultat(s)`;
@@ -660,19 +718,26 @@
 
         qEl.addEventListener("input", render);
         sortSel.addEventListener("change", render);
+        sort2Sel.addEventListener("change", render);
         yearMinEl.addEventListener("input", render);
         yearMaxEl.addEventListener("input", render);
 
         document.getElementById("clear").addEventListener("click", () => {
           qEl.value = "";
-          sortSel.value = "relevance";
+
+          // tri par défaut demandé
+          sortSel.value = "park_asc";
+          sort2Sel.value = "none";
+
           if(makerCtl) makerCtl.clear();
           if(parkCtl) parkCtl.clear();
           makerSearch.value = "";
           parkSearch.value = "";
+
           yearMinEl.value = String(yMinAbs);
           yearMaxEl.value = String(yMaxAbs);
           updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
+
           render();
         });
 

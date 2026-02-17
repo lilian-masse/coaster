@@ -171,15 +171,6 @@ function norm(s){
     .replace(/\s+/g," ")
     .trim();
 }
-// ✅ plus permissif pour détecter des colonnes (supprime ponctuation / slash / points)
-function normKey(s){
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-z0-9]+/g," ")
-    .replace(/\s+/g," ")
-    .trim();
-}
 function esc(s){
   return String(s ?? "")
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
@@ -207,21 +198,16 @@ function titleizeKey(k){
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 function sortFamily(mode){ return String(mode||"").split("_")[0]; }
-
-// ✅ amélioration détection champ (gère "Sieges rang", "sieges/rang.", "seats_per_row", etc.)
 function pickField(obj, candidates){
   const keys = Object.keys(obj || {});
-  const map = new Map(keys.map(k => [normKey(k), k]));
-
-  // exact normalized
+  const map = new Map(keys.map(k => [norm(k), k]));
   for(const c of candidates){
-    const hit = map.get(normKey(c));
+    const hit = map.get(norm(c));
     if(hit) return hit;
   }
-  // contains (normalized)
   for(const k of keys){
-    const nk = normKey(k);
-    if(candidates.some(c => nk.includes(normKey(c)))) return k;
+    const nk = norm(k);
+    if(candidates.some(c => nk.includes(norm(c)))) return k;
   }
   return null;
 }
@@ -231,9 +217,9 @@ const FACET_SPECS = [
   { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
   { id:"park", label:"Parc", candidates:["Parc","Park"] },
   { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
-  { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion","Type propulsion"] },
-  { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion","LaunchAngle"] },
-  { id:"structure", label:"Structure", candidates:["Structure","Structure type","StructureType"] },
+  { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"] },
+  { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"] },
+  { id:"structure", label:"Structure", candidates:["Structure","Structure type"] },
   { id:"particularity", label:"Particularité", candidates:["Particularite","Particularité","Particularity","Spécificité","Specificite"] },
   { id:"rotation", label:"Rotation", candidates:["Rotation","Rotating"] },
   { id:"layout", label:"Disposition", candidates:["Disposition","Layout","Implantation"] },
@@ -241,7 +227,7 @@ const FACET_SPECS = [
 ];
 
 const NUM_SPECS = [
-  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year","OpeningYear"], isYear:true, step:1, integer:true },
+  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
   { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:0.1 },
   { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:0.1 },
   { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
@@ -249,22 +235,13 @@ const NUM_SPECS = [
   { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:0.1 },
   { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
 
-  // ✅ candidats élargis (camelCase, snake_case, sans ponctuation)
-  { id:"seatsPerRow", label:"Sièges/rang.", candidates:[
-      "Sieges/rang.","Sièges/rang.","Sieges rang","Sièges rang","Seats/row","Seats per row","SeatsPerRow","seats_per_row"
-    ], step:1, integer:true },
-  { id:"rowsPerCar", label:"Rangées/voit.", candidates:[
-      "Rangees/voit.","Rangées/voit.","Rangees voit","Rangées voit","Rows/car","Rows per car","RowsPerCar","rows_per_car"
-    ], step:1, integer:true },
-  { id:"seatsPerCar", label:"Sièges/voit.", candidates:[
-      "Sieges/voit.","Sièges/voit.","Sieges voit","Sièges voit","Seats/car","Seats per car","SeatsPerCar","seats_per_car"
-    ], step:1, integer:true },
-  { id:"carsPerTrain", label:"Voit./train", candidates:[
-      "Voit./train","Voit train","Cars/train","Cars per train","CarsPerTrain","cars_per_train","Voitures/train"
-    ], step:1, integer:true },
-  { id:"seatsPerTrain", label:"Sièges/train", candidates:[
-      "Sieges/train","Sièges/train","Sieges train","Sièges train","Seats/train","Seats per train","SeatsPerTrain","seats_per_train"
-    ], step:1, integer:true },
+  /* ✅ FIX: Excel columns were named "Sièges" and "Rangées" */
+  { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
+  { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
+
+  { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"], step:1, integer:true },
+  { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
+  { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"], step:1, integer:true },
 ];
 
 const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];
@@ -348,7 +325,6 @@ function sortRows(list, mode1, mode2, f){
   let waterField = null;
 
   const selected = {};
-  const facetOptions = {};
   const facetUI = {};
   const sliderUI = {};
   const sliderAbs = {};
@@ -359,7 +335,7 @@ function sortRows(list, mode1, mode2, f){
   let lastRendered = [];
   let currentIndex = -1;
 
-  // defaults
+  // defaults for empty fields
   function normalizeFacetValue(facetId, raw){
     let v = String(raw ?? "").trim();
     if(facetId === "launchAngle" && !v) return "Incliné";
@@ -391,6 +367,7 @@ function sortRows(list, mode1, mode2, f){
     const e = eKey ? toNumber(row[eKey]) : null;
 
     if(cKey && c === null && a !== null && b !== null) row[cKey] = a * b;
+
     const cNow = cKey ? toNumber(row[cKey]) : null;
     if(eKey && e === null && d !== null && cNow !== null) row[eKey] = cNow * d;
   }
@@ -519,7 +496,7 @@ function sortRows(list, mode1, mode2, f){
       ui.minEl.step = String(step);
       ui.maxEl.step = String(step);
 
-      // default: full range
+      // default full span
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -599,8 +576,10 @@ function sortRows(list, mode1, mode2, f){
   function computeFacetCounts(facetId){
     const key = fields[facetId];
     if(!key) return new Map();
+
     const base = filterRowsExcludingFacet(facetId);
     const m = new Map();
+
     for(const r of base){
       const v = normalizeFacetValue(facetId, r[key]);
       if(!v) continue;
@@ -623,6 +602,16 @@ function sortRows(list, mode1, mode2, f){
     return c;
   }
 
+  /* ✅ NEW: sort each filter by count desc, then alpha */
+  function sortOptionsByCountsDesc(options, counts){
+    return options.slice().sort((a,b)=>{
+      const ca = counts.get(a) || 0;
+      const cb = counts.get(b) || 0;
+      if(cb !== ca) return cb - ca;
+      return String(a).localeCompare(String(b), "fr");
+    });
+  }
+
   function drawFacetList(facetId){
     const ui = facetUI[facetId];
     const key = fields[facetId];
@@ -634,10 +623,18 @@ function sortRows(list, mode1, mode2, f){
     }
 
     const q = norm(ui.searchEl.value);
-    const options = facetOptions[facetId] || [];
-    const counts = computeFacetCounts(facetId);
     const selectedSet = selected[facetId];
 
+    const counts = computeFacetCounts(facetId);
+
+    // Build options from counts keys + currently selected (so selected values never disappear)
+    const optSet = new Set([...counts.keys(), ...Array.from(selectedSet)]);
+    let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+
+    // ✅ sort by counts desc
+    options = sortOptionsByCountsDesc(options, counts);
+
+    // search filter after sorting
     const shown = options.filter(v => norm(v).includes(q));
 
     ui.listEl.innerHTML = shown.map(v=>{
@@ -698,9 +695,17 @@ function sortRows(list, mode1, mode2, f){
       const bmin = Math.max(1, Math.floor(B.min));
       const bmax = Math.max(1, Math.floor(B.max));
 
-      setDyn("seatsPerRow", Math.ceil(cmin/Math.max(1,bmax)), Math.floor(cmax/Math.max(1,bmin)));
-      setDyn("rowsPerCar",  Math.ceil(cmin/Math.max(1,amax)), Math.floor(cmax/Math.max(1,amin)));
-      setDyn("seatsPerCar", amin*bmin, amax*bmax);
+      const A_low = Math.ceil(cmin / Math.max(1, bmax));
+      const A_high = Math.floor(cmax / Math.max(1, bmin));
+      setDyn("seatsPerRow", A_low, A_high);
+
+      const B_low = Math.ceil(cmin / Math.max(1, amax));
+      const B_high = Math.floor(cmax / Math.max(1, amin));
+      setDyn("rowsPerCar", B_low, B_high);
+
+      const C_low = amin * bmin;
+      const C_high = amax * bmax;
+      setDyn("seatsPerCar", C_low, C_high);
 
       updateDualUI("seatsPerRow");
       updateDualUI("rowsPerCar");
@@ -718,10 +723,18 @@ function sortRows(list, mode1, mode2, f){
       const dmin = Math.max(1, Math.floor(D.min));
       const dmax = Math.max(1, Math.floor(D.max));
 
+      const C_low2 = Math.ceil(emin / Math.max(1, dmax));
+      const C_high2 = Math.floor(emax / Math.max(1, dmin));
       const cur = sliderDyn["seatsPerCar"] || sliderAbs["seatsPerCar"];
-      setDyn("seatsPerCar", Math.max(cur.min, Math.ceil(emin/Math.max(1,dmax))), Math.min(cur.max, Math.floor(emax/Math.max(1,dmin))));
-      setDyn("carsPerTrain", Math.ceil(emin/Math.max(1,cmax2)), Math.floor(emax/Math.max(1,cmin2)));
-      setDyn("seatsPerTrain", cmin2*dmin, cmax2*dmax);
+      setDyn("seatsPerCar", Math.max(cur.min, C_low2), Math.min(cur.max, C_high2));
+
+      const D_low = Math.ceil(emin / Math.max(1, cmax2));
+      const D_high = Math.floor(emax / Math.max(1, cmin2));
+      setDyn("carsPerTrain", D_low, D_high);
+
+      const E_low = cmin2 * dmin;
+      const E_high = cmax2 * dmax;
+      setDyn("seatsPerTrain", E_low, E_high);
 
       updateDualUI("seatsPerCar");
       updateDualUI("carsPerTrain");
@@ -810,7 +823,6 @@ function sortRows(list, mode1, mode2, f){
   });
 
   function render(){
-    // tri anti-conflit (principal/secondaire)
     const fam1 = sortFamily(sortSel.value);
     for(const opt of Array.from(sort2Sel.options)){
       opt.disabled = (sortFamily(opt.value) === fam1);
@@ -883,19 +895,6 @@ function sortRows(list, mode1, mode2, f){
       return rr;
     });
 
-    // ✅ TRI DÉCROISSANT des options de CHAQUE filtre
-    for(const spec of FACET_SPECS){
-      const key = fields[spec.id];
-      if(!key){ facetOptions[spec.id] = []; continue; }
-
-      const opts = allRows
-        .map(r => normalizeFacetValue(spec.id, r[key]))
-        .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
-
-      facetOptions[spec.id] = Array.from(new Set(opts))
-        .sort((a,b)=> b.localeCompare(a,"fr")); // <-- décroissant
-    }
-
     initSlidersFromData();
     enforceSeatConstraints();
 
@@ -941,6 +940,18 @@ function sortRows(list, mode1, mode2, f){
       closeModal();
       render();
     });
+
+    // force full span at load
+    for(const spec of NUM_SPECS){
+      const abs = sliderAbs[spec.id];
+      const ui = sliderUI[spec.id];
+      if(!abs || !ui || ui.minEl.disabled) continue;
+      ui.minEl.value = String(abs.min);
+      ui.maxEl.value = String(abs.max);
+      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+      updateDualUI(spec.id);
+    }
+    enforceSeatConstraints();
 
     render();
 

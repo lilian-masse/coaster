@@ -80,9 +80,6 @@
       align-items: center;
       justify-content: space-between;
     }
-    .pager { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .pager button { width: auto; }
-    .pager .info { opacity: .8; font-size: 14px; }
     .empty { padding: 18px; border: 1px dashed #ddd; border-radius: 16px; opacity: .8; }
 
     @media (max-width: 980px){
@@ -101,7 +98,7 @@
 <body>
   <h1>Coasters</h1>
   <div class="muted">
-    Fiches avec recherche + filtres multi (Fabricants / Parcs), ouverture min/max (année), tri et pagination.
+    Fiches avec recherche + filtres multi (Fabricants / Parcs) + ouverture min/max (année) + tri.
     <span id="count" class="pill">…</span>
   </div>
 
@@ -156,16 +153,6 @@
       </select>
     </div>
 
-    <div class="field small">
-      <label for="pageSize">Par page</label>
-      <select id="pageSize">
-        <option>12</option>
-        <option selected>24</option>
-        <option>48</option>
-        <option>96</option>
-      </select>
-    </div>
-
     <div class="field actions">
       <button id="clear" type="button">Réinitialiser</button>
       <button id="clearYears" type="button">Effacer années</button>
@@ -175,18 +162,16 @@
   <div id="grid" class="grid"></div>
 
   <div class="footer">
-    <div class="pager">
-      <button id="prev" type="button">← Précédent</button>
-      <button id="next" type="button">Suivant →</button>
-      <span id="pageInfo" class="info"></span>
-    </div>
     <div class="info">
       <span class="pill" id="activeFilters">Filtres: aucun</span>
+    </div>
+    <div class="info">
+      <span id="status" class="pill">Affichage: tous</span>
     </div>
   </div>
 
   <script>
-    // IMPORTANT: ton JSON doit être ici dans ton repo:
+    // Ton JSON doit être ici dans ton repo :
     // /data/coasters_clean.json
     const dataUrl = "./data/coasters_clean.json";
 
@@ -263,29 +248,46 @@
     }
 
     function buildChecklist({containerEl, searchEl, allBtn, noneBtn, labels, onChange}){
+      // Préserve la sélection même quand on filtre la liste
+      const selected = new Set();
+
+      function syncSelectedFromDom(){
+        containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          if(cb.checked) selected.add(cb.value);
+          else selected.delete(cb.value);
+        });
+      }
+
       function draw(filterText){
         const ft = norm(filterText);
         const shown = labels.filter(l => norm(l).includes(ft));
 
         containerEl.innerHTML = shown.map(label => {
           const value = norm(label);
+          const checked = selected.has(value) ? "checked" : "";
           return `
             <div class="row">
-              <input type="checkbox" value="${escapeHtml(value)}" data-label="${escapeHtml(label)}" />
+              <input type="checkbox" value="${escapeHtml(value)}" ${checked} />
               <span>${escapeHtml(label)}</span>
             </div>
           `;
         }).join("");
 
         containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          cb.addEventListener("change", onChange);
+          cb.addEventListener("change", () => {
+            syncSelectedFromDom();
+            onChange();
+          });
         });
       }
 
       function setAll(checked){
-        containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          cb.checked = checked;
-        });
+        if(checked){
+          labels.forEach(label => selected.add(norm(label)));
+        } else {
+          selected.clear();
+        }
+        draw(searchEl.value);
         onChange();
       }
 
@@ -293,13 +295,14 @@
       allBtn.addEventListener("click", () => setAll(true));
       noneBtn.addEventListener("click", () => setAll(false));
 
-      draw("");
-    }
-
-    function getCheckedSet(listEl){
-      const set = new Set();
-      listEl.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => set.add(cb.value));
-      return set;
+      // API simple pour lire/écrire la sélection
+      return {
+        draw,
+        getSelectedSet: () => new Set(selected),
+        clear: () => { selected.clear(); draw(""); },
+        selectAll: () => setAll(true),
+        selectNone: () => setAll(false),
+      };
     }
 
     function renderCard(row, f){
@@ -310,15 +313,9 @@
         title = firstNonEmpty ?? "Fiche";
       }
 
-      // Sous-titre
+      // Sous-titre: uniquement le parc (pas l'année)
       const subParts = [];
       if (f.parkField && row[f.parkField]) subParts.push(row[f.parkField]);
-
-      if (f.yearField && row[f.yearField] !== null && row[f.yearField] !== undefined && String(row[f.yearField]).trim() !== ""){
-        const y = toYear(row[f.yearField]);
-        subParts.push("Ouverture: " + (y ?? row[f.yearField]));
-      }
-
       const sub = subParts.join(" • ");
 
       // Champs affichés
@@ -364,8 +361,7 @@
       `;
     }
 
-    function sortRows(list, state, f){
-      const mode = state.sort;
+    function sortRows(list, mode, f){
       const getYear = (r) => f.yearField ? toYear(r[f.yearField]) : null;
       const getName = (r) => f.nameField ? String(r[f.nameField] ?? "") : "";
 
@@ -381,22 +377,20 @@
       if(mode === "name_desc"){
         return list.slice().sort((a,b) => getName(b).localeCompare(getName(a), "fr"));
       }
-      // relevance: ordre d'origine
-      return list;
+      return list; // relevance
     }
 
     // ---- App
     (async function init(){
       const grid = document.getElementById("grid");
       const countEl = document.getElementById("count");
-      const pageInfoEl = document.getElementById("pageInfo");
       const activeFiltersEl = document.getElementById("activeFilters");
+      const statusEl = document.getElementById("status");
 
       const qEl = document.getElementById("q");
       const yearMinEl = document.getElementById("yearMin");
       const yearMaxEl = document.getElementById("yearMax");
       const sortSel = document.getElementById("sort");
-      const pageSizeSel = document.getElementById("pageSize");
 
       const makerSearch = document.getElementById("makerSearch");
       const makerList = document.getElementById("makerList");
@@ -408,9 +402,6 @@
       const parkAll = document.getElementById("parkAll");
       const parkNone = document.getElementById("parkNone");
 
-      const prevBtn = document.getElementById("prev");
-      const nextBtn = document.getElementById("next");
-
       const res = await fetch(dataUrl);
       if(!res.ok){
         grid.innerHTML = `<div class="empty">Impossible de charger <code>${dataUrl}</code>. Vérifie que le fichier existe bien dans <code>/data/</code>.</div>`;
@@ -419,191 +410,9 @@
       const rows = await res.json();
       const sample = rows[0] || {};
 
-      // Champs adaptés à ton JSON FR (ajuste ici si besoin)
+      // Champs adaptés à ton JSON FR
       const f = {
         nameField: pickField(sample, ["Nom", "Coaster", "Name", "name", "coaster", "ride", "attraction"]),
         parkField: pickField(sample, ["Parc", "Park", "park", "parc", "location"]),
         makerField: pickField(sample, ["Fabricant", "Fabricant_2", "Constructeur", "Manufacturer", "manufacturer", "maker", "builder"]),
-        yearField: pickField(sample, ["Ouverture", "Année", "Annee", "Year", "year", "opened", "opening_year"]),
-        speedField: pickField(sample, ["Vitesse", "Speed", "speed", "top_speed"]),
-        heightField: pickField(sample, ["Hauteur", "Height", "height"]),
-        lengthField: pickField(sample, ["Longueur", "Length", "length"]),
-        inversionsField: pickField(sample, ["Inversions", "inversions", "nb_inversions"]),
-      };
-
-      const makerBox = document.getElementById("makerBox");
-      const parkBox  = document.getElementById("parkBox");
-
-      const makerLabels = f.makerField ? uniqueSortedLabels(rows.map(r => r[f.makerField])) : [];
-      const parkLabels  = f.parkField  ? uniqueSortedLabels(rows.map(r => r[f.parkField]))  : [];
-
-      let page = 1;
-
-      function getPageSize(){
-        const n = parseInt(pageSizeSel.value, 10);
-        return Number.isFinite(n) && n > 0 ? n : 24;
-      }
-
-      function parseYearInput(el){
-        const s = String(el.value ?? "").trim();
-        if(!s) return null;
-        const n = Number(s);
-        return Number.isFinite(n) ? Math.trunc(n) : null;
-      }
-
-      function activeFiltersText(state){
-        const parts = [];
-        if(state.q) parts.push(`Recherche: “${state.q}”`);
-        if(state.makers.size) parts.push(`Fabricants: ${state.makers.size}`);
-        if(state.parks.size) parts.push(`Parcs: ${state.parks.size}`);
-        if(state.ymin !== null) parts.push(`Ouverture ≥ ${state.ymin}`);
-        if(state.ymax !== null) parts.push(`Ouverture ≤ ${state.ymax}`);
-        return parts.length ? parts.join(" • ") : "aucun";
-      }
-
-      function render(){
-        const makersSet = getCheckedSet(makerList);
-        const parksSet  = getCheckedSet(parkList);
-
-        const state = {
-          q: norm(qEl.value),
-          makers: makersSet,
-          parks: parksSet,
-          ymin: parseYearInput(yearMinEl),
-          ymax: parseYearInput(yearMaxEl),
-          sort: sortSel.value,
-        };
-
-        let filtered = rows.filter(r => {
-          if(!matchesQuery(r, state.q)) return false;
-
-          if(f.makerField && state.makers.size){
-            if(!state.makers.has(norm(r[f.makerField]))) return false;
-          }
-          if(f.parkField && state.parks.size){
-            if(!state.parks.has(norm(r[f.parkField]))) return false;
-          }
-
-          if(f.yearField && (state.ymin !== null || state.ymax !== null)){
-            const y = toYear(r[f.yearField]);
-            if(y === null) return false;
-            if(state.ymin !== null && y < state.ymin) return false;
-            if(state.ymax !== null && y > state.ymax) return false;
-          }
-
-          return true;
-        });
-
-        filtered = sortRows(filtered, state, f);
-
-        const pageSize = getPageSize();
-        const total = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-        if(page > totalPages) page = totalPages;
-        if(page < 1) page = 1;
-
-        const start = (page - 1) * pageSize;
-        const slice = filtered.slice(start, start + pageSize);
-
-        countEl.textContent = `${total} résultat(s)`;
-        activeFiltersEl.textContent = "Filtres: " + activeFiltersText(state);
-
-        prevBtn.disabled = page <= 1;
-        nextBtn.disabled = page >= totalPages;
-        pageInfoEl.textContent = `Page ${page} / ${totalPages} (affiche ${slice.length} sur ${total})`;
-
-        if(total === 0){
-          grid.innerHTML = `<div class="empty">Aucun résultat. Essaie d’enlever un filtre.</div>`;
-          return;
-        }
-        grid.innerHTML = slice.map(r => renderCard(r, f)).join("");
-      }
-
-      // Build checklists
-      if(f.makerField){
-        buildChecklist({
-          containerEl: makerList,
-          searchEl: makerSearch,
-          allBtn: makerAll,
-          noneBtn: makerNone,
-          labels: makerLabels,
-          onChange: () => { page = 1; render(); }
-        });
-      } else {
-        makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé dans les données.</div>`;
-      }
-
-      if(f.parkField){
-        buildChecklist({
-          containerEl: parkList,
-          searchEl: parkSearch,
-          allBtn: parkAll,
-          noneBtn: parkNone,
-          labels: parkLabels,
-          onChange: () => { page = 1; render(); }
-        });
-      } else {
-        parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé dans les données.</div>`;
-      }
-
-      // Events
-      qEl.addEventListener("input", () => { page = 1; render(); });
-      yearMinEl.addEventListener("input", () => { page = 1; render(); });
-      yearMaxEl.addEventListener("input", () => { page = 1; render(); });
-      sortSel.addEventListener("change", () => { page = 1; render(); });
-      pageSizeSel.addEventListener("change", () => { page = 1; render(); });
-
-      prevBtn.addEventListener("click", () => { page -= 1; render(); });
-      nextBtn.addEventListener("click", () => { page += 1; render(); });
-
-      document.getElementById("clear").addEventListener("click", () => {
-        qEl.value = "";
-        yearMinEl.value = "";
-        yearMaxEl.value = "";
-        sortSel.value = "relevance";
-
-        makerList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        parkList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-
-        // reset recherches dans listes
-        makerSearch.value = "";
-        parkSearch.value = "";
-        // redessiner listes
-        if(f.makerField){
-          buildChecklist({
-            containerEl: makerList,
-            searchEl: makerSearch,
-            allBtn: makerAll,
-            noneBtn: makerNone,
-            labels: makerLabels,
-            onChange: () => { page = 1; render(); }
-          });
-        }
-        if(f.parkField){
-          buildChecklist({
-            containerEl: parkList,
-            searchEl: parkSearch,
-            allBtn: parkAll,
-            noneBtn: parkNone,
-            labels: parkLabels,
-            onChange: () => { page = 1; render(); }
-          });
-        }
-
-        page = 1;
-        render();
-      });
-
-      document.getElementById("clearYears").addEventListener("click", () => {
-        yearMinEl.value = "";
-        yearMaxEl.value = "";
-        page = 1;
-        render();
-      });
-
-      // première render
-      render();
-    })();
-  </script>
-</body>
-</html>
+        yearField: pickField(sample

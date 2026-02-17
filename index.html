@@ -6,6 +6,10 @@
 <title>Coasters — Fiches</title>
 
 <style>
+  :root{
+    --b:#e6e6e6; --bg:#fff; --muted:rgba(0,0,0,.65);
+    --shadow:0 1px 6px rgba(0,0,0,.04);
+  }
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
   h1{margin:0 0 10px}
   .bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:22px;align-items:start}
@@ -13,41 +17,45 @@
   input,select,button{padding:9px 10px;font-size:14px;width:100%;box-sizing:border-box}
   button{cursor:pointer}
 
-  .multibox{border:1px solid #e6e6e6;border-radius:12px;padding:10px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.03)}
-  .multibox .list{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px}
-  .multibox .row{display:flex;gap:8px;align-items:center;padding:6px 2px;font-size:13px}
-  .multibox .row input{width:auto}
+  .box{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
+  .boxTitle{font-weight:700;font-size:13px;margin:0 0 8px}
+  .list{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px}
+  .row{display:flex;gap:8px;align-items:center;padding:6px 2px;font-size:13px}
+  .row input{width:auto}
+  .row small{opacity:.65;margin-left:auto}
   .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .tools button{width:auto;padding:8px 10px;font-size:13px}
 
-  .range-wrap{position:relative;height:36px}
-  .range-wrap input[type="range"]{
+  .rangeWrap{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
+  .rangeHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .rangeHead .name{font-weight:700;font-size:13px}
+  .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px;opacity:.9}
+
+  .dual{position:relative;height:36px}
+  .dual input[type="range"]{
     position:absolute;left:0;top:9px;width:100%;
     margin:0;padding:0;background:none;
     pointer-events:none;-webkit-appearance:none;appearance:none;height:18px
   }
-  .range-wrap input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:transparent}
-  .range-wrap input[type="range"]::-webkit-slider-thumb{
+  .dual input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:transparent}
+  .dual input[type="range"]::-webkit-slider-thumb{
     -webkit-appearance:none;appearance:none;pointer-events:auto;
     height:16px;width:16px;border-radius:50%;
     border:1px solid #999;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.12);cursor:pointer
   }
   .track{position:absolute;left:0;right:0;top:15px;height:6px;background:#eee;border-radius:999px}
-  .range{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
-  .range-meta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
-  .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px}
+  .fill{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
+  .rangeMeta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
   .card{
-    border:1px solid #e6e6e6;border-radius:14px;background:#fff;
-    box-shadow:0 1px 6px rgba(0,0,0,.04);
-    padding:14px;
-    cursor:pointer;
+    border:1px solid var(--b);border-radius:14px;background:#fff;
+    box-shadow:var(--shadow);padding:14px;cursor:pointer;
   }
   .card:focus{outline:2px solid #cfcfcf;outline-offset:2px}
   .title{font-weight:750;margin:0 0 6px;font-size:16px}
   .sub{opacity:.75;margin:0 0 10px;font-size:13px}
-  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 10px;font-size:13px}
   .k{opacity:.6}
   .v{word-break:break-word}
 
@@ -65,74 +73,39 @@
     z-index:1000;
   }
   .modalOverlay.open{display:flex}
-
-  .modalWrap{
-    position:relative;
-    width:min(820px, 100%);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-
+  .modalWrap{position:relative;width:min(820px, 100%);display:flex;align-items:center;justify-content:center}
   .modal{
-    width:100%;
-    max-height:min(82vh, 820px);
-    overflow:auto;
-    background:#fff;
-    border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.25);
-    border:1px solid #eee;
+    width:100%;max-height:min(82vh, 820px);overflow:auto;background:#fff;border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid #eee;
   }
-  .modalHeader{
-    position:sticky;top:0;
-    background:#fff;
-    border-bottom:1px solid #eee;
-    padding:14px 16px;
-  }
+  .modalHeader{position:sticky;top:0;background:#fff;border-bottom:1px solid #eee;padding:14px 16px}
   .modalTitle{font-weight:800;margin:0;font-size:18px;line-height:1.25}
   .modalSub{margin:4px 0 0;opacity:.7;font-size:13px}
   .modalBody{padding:14px 16px 18px}
-  .modalGrid{display:grid;grid-template-columns:160px 1fr;gap:8px 12px;font-size:14px}
+  .modalGrid{display:grid;grid-template-columns:180px 1fr;gap:8px 12px;font-size:14px}
   .modalK{opacity:.65}
   .modalV{word-break:break-word}
-  @media (max-width:560px){
-    .modalGrid{grid-template-columns:1fr;gap:6px}
-  }
+  @media (max-width:560px){ .modalGrid{grid-template-columns:1fr;gap:6px} }
 
-  /* Flèches gauche/droite */
+  /* Flèches */
   .navArrow{
-    position:absolute;
-    top:50%;
-    transform:translateY(-50%);
-    width:46px;height:46px;
-    border-radius:999px;
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:46px;height:46px;border-radius:999px;
     border:1px solid rgba(255,255,255,.35);
-    background:rgba(0,0,0,.28);
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    user-select:none;
-    font-size:26px;
-    line-height:1;
-    padding:0;
+    background:rgba(0,0,0,.28);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;font-size:26px;line-height:1;padding:0;
   }
   .navArrow:hover{background:rgba(0,0,0,.38)}
   .navArrow:focus{outline:2px solid rgba(255,255,255,.65);outline-offset:2px}
-  .navArrow[disabled]{opacity:.25;cursor:not-allowed}
-
   .navLeft{left:-10px}
   .navRight{right:-10px}
-
-  /* ✅ on cache complètement si disabled */
   .navArrow[disabled]{display:none}
-
   @media (max-width:520px){
-    .navLeft{left:4px}
-    .navRight{right:4px}
-    .navArrow{width:42px;height:42px;font-size:24px}
+    .navLeft{left:4px}.navRight{right:4px}.navArrow{width:42px;height:42px;font-size:24px}
   }
+
+  .sectionTitle{font-weight:800;margin:18px 0 8px;font-size:14px;opacity:.85}
 </style>
 </head>
 
@@ -143,42 +116,6 @@
   <div>
     <label>Recherche</label>
     <input id="q" placeholder="Rechercher…">
-  </div>
-
-  <div>
-    <label>Fabricants</label>
-    <div class="multibox" id="makerBox">
-      <input id="makerSearch" placeholder="Filtrer fabricant…">
-      <div id="makerList" class="list"></div>
-      <div class="tools">
-        <button id="makerClear" type="button">Effacer</button>
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <label>Parcs</label>
-    <div class="multibox" id="parkBox">
-      <input id="parkSearch" placeholder="Filtrer parc…">
-      <div id="parkList" class="list"></div>
-      <div class="tools">
-        <button id="parkClear" type="button">Effacer</button>
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <label>Ouverture</label>
-    <div class="range-wrap">
-      <div class="track"></div>
-      <div id="rangeFill" class="range"></div>
-      <input id="yearMin" type="range" aria-label="Année minimum">
-      <input id="yearMax" type="range" aria-label="Année maximum">
-    </div>
-    <div class="range-meta">
-      <span class="pill" id="minLabel">—</span>
-      <span class="pill" id="maxLabel">—</span>
-    </div>
   </div>
 
   <div>
@@ -199,15 +136,30 @@
     </select>
   </div>
 
+  <div class="box">
+    <div class="boxTitle">Eau ?</div>
+    <label class="row" style="padding:0;margin:0;gap:10px">
+      <input id="waterOnly" type="checkbox">
+      <span>Afficher seulement les coasters “Eau”</span>
+      <small id="waterCount">—</small>
+    </label>
+  </div>
+
   <div style="align-self:end">
     <button id="clear" type="button">Réinitialiser</button>
   </div>
 </div>
 
+<div class="sectionTitle">Filtres</div>
+<div class="bar" id="facetBar"></div>
+
+<div class="sectionTitle">Plages numériques</div>
+<div class="bar" id="sliderBar"></div>
+
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
-<!-- MODALE (sans bouton Fermer) + flèches -->
+<!-- MODALE -->
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="modalWrap">
     <button id="navLeft" class="navArrow navLeft" type="button" aria-label="Précédent">‹</button>
@@ -228,59 +180,24 @@
 <script>
 const dataUrl = "./data/coasters_clean.json";
 
-/* DOM */
-const qEl = document.getElementById("q");
-const sortSel = document.getElementById("sort");
-const sort2Sel = document.getElementById("sort2");
+/* ---------- Utils ---------- */
+const $ = (id)=>document.getElementById(id);
 
-const makerBox = document.getElementById("makerBox");
-const parkBox  = document.getElementById("parkBox");
-const makerList = document.getElementById("makerList");
-const parkList  = document.getElementById("parkList");
-const makerSearch = document.getElementById("makerSearch");
-const parkSearch  = document.getElementById("parkSearch");
+function showError(msg){ $("err").style.display="block"; $("err").textContent = msg; }
+function clearError(){ $("err").style.display="none"; $("err").textContent = ""; }
 
-const grid = document.getElementById("grid");
-const errBox = document.getElementById("err");
-
-const yearMinEl = document.getElementById("yearMin");
-const yearMaxEl = document.getElementById("yearMax");
-const fill = document.getElementById("rangeFill");
-const minLabel = document.getElementById("minLabel");
-const maxLabel = document.getElementById("maxLabel");
-
-/* Modal */
-const modalOverlay = document.getElementById("modalOverlay");
-const modalTitleEl = document.getElementById("modalTitle");
-const modalSubEl = document.getElementById("modalSub");
-const modalGridEl = document.getElementById("modalGrid");
-const navLeftBtn = document.getElementById("navLeft");
-const navRightBtn = document.getElementById("navRight");
-
-function showError(msg){ errBox.style.display="block"; errBox.textContent = msg; }
-function clearError(){ errBox.style.display="none"; errBox.textContent = ""; }
-
-function norm(v){ return String(v ?? "").trim().toLowerCase(); }
+function norm(s){
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // accents
+    .replace(/\s+/g," ")
+    .trim();
+}
 function esc(s){
   return String(s ?? "")
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
-
-function pickField(obj, candidates){
-  const keys = Object.keys(obj || {});
-  const lower = new Map(keys.map(k => [k.toLowerCase(), k]));
-  for(const c of candidates){
-    const hit = lower.get(String(c).toLowerCase());
-    if(hit) return hit;
-  }
-  for(const k of keys){
-    const kl = k.toLowerCase();
-    if(candidates.some(c => kl.includes(String(c).toLowerCase()))) return k;
-  }
-  return null;
-}
-
 function toNumber(v){
   const s = String(v ?? "").trim();
   if(!s) return null;
@@ -288,77 +205,116 @@ function toNumber(v){
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
-
+// timestamps positifs & négatifs, ou année déjà
 function toYear(v){
   const n = toNumber(v);
   if(n === null) return null;
   if(n >= 1800 && n <= 2200) return Math.trunc(n);
-
   const a = Math.abs(n);
-  if(a > 1e11){
-    const y = new Date(n).getUTCFullYear();
-    return Number.isFinite(y) ? y : null;
+  if(a > 1e11){ const y = new Date(n).getUTCFullYear(); return Number.isFinite(y) ? y : null; }
+  if(a > 1e9){ const y = new Date(n*1000).getUTCFullYear(); return Number.isFinite(y) ? y : null; }
+  return null;
+}
+function titleizeKey(k){
+  const s = String(k ?? "").replace(/_/g," ").trim();
+  if(!s) return "Champ";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function sortFamily(mode){ return String(mode||"").split("_")[0]; }
+
+/* ---------- Field detection (robuste) ---------- */
+function pickField(obj, candidates){
+  const keys = Object.keys(obj || {});
+  const map = new Map(keys.map(k => [norm(k), k]));
+  // exact normalized
+  for(const c of candidates){
+    const hit = map.get(norm(c));
+    if(hit) return hit;
   }
-  if(a > 1e9){
-    const y = new Date(n * 1000).getUTCFullYear();
-    return Number.isFinite(y) ? y : null;
+  // contains
+  for(const k of keys){
+    const nk = norm(k);
+    if(candidates.some(c => nk.includes(norm(c)))) return k;
   }
   return null;
 }
 
-function sortFamily(mode){
-  return String(mode || "").split("_")[0]; // "park" ou "year"
+/* ---------- Config demanded by user ---------- */
+const FACET_SPECS = [
+  { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
+  { id:"park", label:"Parc", candidates:["Parc","Park"] },
+
+  { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
+  { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"] },
+  { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"] },
+  { id:"structure", label:"Structure", candidates:["Structure","Structure type"] },
+  { id:"particularity", label:"Particularité", candidates:["Particularite","Particularité","Particularity","Spécificité","Specificite"] },
+  { id:"rotation", label:"Rotation", candidates:["Rotation","Rotating"] },
+  { id:"layout", label:"Disposition", candidates:["Disposition","Layout","Implantation"] },
+  { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
+];
+
+const NUM_SPECS = [
+  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1 },
+  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:0.1 },
+  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:0.1 },
+  { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
+  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1 },
+  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:0.1 },
+  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1 },
+
+  // sièges / trains (avec contraintes)
+  { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
+  { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
+  { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"], step:1, integer:true },
+
+  { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
+  { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"], step:1, integer:true },
+];
+
+const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];
+
+/* ---------- UI builders ---------- */
+function createFacetBox(spec){
+  const box = document.createElement("div");
+  box.className = "box";
+  box.innerHTML = `
+    <div class="boxTitle">${esc(spec.label)}</div>
+    <input id="search_${spec.id}" placeholder="Filtrer…">
+    <div id="list_${spec.id}" class="list"></div>
+    <div class="tools">
+      <button id="clear_${spec.id}" type="button">Effacer</button>
+    </div>
+  `;
+  return box;
 }
 
-function clampSwap(){
-  let a = parseInt(yearMinEl.value, 10);
-  let b = parseInt(yearMaxEl.value, 10);
-  if(a > b){
-    const t = a; a = b; b = t;
-    yearMinEl.value = String(a);
-    yearMaxEl.value = String(b);
-  }
-  return {min:a, max:b};
+function createDualSlider(spec){
+  const wrap = document.createElement("div");
+  wrap.className = "rangeWrap";
+  wrap.innerHTML = `
+    <div class="rangeHead">
+      <span class="name">${esc(spec.label)}</span>
+      <span class="pill" id="pill_${spec.id}">—</span>
+    </div>
+    <div class="dual" id="dual_${spec.id}">
+      <div class="track"></div>
+      <div class="fill" id="fill_${spec.id}"></div>
+      <input id="${spec.id}_min" type="range" aria-label="${esc(spec.label)} min">
+      <input id="${spec.id}_max" type="range" aria-label="${esc(spec.label)} max">
+    </div>
+    <div class="rangeMeta">
+      <span id="lab_${spec.id}_min">—</span>
+      <span id="lab_${spec.id}_max">—</span>
+    </div>
+  `;
+  return wrap;
 }
 
-function updateSliderUI(absMin, absMax){
-  const {min, max} = clampSwap();
-  minLabel.textContent = String(min);
-  maxLabel.textContent = String(max);
-
-  const total = (absMax - absMin) || 1;
-  const left = ((min - absMin) / total) * 100;
-  const right = ((max - absMin) / total) * 100;
-
-  fill.style.left = left + "%";
-  fill.style.width = Math.max(0, right - left) + "%";
-  return {min, max};
-}
-
-function uniqueSorted(values){
-  const cleaned = values
-    .map(v => String(v ?? "").trim())
-    .filter(v => v !== "" && v.toLowerCase() !== "unknown" && v !== "-" && v !== "—" && v.toLowerCase() !== "n/a");
-  return Array.from(new Set(cleaned)).sort((a,b)=>a.localeCompare(b,"fr"));
-}
-
-function matchesQuery(row, q){
-  if(!q) return true;
-  const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
-  return text.includes(q);
-}
-
-function hasCoasterName(row, nameField){
-  if(!nameField) return false;
-  const n = String(row[nameField] ?? "").trim().toLowerCase();
-  if(!n) return false;
-  if(n === "n/a" || n === "na" || n === "unknown" || n === "-" || n === "—") return false;
-  return true;
-}
-
+/* ---------- Sorting ---------- */
 function sortRows(list, mode1, mode2, f){
-  const getYear = (r) => f.year ? (toYear(r[f.year]) ?? null) : null;
-  const getPark = (r) => f.park ? String(r[f.park] ?? "") : "";
+  const getYear = (r)=> f.year ? (toYear(r[f.year]) ?? null) : null;
+  const getPark = (r)=> f.park ? String(r[f.park] ?? "") : "";
 
   function cmp(mode, a, b){
     if(mode === "year_desc") return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
@@ -368,309 +324,637 @@ function sortRows(list, mode1, mode2, f){
   }
 
   return list.slice().sort((a,b)=>{
-    let c = cmp(mode1, a, b);
-    if(c !== 0) return c;
-    c = cmp(mode2, a, b);
-    if(c !== 0) return c;
-    c = cmp("park_asc", a, b);
-    if(c !== 0) return c;
-    return cmp("year_asc", a, b);
+    let c = cmp(mode1,a,b); if(c!==0) return c;
+    c = cmp(mode2,a,b); if(c!==0) return c;
+    c = cmp("park_asc",a,b); if(c!==0) return c;
+    return cmp("year_asc",a,b);
   });
 }
 
-function titleizeKey(k){
-  const s = String(k ?? "").replace(/_/g," ").trim();
-  if(!s) return "Champ";
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+/* ---------- Main ---------- */
+(async function(){
+  clearError();
 
-function drawChecklist(containerEl, labels, selectedSet, searchEl, onChange){
-  function draw(){
-    const ft = norm(searchEl.value);
-    const shown = labels.filter(l => norm(l).includes(ft));
+  // DOM refs
+  const facetBar = $("facetBar");
+  const sliderBar = $("sliderBar");
+  const grid = $("grid");
+  const qEl = $("q");
+  const sortSel = $("sort");
+  const sort2Sel = $("sort2");
+  const waterOnlyEl = $("waterOnly");
+  const waterCountEl = $("waterCount");
+  const navLeftBtn = $("navLeft");
+  const navRightBtn = $("navRight");
+  const modalOverlay = $("modalOverlay");
+  const modalTitleEl = $("modalTitle");
+  const modalSubEl = $("modalSub");
+  const modalGridEl = $("modalGrid");
 
-    containerEl.innerHTML = shown.map(label => {
-      const checked = selectedSet.has(label) ? "checked" : "";
+  let allRows = [];
+  let fields = {};        // mapping specId -> real key in JSON (or null)
+  let numFields = {};     // id -> key
+  let waterField = null;  // key for water boolean OR null (we'll derive)
+
+  // state
+  const selected = {};          // facetId -> Set
+  const facetOptions = {};      // facetId -> [labels]
+  const facetUI = {};           // facetId -> {listEl, searchEl, clearBtn}
+  const sliderUI = {};          // numId -> refs
+  const sliderAbs = {};         // numId -> {min,max,step,integer}
+  const sliderDyn = {};         // numId -> {min,max} dynamic bounds
+  const sliderVal = {};         // numId -> {min,max} current chosen
+  let waterOnly = false;
+
+  // modal nav
+  let lastRendered = [];
+  let currentIndex = -1;
+
+  function detectAllFields(sample){
+    const out = {};
+    for(const spec of FACET_SPECS){
+      out[spec.id] = pickField(sample, spec.candidates);
+    }
+    const numOut = {};
+    for(const spec of NUM_SPECS){
+      numOut[spec.id] = pickField(sample, spec.candidates);
+    }
+    // water field (optional)
+    waterField = pickField(sample, WATER_CANDIDATES);
+    return { out, numOut };
+  }
+
+  function parseWater(row){
+    // If explicit field exists:
+    if(waterField){
+      const v = row[waterField];
+      const s = norm(v);
+      if(!s) return false;
+      return ["1","true","oui","yes","y","water","eau","splash"].some(t => s === t || s.includes(t));
+    }
+    // Otherwise: try infer from "Particularité" or "Modèle" or any string field
+    const blob = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
+    return blob.includes("eau") || blob.includes("water") || blob.includes("splash");
+  }
+
+  function computeDerivedSeats(row){
+    // Try reading numeric values from detected fields (if exist)
+    const aKey = numFields.seatsPerRow;
+    const bKey = numFields.rowsPerCar;
+    const cKey = numFields.seatsPerCar;
+
+    const dKey = numFields.carsPerTrain;
+    const eKey = numFields.seatsPerTrain;
+
+    const a = aKey ? toNumber(row[aKey]) : null;
+    const b = bKey ? toNumber(row[bKey]) : null;
+    const c = cKey ? toNumber(row[cKey]) : null;
+
+    const d = dKey ? toNumber(row[dKey]) : null;
+    const e = eKey ? toNumber(row[eKey]) : null;
+
+    // Derivations requested:
+    // seats/row * rows/car = seats/car
+    if((cKey && (c === null)) && (a !== null && b !== null)){
+      row[cKey] = a * b;
+    }
+    // seats/car * cars/train = seats/train
+    if((eKey && (e === null)) && (d !== null) && ((cKey ? toNumber(row[cKey]) : c) !== null)){
+      row[eKey] = (toNumber(row[cKey]) ?? c) * d;
+    }
+  }
+
+  function clampSwap(minEl, maxEl){
+    let a = Number(minEl.value);
+    let b = Number(maxEl.value);
+    if(a > b){
+      const t=a; a=b; b=t;
+      minEl.value = String(a);
+      maxEl.value = String(b);
+    }
+    return {min:a, max:b};
+  }
+
+  function updateDualUI(id){
+    const ui = sliderUI[id];
+    const abs = sliderAbs[id];
+    const dyn = sliderDyn[id] || abs;
+
+    // apply dynamic bounds
+    ui.minEl.min = String(dyn.min);
+    ui.maxEl.min = String(dyn.min);
+    ui.minEl.max = String(dyn.max);
+    ui.maxEl.max = String(dyn.max);
+
+    // clamp values within bounds
+    let minV = Number(ui.minEl.value);
+    let maxV = Number(ui.maxEl.value);
+    minV = Math.max(dyn.min, Math.min(dyn.max, minV));
+    maxV = Math.max(dyn.min, Math.min(dyn.max, maxV));
+    if(minV > maxV){ const t=minV; minV=maxV; maxV=t; }
+    ui.minEl.value = String(minV);
+    ui.maxEl.value = String(maxV);
+
+    sliderVal[id] = {min:minV, max:maxV};
+
+    // fill
+    const total = (dyn.max - dyn.min) || 1;
+    const left = ((minV - dyn.min) / total) * 100;
+    const right = ((maxV - dyn.min) / total) * 100;
+    ui.fillEl.style.left = left + "%";
+    ui.fillEl.style.width = Math.max(0, right - left) + "%";
+
+    // labels
+    ui.labMin.textContent = String(minV);
+    ui.labMax.textContent = String(maxV);
+    ui.pill.textContent = `${minV} → ${maxV}`;
+  }
+
+  function buildFacetUI(){
+    facetBar.innerHTML = "";
+    for(const spec of FACET_SPECS){
+      const key = fields[spec.id];
+      // If column not found, we still show box but with message
+      const box = createFacetBox(spec);
+      facetBar.appendChild(box);
+
+      const searchEl = box.querySelector(`#search_${spec.id}`);
+      const listEl = box.querySelector(`#list_${spec.id}`);
+      const clearBtn = box.querySelector(`#clear_${spec.id}`);
+
+      facetUI[spec.id] = {searchEl, listEl, clearBtn};
+
+      selected[spec.id] = new Set();
+
+      clearBtn.addEventListener("click", ()=>{
+        selected[spec.id].clear();
+        render();
+      });
+
+      searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
+    }
+  }
+
+  function buildSliderUI(){
+    sliderBar.innerHTML = "";
+    for(const spec of NUM_SPECS){
+      const wrap = createDualSlider(spec);
+      sliderBar.appendChild(wrap);
+
+      const minEl = wrap.querySelector(`#${spec.id}_min`);
+      const maxEl = wrap.querySelector(`#${spec.id}_max`);
+      const fillEl = wrap.querySelector(`#fill_${spec.id}`);
+      const labMin = wrap.querySelector(`#lab_${spec.id}_min`);
+      const labMax = wrap.querySelector(`#lab_${spec.id}_max`);
+      const pill = wrap.querySelector(`#pill_${spec.id}`);
+
+      sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
+
+      minEl.addEventListener("input", ()=>{
+        clampSwap(minEl,maxEl);
+        enforceSeatConstraints(); // may adjust bounds
+        render();
+      });
+      maxEl.addEventListener("input", ()=>{
+        clampSwap(minEl,maxEl);
+        enforceSeatConstraints();
+        render();
+      });
+    }
+  }
+
+  function initSlidersFromData(){
+    for(const spec of NUM_SPECS){
+      const key = numFields[spec.id];
+      const ui = sliderUI[spec.id];
+
+      // if key missing, disable the control (but keep visible)
+      if(!key){
+        ui.minEl.disabled = true;
+        ui.maxEl.disabled = true;
+        ui.pill.textContent = "— (champ introuvable)";
+        ui.labMin.textContent = "—";
+        ui.labMax.textContent = "—";
+        continue;
+      }
+
+      let values = allRows
+        .map(r => spec.isYear ? toYear(r[key]) : toNumber(r[key]))
+        .filter(v => Number.isFinite(v));
+
+      if(values.length === 0){
+        ui.minEl.disabled = true;
+        ui.maxEl.disabled = true;
+        ui.pill.textContent = "— (pas de valeurs)";
+        ui.labMin.textContent = "—";
+        ui.labMax.textContent = "—";
+        continue;
+      }
+
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+
+      // normalize for integer/steps
+      const step = spec.step ?? 1;
+      const integer = !!spec.integer || step === 1;
+
+      if(integer){
+        min = Math.floor(min);
+        max = Math.ceil(max);
+      }
+
+      sliderAbs[spec.id] = {min, max, step, integer};
+      sliderDyn[spec.id] = {min, max};
+
+      ui.minEl.step = String(step);
+      ui.maxEl.step = String(step);
+
+      ui.minEl.value = String(min);
+      ui.maxEl.value = String(max);
+
+      updateDualUI(spec.id);
+    }
+  }
+
+  /* ---------- Filtering logic ---------- */
+  function passesSearch(row){
+    const q = norm(qEl.value);
+    if(!q) return true;
+    const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
+    return text.includes(q);
+  }
+
+  function passesFacets(row){
+    for(const spec of FACET_SPECS){
+      const set = selected[spec.id];
+      if(!set || set.size === 0) continue;
+      const key = fields[spec.id];
+      const v = String(row[key] ?? "").trim();
+      if(!set.has(v)) return false;
+    }
+    return true;
+  }
+
+  function passesSliders(row){
+    for(const spec of NUM_SPECS){
+      const key = numFields[spec.id];
+      const ui = sliderUI[spec.id];
+      if(!key || ui.minEl.disabled) continue;
+
+      const {min, max} = sliderVal[spec.id] || sliderAbs[spec.id];
+      const val = spec.isYear ? toYear(row[key]) : toNumber(row[key]);
+
+      // If null -> keep only if full range (same logic as before)
+      if(val === null){
+        const abs = sliderAbs[spec.id];
+        if(min !== abs.min || max !== abs.max) return false;
+      } else {
+        if(val < min || val > max) return false;
+      }
+    }
+    return true;
+  }
+
+  function passesWater(row){
+    if(!waterOnly) return true;
+    return !!row.__water;
+  }
+
+  function passesAll(row){
+    // exclude cards without coaster name
+    const nameKey = numFields.name || fields.name; // not used; we detect separately below
+    const n = String(row[fields.name] ?? "").trim();
+    if(!n) return false;
+
+    return passesSearch(row) && passesSliders(row) && passesFacets(row) && passesWater(row);
+  }
+
+  /* ---------- Faceted disabling (counts) ---------- */
+  function filterRowsExcludingFacet(excludeFacetId){
+    return allRows.filter(r=>{
+      // always exclude empty-name rows
+      const n = String(r[fields.name] ?? "").trim();
+      if(!n) return false;
+
+      if(!passesSearch(r)) return false;
+      if(!passesSliders(r)) return false;
+      if(!passesWater(r)) return false;
+
+      // apply all facets except excludeFacetId
+      for(const spec of FACET_SPECS){
+        if(spec.id === excludeFacetId) continue;
+        const set = selected[spec.id];
+        if(set && set.size){
+          const key = fields[spec.id];
+          const v = String(r[key] ?? "").trim();
+          if(!set.has(v)) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  function computeFacetCounts(facetId){
+    const key = fields[facetId];
+    if(!key) return new Map();
+    const base = filterRowsExcludingFacet(facetId);
+    const m = new Map();
+    for(const r of base){
+      const v = String(r[key] ?? "").trim();
+      if(!v) continue;
+      m.set(v, (m.get(v) || 0) + 1);
+    }
+    return m;
+  }
+
+  function computeWaterCount(){
+    // count water==true excluding waterOnly filter itself
+    const base = allRows.filter(r=>{
+      const n = String(r[fields.name] ?? "").trim();
+      if(!n) return false;
+      if(!passesSearch(r)) return false;
+      if(!passesSliders(r)) return false;
+      if(!passesFacets(r)) return false;
+      return true;
+    });
+    let c = 0;
+    for(const r of base) if(r.__water) c++;
+    return c;
+  }
+
+  function drawFacetList(facetId){
+    const ui = facetUI[facetId];
+    const key = fields[facetId];
+
+    if(!key){
+      ui.listEl.innerHTML = `<div class="empty">Champ introuvable</div>`;
+      ui.searchEl.disabled = true;
+      return;
+    }
+
+    const q = norm(ui.searchEl.value);
+    const options = facetOptions[facetId] || [];
+    const counts = computeFacetCounts(facetId);
+    const selectedSet = selected[facetId];
+
+    const shown = options.filter(v => norm(v).includes(q));
+
+    ui.listEl.innerHTML = shown.map(v=>{
+      const c = counts.get(v) || 0;
+
+      // ✅ empêcher de choisir une option qui ne compte aucun coaster (quand filtres actifs)
+      // - on désactive si c==0 ET non sélectionné, pour pouvoir décocher si déjà sélectionné
+      const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
+      const checked = selectedSet.has(v) ? "checked" : "";
+
       return `
-        <div class="row">
-          <input type="checkbox" value="${esc(label)}" ${checked}>
-          <span>${esc(label)}</span>
-        </div>
+        <label class="row">
+          <input type="checkbox" value="${esc(v)}" ${checked} ${disabled}>
+          <span>${esc(v)}</span>
+          <small>${c}</small>
+        </label>
       `;
-    }).join("");
+    }).join("") || `<div class="empty">Aucune option</div>`;
 
-    containerEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    ui.listEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
       cb.addEventListener("change", ()=>{
         const v = cb.value;
         if(cb.checked) selectedSet.add(v);
         else selectedSet.delete(v);
-        onChange();
+        render();
       });
     });
   }
 
-  searchEl.addEventListener("input", draw);
-  draw();
+  function updateAllFacetUIs(){
+    for(const spec of FACET_SPECS){
+      drawFacetList(spec.id);
+    }
 
-  return {
-    clear: () => { selectedSet.clear(); searchEl.value=""; draw(); },
-    redraw: draw
-  };
-}
+    // water availability
+    const c = computeWaterCount();
+    waterCountEl.textContent = String(c);
 
-/* Cards (compact) */
-function cardHTML(r, f, idx){
-  const title = String(r[f.name] ?? "").trim();
-  const park = f.park ? String(r[f.park] ?? "").trim() : "";
-  const y = f.year ? toYear(r[f.year]) : null;
-
-  const rows = [];
-  if(f.maker) rows.push(["Fabricant", r[f.maker]]);
-  if(f.year)  rows.push(["Ouverture", (y ?? "")]);
-
-  const kv = rows
-    .filter(([_,v]) => String(v ?? "").trim() !== "")
-    .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
-    .join("");
-
-  return `
-    <article class="card" tabindex="0" role="button" aria-label="Ouvrir les détails" data-idx="${idx}">
-      <h2 class="title">${esc(title)}</h2>
-      ${park ? `<p class="sub">${esc(park)}</p>` : ""}
-      <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
-    </article>
-  `;
-}
-
-/* Modal navigation state */
-let lastRendered = [];
-let currentIndex = -1;
-let currentFields = null;
-
-/* ✅ Désactive/masque selon index (pas de wrap) */
-function updateArrowsState(){
-  const n = lastRendered.length;
-  if(n <= 1){
-    navLeftBtn.disabled = true;
-    navRightBtn.disabled = true;
-    return;
+    const shouldDisable = (c === 0 && !waterOnly);
+    waterOnlyEl.disabled = shouldDisable;
   }
-  navLeftBtn.disabled = (currentIndex <= 0);
-  navRightBtn.disabled = (currentIndex >= n - 1);
-}
 
-function openModalAtIndex(idx){
-  if(!currentFields) return;
-  if(!lastRendered.length) return;
+  /* ---------- Seat constraint enforcement ---------- */
+  function getRange(id){
+    const abs = sliderAbs[id];
+    const ui = sliderUI[id];
+    if(!abs || !ui || ui.minEl.disabled) return null;
+    const {min, max} = sliderVal[id] || abs;
+    return {min:Number(min), max:Number(max), absMin:abs.min, absMax:abs.max};
+  }
 
-  const n = lastRendered.length;
-  const safeIdx = Math.max(0, Math.min(n - 1, idx));
-  currentIndex = safeIdx;
+  function setDyn(id, dynMin, dynMax){
+    if(!sliderAbs[id]) return;
+    const abs = sliderAbs[id];
+    const dmin = Math.max(abs.min, Math.min(abs.max, dynMin));
+    const dmax = Math.max(abs.min, Math.min(abs.max, dynMax));
+    sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
+  }
 
-  const row = lastRendered[currentIndex];
-  const f = currentFields;
+  function enforceSeatConstraints(){
+    // Group 1: seatsPerRow (A), rowsPerCar (B), seatsPerCar (C) where C = A*B
+    const A = getRange("seatsPerRow");
+    const B = getRange("rowsPerCar");
+    const C = getRange("seatsPerCar");
 
-  const title = String(row[f.name] ?? "").trim();
-  const park  = f.park ? String(row[f.park] ?? "").trim() : "";
+    if(A && B && C){
+      const cmin = Math.max(1, Math.floor(C.min));
+      const cmax = Math.max(1, Math.floor(C.max));
+      const amin = Math.max(1, Math.floor(A.min));
+      const amax = Math.max(1, Math.floor(A.max));
+      const bmin = Math.max(1, Math.floor(B.min));
+      const bmax = Math.max(1, Math.floor(B.max));
 
-  modalTitleEl.textContent = title || "—";
-  modalSubEl.textContent = park || "";
+      // Compute dynamic bounds (conservateurs mais cohérents)
+      // A bounds based on C and B
+      const A_low = Math.ceil(cmin / Math.max(1, bmax));
+      const A_high = Math.floor(cmax / Math.max(1, bmin));
+      setDyn("seatsPerRow", A_low, A_high);
 
-  const excludeKeys = new Set([f.name, f.park]);
-  const pairs = Object.entries(row)
-    .filter(([k,v]) => !excludeKeys.has(k) && String(v ?? "").trim() !== "")
-    .map(([k,v]) => {
-      if(f.year && k === f.year){
-        const yy = toYear(v);
-        return [titleizeKey(k), (yy ?? v)];
-      }
-      return [titleizeKey(k), v];
-    });
+      // B bounds based on C and A
+      const B_low = Math.ceil(cmin / Math.max(1, amax));
+      const B_high = Math.floor(cmax / Math.max(1, amin));
+      setDyn("rowsPerCar", B_low, B_high);
 
-  modalGridEl.innerHTML = pairs.map(([k,v]) =>
-    `<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`
-  ).join("") || `<div class="empty">Aucun détail.</div>`;
+      // C bounds based on A and B
+      const C_low = amin * bmin;
+      const C_high = amax * bmax;
+      setDyn("seatsPerCar", C_low, C_high);
 
-  updateArrowsState();
-  modalOverlay.classList.add("open");
-  modalOverlay.setAttribute("aria-hidden","false");
-}
-
-function closeModal(){
-  modalOverlay.classList.remove("open");
-  modalOverlay.setAttribute("aria-hidden","true");
-  currentIndex = -1;
-}
-
-function prevModal(){
-  if(navLeftBtn.disabled) return;
-  openModalAtIndex(currentIndex - 1);
-}
-function nextModal(){
-  if(navRightBtn.disabled) return;
-  openModalAtIndex(currentIndex + 1);
-}
-
-navLeftBtn.addEventListener("click", (e)=>{ e.stopPropagation(); prevModal(); });
-navRightBtn.addEventListener("click", (e)=>{ e.stopPropagation(); nextModal(); });
-
-modalOverlay.addEventListener("click", (e)=>{
-  if(e.target === modalOverlay) closeModal();
-});
-
-document.addEventListener("keydown", (e)=>{
-  const open = modalOverlay.classList.contains("open");
-  if(!open) return;
-
-  if(e.key === "Escape"){ closeModal(); return; }
-  if(e.key === "ArrowLeft"){ e.preventDefault(); prevModal(); return; }
-  if(e.key === "ArrowRight"){ e.preventDefault(); nextModal(); return; }
-});
-
-(async function init(){
-  clearError();
-
-  try{
-    const res = await fetch(dataUrl, { cache:"no-store" });
-    if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
-
-    const rows = await res.json();
-    if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
-    if(rows.length === 0){ grid.innerHTML = `<div class="empty">Aucune donnée.</div>`; return; }
-
-    const sample = rows[0];
-
-    const f = {
-      name: pickField(sample, ["Nom","Name","Coaster","coaster","ride","attraction"]),
-      park: pickField(sample, ["Parc","Park","parc","park"]),
-      maker: pickField(sample, ["Fabricant","Manufacturer","Constructeur","maker","builder"]),
-      year: pickField(sample, ["Ouverture","Année","Annee","Year","opened","opening_year"]),
-    };
-    currentFields = f;
-
-    if(!f.name) throw new Error("Champ 'Nom de coaster' introuvable. Vérifie la clé (Nom/Name/Coaster…).");
-    if(!f.maker) makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé.</div>`;
-    if(!f.park)  parkBox.innerHTML  = `<div class="empty">Champ "Parc" non trouvé.</div>`;
-
-    // plage année globale
-    let absMin = 1900, absMax = new Date().getUTCFullYear();
-    if(f.year){
-      const years = rows.map(r => toYear(r[f.year])).filter(y => Number.isFinite(y));
-      if(years.length){ absMin = Math.min(...years); absMax = Math.max(...years); }
+      updateDualUI("seatsPerRow");
+      updateDualUI("rowsPerCar");
+      updateDualUI("seatsPerCar");
     }
 
-    yearMinEl.min = yearMaxEl.min = String(absMin);
-    yearMinEl.max = yearMaxEl.max = String(absMax);
-    yearMinEl.value = String(absMin);
-    yearMaxEl.value = String(absMax);
+    // Group 2: seatsPerCar (C), carsPerTrain (D), seatsPerTrain (E) where E = C*D
+    const C2 = getRange("seatsPerCar");
+    const D = getRange("carsPerTrain");
+    const E = getRange("seatsPerTrain");
 
-    const selectedMakers = new Set();
-    const selectedParks  = new Set();
+    if(C2 && D && E){
+      const emin = Math.max(1, Math.floor(E.min));
+      const emax = Math.max(1, Math.floor(E.max));
+      const cmin2 = Math.max(1, Math.floor(C2.min));
+      const cmax2 = Math.max(1, Math.floor(C2.max));
+      const dmin = Math.max(1, Math.floor(D.min));
+      const dmax = Math.max(1, Math.floor(D.max));
 
-    const makerLabels = f.maker ? uniqueSorted(rows.map(r => r[f.maker])) : [];
-    const parkLabels  = f.park  ? uniqueSorted(rows.map(r => r[f.park]))  : [];
+      // C bounds based on E and D
+      const C_low2 = Math.ceil(emin / Math.max(1, dmax));
+      const C_high2 = Math.floor(emax / Math.max(1, dmin));
+      // intersect with current dyn from group 1 if exists
+      const curDynC = sliderDyn["seatsPerCar"] || sliderAbs["seatsPerCar"];
+      setDyn("seatsPerCar", Math.max(curDynC.min, C_low2), Math.min(curDynC.max, C_high2));
 
-    const makerCtl = (f.maker && makerLabels.length)
-      ? drawChecklist(makerList, makerLabels, selectedMakers, makerSearch, render)
-      : null;
+      // D bounds based on E and C
+      const D_low = Math.ceil(emin / Math.max(1, cmax2));
+      const D_high = Math.floor(emax / Math.max(1, cmin2));
+      setDyn("carsPerTrain", D_low, D_high);
 
-    const parkCtl = (f.park && parkLabels.length)
-      ? drawChecklist(parkList, parkLabels, selectedParks, parkSearch, render)
-      : null;
+      // E bounds based on C and D
+      const E_low = cmin2 * dmin;
+      const E_high = cmax2 * dmax;
+      setDyn("seatsPerTrain", E_low, E_high);
 
-    document.getElementById("makerClear").addEventListener("click", ()=>{
-      if(makerCtl) makerCtl.clear(); render();
-    });
-    document.getElementById("parkClear").addEventListener("click", ()=>{
-      if(parkCtl) parkCtl.clear(); render();
-    });
-
-    // tri anti-conflit (au sens près)
-    let prevPrimary = sortSel.value;
-
-    function updateSecondaryOptions(){
-      const fam1 = sortFamily(sortSel.value);
-      for(const opt of Array.from(sort2Sel.options)){
-        opt.disabled = (sortFamily(opt.value) === fam1);
-      }
-      if(sortFamily(sort2Sel.value) === fam1){
-        const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
-        if(firstValid) sort2Sel.value = firstValid.value;
-      }
+      updateDualUI("seatsPerCar");
+      updateDualUI("carsPerTrain");
+      updateDualUI("seatsPerTrain");
     }
+  }
 
-    sortSel.addEventListener("change", ()=>{
-      const newPrimary = sortSel.value;
-      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
-        sort2Sel.value = prevPrimary;
-      }
-      prevPrimary = newPrimary;
-      updateSecondaryOptions();
-      render();
-    });
-    sort2Sel.addEventListener("change", ()=>{ updateSecondaryOptions(); render(); });
+  /* ---------- Rendering cards + modal ---------- */
+  function cardHTML(r, idx){
+    const name = String(r[fields.name] ?? "").trim();
+    const park = fields.park ? String(r[fields.park] ?? "").trim() : "";
+    const y = numFields.year ? toYear(r[numFields.year]) : null;
 
-    qEl.addEventListener("input", render);
-    yearMinEl.addEventListener("input", render);
-    yearMaxEl.addEventListener("input", render);
+    const rows = [];
+    if(fields.maker) rows.push(["Fabricant", r[fields.maker]]);
+    if(numFields.year) rows.push(["Ouverture", (y ?? "")]);
 
-    document.getElementById("clear").addEventListener("click", ()=>{
-      qEl.value = "";
-      if(makerCtl) makerCtl.clear();
-      if(parkCtl) parkCtl.clear();
+    const kv = rows
+      .filter(([_,v]) => String(v ?? "").trim() !== "")
+      .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
+      .join("");
 
-      yearMinEl.value = String(absMin);
-      yearMaxEl.value = String(absMax);
+    return `
+      <article class="card" tabindex="0" role="button" aria-label="Ouvrir les détails" data-idx="${idx}">
+        <h2 class="title">${esc(name)}</h2>
+        ${park ? `<p class="sub">${esc(park)}</p>` : ""}
+        <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
+      </article>
+    `;
+  }
 
-      sortSel.value = "park_asc";
-      sort2Sel.value = "year_asc";
-      prevPrimary = sortSel.value;
+  function updateArrowsState(){
+    const n = lastRendered.length;
+    if(n <= 1){
+      navLeftBtn.disabled = true;
+      navRightBtn.disabled = true;
+      return;
+    }
+    navLeftBtn.disabled = (currentIndex <= 0);
+    navRightBtn.disabled = (currentIndex >= n - 1);
+  }
 
-      updateSecondaryOptions();
-      render();
-    });
+  function openModalAtIndex(idx){
+    const n = lastRendered.length;
+    if(!n) return;
+    currentIndex = Math.max(0, Math.min(n-1, idx));
+    const row = lastRendered[currentIndex];
 
-    updateSecondaryOptions();
+    const name = String(row[fields.name] ?? "").trim();
+    const park  = fields.park ? String(row[fields.park] ?? "").trim() : "";
 
-    function render(){
-      const q = norm(qEl.value);
-      const {min, max} = updateSliderUI(absMin, absMax);
+    modalTitleEl.textContent = name || "—";
+    modalSubEl.textContent = park || "";
 
-      let filtered = rows.filter(r=>{
-        if(!hasCoasterName(r, f.name)) return false;
-        if(!matchesQuery(r, q)) return false;
-
-        if(f.maker && selectedMakers.size){
-          const m = String(r[f.maker] ?? "").trim();
-          if(!selectedMakers.has(m)) return false;
+    const excludeKeys = new Set([fields.name, fields.park]);
+    const pairs = Object.entries(row)
+      .filter(([k,v]) => !excludeKeys.has(k) && !String(k).startsWith("__") && String(v ?? "").trim() !== "")
+      .map(([k,v]) => {
+        // year formatting
+        if(numFields.year && k === numFields.year){
+          const yy = toYear(v);
+          return [titleizeKey(k), (yy ?? v)];
         }
-        if(f.park && selectedParks.size){
-          const p = String(r[f.park] ?? "").trim();
-          if(!selectedParks.has(p)) return false;
-        }
-
-        if(f.year){
-          const y = toYear(r[f.year]);
-          if(y === null){
-            if(min !== absMin || max !== absMax) return false;
-          } else {
-            if(y < min || y > max) return false;
-          }
-        }
-
-        return true;
+        return [titleizeKey(k), v];
       });
 
-      filtered = sortRows(filtered, sortSel.value, sort2Sel.value, f);
-      lastRendered = filtered;
+    modalGridEl.innerHTML = pairs.map(([k,v]) =>
+      `<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`
+    ).join("") || `<div class="empty">Aucun détail.</div>`;
 
-      if(filtered.length === 0){
-        grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
-        return;
-      }
+    updateArrowsState();
+    modalOverlay.classList.add("open");
+    modalOverlay.setAttribute("aria-hidden","false");
+  }
 
-      grid.innerHTML = filtered.map((r, i) => cardHTML(r, f, i)).join("");
+  function closeModal(){
+    modalOverlay.classList.remove("open");
+    modalOverlay.setAttribute("aria-hidden","true");
+    currentIndex = -1;
+  }
 
+  function prevModal(){
+    if(navLeftBtn.disabled) return;
+    openModalAtIndex(currentIndex - 1);
+  }
+  function nextModal(){
+    if(navRightBtn.disabled) return;
+    openModalAtIndex(currentIndex + 1);
+  }
+
+  navLeftBtn.addEventListener("click", (e)=>{ e.stopPropagation(); prevModal(); });
+  navRightBtn.addEventListener("click", (e)=>{ e.stopPropagation(); nextModal(); });
+
+  modalOverlay.addEventListener("click", (e)=>{ if(e.target === modalOverlay) closeModal(); });
+  document.addEventListener("keydown", (e)=>{
+    const open = modalOverlay.classList.contains("open");
+    if(!open) return;
+    if(e.key === "Escape"){ closeModal(); return; }
+    if(e.key === "ArrowLeft"){ e.preventDefault(); prevModal(); return; }
+    if(e.key === "ArrowRight"){ e.preventDefault(); nextModal(); return; }
+  });
+
+  /* ---------- Main render ---------- */
+  function render(){
+    // keep tri anti-conflit
+    const fam1 = sortFamily(sortSel.value);
+    for(const opt of Array.from(sort2Sel.options)){
+      opt.disabled = (sortFamily(opt.value) === fam1);
+    }
+    if(sortFamily(sort2Sel.value) === fam1){
+      // pick first valid
+      const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
+      if(firstValid) sort2Sel.value = firstValid.value;
+    }
+
+    waterOnly = !!waterOnlyEl.checked;
+
+    // update all slider UIs (basic)
+    for(const spec of NUM_SPECS){
+      if(sliderUI[spec.id]) updateDualUI(spec.id);
+    }
+    // enforce cross-slider constraints for seats
+    enforceSeatConstraints();
+
+    // compute filtered
+    let filtered = allRows.filter(passesAll);
+    filtered = sortRows(filtered, sortSel.value, sort2Sel.value, {year:numFields.year, park:fields.park});
+
+    lastRendered = filtered;
+
+    // cards
+    if(filtered.length === 0){
+      grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
+    } else {
+      grid.innerHTML = filtered.map((r,i)=>cardHTML(r,i)).join("");
       grid.querySelectorAll(".card").forEach(card=>{
         const idx = Number(card.getAttribute("data-idx"));
         card.addEventListener("click", ()=> openModalAtIndex(idx));
@@ -681,16 +965,119 @@ document.addEventListener("keydown", (e)=>{
           }
         });
       });
-
-      // Si la modale est ouverte et que la liste a changé, recaler l'index (au besoin)
-      if(modalOverlay.classList.contains("open")){
-        const n = lastRendered.length;
-        if(n === 0){ closeModal(); return; }
-        if(currentIndex >= n) currentIndex = n - 1;
-        updateArrowsState();
-      }
     }
 
+    // facet disabling + water disabling
+    updateAllFacetUIs();
+
+    // if modal open, keep arrows correct / clamp index
+    if(modalOverlay.classList.contains("open")){
+      if(lastRendered.length === 0){ closeModal(); return; }
+      if(currentIndex >= lastRendered.length) currentIndex = lastRendered.length - 1;
+      updateArrowsState();
+    }
+  }
+
+  /* ---------- Init ---------- */
+  try{
+    const res = await fetch(dataUrl, { cache:"no-store" });
+    if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
+
+    const rows = await res.json();
+    if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
+    if(rows.length === 0){
+      grid.innerHTML = `<div class="empty">Aucune donnée.</div>`;
+      return;
+    }
+
+    // detect base must-have: coaster name
+    const sample = rows[0];
+    // name field: try common
+    fields.name = pickField(sample, ["Nom","Name","Coaster","Attraction","Ride"]);
+    if(!fields.name) throw new Error("Champ 'Nom de coaster' introuvable (Nom/Name/Coaster…).");
+
+    // detect requested facets + numerics
+    const det = detectAllFields(sample);
+    Object.assign(fields, det.out);
+    Object.assign(numFields, det.numOut);
+
+    // Build UI
+    buildFacetUI();
+    buildSliderUI();
+
+    // Prepare rows: derive water + seat formulas
+    allRows = rows.map(r=>{
+      const rr = {...r};
+      rr.__water = parseWater(rr);
+      // derive seats if possible
+      computeDerivedSeats(rr);
+      return rr;
+    });
+
+    // Compute facet options (unique sorted)
+    for(const spec of FACET_SPECS){
+      const key = fields[spec.id];
+      if(!key){ facetOptions[spec.id] = []; continue; }
+      const opts = allRows
+        .map(r => String(r[key] ?? "").trim())
+        .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+      facetOptions[spec.id] = Array.from(new Set(opts)).sort((a,b)=>a.localeCompare(b,"fr"));
+    }
+
+    // Init sliders from data
+    initSlidersFromData();
+    // One pass for seat constraint bounds
+    enforceSeatConstraints();
+
+    // Wire controls
+    qEl.addEventListener("input", render);
+
+    // sort swap logic (au sens près)
+    let prevPrimary = sortSel.value;
+    sortSel.addEventListener("change", ()=>{
+      const newPrimary = sortSel.value;
+      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
+        sort2Sel.value = prevPrimary;
+      }
+      prevPrimary = newPrimary;
+      render();
+    });
+    sort2Sel.addEventListener("change", render);
+
+    waterOnlyEl.addEventListener("change", render);
+
+    $("clear").addEventListener("click", ()=>{
+      qEl.value = "";
+      waterOnlyEl.checked = false;
+
+      // clear facet selections + searches
+      for(const spec of FACET_SPECS){
+        selected[spec.id].clear();
+        const ui = facetUI[spec.id];
+        ui.searchEl.value = "";
+      }
+
+      // reset sliders to abs bounds
+      for(const spec of NUM_SPECS){
+        const abs = sliderAbs[spec.id];
+        const ui = sliderUI[spec.id];
+        if(!abs || ui.minEl.disabled) continue;
+        sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+        ui.minEl.value = String(abs.min);
+        ui.maxEl.value = String(abs.max);
+        updateDualUI(spec.id);
+      }
+      enforceSeatConstraints();
+
+      sortSel.value = "park_asc";
+      sort2Sel.value = "year_asc";
+      prevPrimary = sortSel.value;
+
+      closeModal();
+      render();
+    });
+
+    // initial render
     render();
 
   } catch(e){

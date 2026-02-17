@@ -120,9 +120,13 @@
   }
   .navArrow:hover{background:rgba(0,0,0,.38)}
   .navArrow:focus{outline:2px solid rgba(255,255,255,.65);outline-offset:2px}
-  .navArrow[disabled]{opacity:.35;cursor:not-allowed}
+  .navArrow[disabled]{opacity:.25;cursor:not-allowed}
+
   .navLeft{left:-10px}
   .navRight{right:-10px}
+
+  /* ✅ on cache complètement si disabled */
+  .navArrow[disabled]{display:none}
 
   @media (max-width:520px){
     .navLeft{left:4px}
@@ -203,7 +207,7 @@
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
-<!-- MODALE (sans bouton Fermer) + flèches gauche/droite -->
+<!-- MODALE (sans bouton Fermer) + flèches -->
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="modalWrap">
     <button id="navLeft" class="navArrow navLeft" type="button" aria-label="Précédent">‹</button>
@@ -443,11 +447,16 @@ let lastRendered = [];
 let currentIndex = -1;
 let currentFields = null;
 
-function setArrowsState(){
+/* ✅ Désactive/masque selon index (pas de wrap) */
+function updateArrowsState(){
   const n = lastRendered.length;
-  const disable = n <= 1;
-  navLeftBtn.disabled = disable;
-  navRightBtn.disabled = disable;
+  if(n <= 1){
+    navLeftBtn.disabled = true;
+    navRightBtn.disabled = true;
+    return;
+  }
+  navLeftBtn.disabled = (currentIndex <= 0);
+  navRightBtn.disabled = (currentIndex >= n - 1);
 }
 
 function openModalAtIndex(idx){
@@ -482,7 +491,7 @@ function openModalAtIndex(idx){
     `<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`
   ).join("") || `<div class="empty">Aucun détail.</div>`;
 
-  setArrowsState();
+  updateArrowsState();
   modalOverlay.classList.add("open");
   modalOverlay.setAttribute("aria-hidden","false");
 }
@@ -494,14 +503,12 @@ function closeModal(){
 }
 
 function prevModal(){
-  if(lastRendered.length <= 1) return;
-  const n = lastRendered.length;
-  openModalAtIndex((currentIndex - 1 + n) % n);
+  if(navLeftBtn.disabled) return;
+  openModalAtIndex(currentIndex - 1);
 }
 function nextModal(){
-  if(lastRendered.length <= 1) return;
-  const n = lastRendered.length;
-  openModalAtIndex((currentIndex + 1) % n);
+  if(navRightBtn.disabled) return;
+  openModalAtIndex(currentIndex + 1);
 }
 
 navLeftBtn.addEventListener("click", (e)=>{ e.stopPropagation(); prevModal(); });
@@ -656,7 +663,6 @@ document.addEventListener("keydown", (e)=>{
 
       filtered = sortRows(filtered, sortSel.value, sort2Sel.value, f);
       lastRendered = filtered;
-      setArrowsState();
 
       if(filtered.length === 0){
         grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
@@ -675,6 +681,14 @@ document.addEventListener("keydown", (e)=>{
           }
         });
       });
+
+      // Si la modale est ouverte et que la liste a changé, recaler l'index (au besoin)
+      if(modalOverlay.classList.contains("open")){
+        const n = lastRendered.length;
+        if(n === 0){ closeModal(); return; }
+        if(currentIndex >= n) currentIndex = n - 1;
+        updateArrowsState();
+      }
     }
 
     render();

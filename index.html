@@ -329,8 +329,9 @@ function sortRows(list, mode1, mode2, f){
   const sliderAbs = {};
   const sliderDyn = {};
   const sliderVal = {};
-  let waterOnly = false;
+  const facetMasterOptions = {}; // ✅ NEW: all possible values per facet (including those that can become 0)
 
+  let waterOnly = false;
   let lastRendered = [];
   let currentIndex = -1;
 
@@ -451,9 +452,9 @@ function sortRows(list, mode1, mode2, f){
 
       sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
 
-      // ✅ NEW: prevent zero-result states from numeric sliders
-      minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id, "min"));
-      maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id, "max"));
+      // numeric sliders: never allow 0 results
+      minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
+      maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
     }
   }
 
@@ -496,6 +497,7 @@ function sortRows(list, mode1, mode2, f){
       ui.minEl.step = String(step);
       ui.maxEl.step = String(step);
 
+      // ✅ requested: default to min..max
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -622,9 +624,14 @@ function sortRows(list, mode1, mode2, f){
     const selectedSet = selected[facetId];
     const counts = computeFacetCounts(facetId);
 
-    const optSet = new Set([...counts.keys(), ...Array.from(selectedSet)]);
+    // ✅ requested: show options even if count=0
+    const baseOptions = facetMasterOptions[facetId] || [];
+    const optSet = new Set([...baseOptions, ...Array.from(selectedSet)]);
     let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+
+    // sort by count desc (0 goes bottom), then alpha
     options = sortOptionsByCountsDesc(options, counts);
+
     const shown = options.filter(v => norm(v).includes(q));
 
     ui.listEl.innerHTML = shown.map(v=>{
@@ -652,6 +659,7 @@ function sortRows(list, mode1, mode2, f){
 
   function updateAllFacetUIs(){
     for(const spec of FACET_SPECS) drawFacetList(spec.id);
+
     const c = computeWaterCount();
     waterCountEl.textContent = String(c);
     waterOnlyEl.disabled = (c === 0 && !waterOnly);
@@ -799,11 +807,8 @@ function sortRows(list, mode1, mode2, f){
   });
 
   /* ---------------------------------------------------------
-     ✅ NEW: Numeric sliders must never lead to 0 results.
-     Strategy:
-     - On slider input, try apply change.
-     - If it yields 0 results (with all other filters active),
-       we revert that slider handle to previous value.
+     Numeric sliders must never lead to 0 results.
+     If change => 0 results, revert that slider to last good.
   ---------------------------------------------------------- */
   const lastGoodSliderValue = {}; // id -> {min,max}
 
@@ -828,32 +833,24 @@ function sortRows(list, mode1, mode2, f){
     updateDualUI(id);
   }
 
-  function onNumericSliderAttempt(id, which){
+  function onNumericSliderAttempt(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled) return;
 
-    // keep min<=max
     clampSwap(ui.minEl, ui.maxEl);
-
-    // update internal state for this slider
     updateDualUI(id);
 
-    // seats constraints may adjust other sliders; apply them before testing
     enforceSeatConstraints();
 
-    // test
     const n = countResults();
     if(n === 0){
-      // revert to last known good for this slider
       restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
       enforceSeatConstraints();
-      // update UI lists/cards based on restored state
       render();
       return;
     }
 
-    // accept: save as good state and render
     lastGoodSliderValue[id] = snapshotSlider(id) || {min:abs.min, max:abs.max};
     render();
   }
@@ -882,8 +879,6 @@ function sortRows(list, mode1, mode2, f){
     lastRendered = filtered;
 
     if(filtered.length === 0){
-      // Should be impossible due to numeric slider guard,
-      // but keep fallback for non-numeric filters.
       grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
     } else {
       grid.innerHTML = filtered.map((r,i)=>cardHTML(r,i)).join("");
@@ -934,7 +929,29 @@ function sortRows(list, mode1, mode2, f){
       return rr;
     });
 
+    // ✅ NEW: build master options once (for showing 0 counts)
+    for(const spec of FACET_SPECS){
+      const key = fields[spec.id];
+      if(!key){ facetMasterOptions[spec.id] = []; continue; }
+      const opts = allRows
+        .map(r => normalizeFacetValue(spec.id, r[key]))
+        .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+      facetMasterOptions[spec.id] = Array.from(new Set(opts)).sort((a,b)=>String(a).localeCompare(String(b), "fr"));
+    }
+
     initSlidersFromData();
+    enforceSeatConstraints();
+
+    // ✅ requested (again): force numeric ranges to min..max at load (after seat constraints)
+    for(const spec of NUM_SPECS){
+      const abs = sliderAbs[spec.id];
+      const ui = sliderUI[spec.id];
+      if(!abs || !ui || ui.minEl.disabled) continue;
+      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+      ui.minEl.value = String(abs.min);
+      ui.maxEl.value = String(abs.max);
+      updateDualUI(spec.id);
+    }
     enforceSeatConstraints();
 
     // init lastGoodSliderValue to defaults (full span)

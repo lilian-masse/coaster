@@ -65,8 +65,17 @@
     z-index:1000;
   }
   .modalOverlay.open{display:flex}
+
+  .modalWrap{
+    position:relative;
+    width:min(820px, 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
   .modal{
-    width:min(780px, 100%);
+    width:100%;
     max-height:min(82vh, 820px);
     overflow:auto;
     background:#fff;
@@ -88,6 +97,37 @@
   .modalV{word-break:break-word}
   @media (max-width:560px){
     .modalGrid{grid-template-columns:1fr;gap:6px}
+  }
+
+  /* Flèches gauche/droite */
+  .navArrow{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:46px;height:46px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.35);
+    background:rgba(0,0,0,.28);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    font-size:26px;
+    line-height:1;
+    padding:0;
+  }
+  .navArrow:hover{background:rgba(0,0,0,.38)}
+  .navArrow:focus{outline:2px solid rgba(255,255,255,.65);outline-offset:2px}
+  .navArrow[disabled]{opacity:.35;cursor:not-allowed}
+  .navLeft{left:-10px}
+  .navRight{right:-10px}
+
+  @media (max-width:520px){
+    .navLeft{left:4px}
+    .navRight{right:4px}
+    .navArrow{width:42px;height:42px;font-size:24px}
   }
 </style>
 </head>
@@ -163,17 +203,21 @@
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
-<!-- MODALE (sans bouton Fermer) -->
+<!-- MODALE (sans bouton Fermer) + flèches gauche/droite -->
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="modal" role="document">
-    <div class="modalHeader">
-      <h2 id="modalTitle" class="modalTitle">—</h2>
-      <p id="modalSub" class="modalSub"></p>
-      <p class="pill" style="margin:10px 0 0;display:inline-block;opacity:.85">Clique en dehors ou appuie sur Échap</p>
+  <div class="modalWrap">
+    <button id="navLeft" class="navArrow navLeft" type="button" aria-label="Précédent">‹</button>
+    <div class="modal" role="document">
+      <div class="modalHeader">
+        <h2 id="modalTitle" class="modalTitle">—</h2>
+        <p id="modalSub" class="modalSub"></p>
+        <p class="pill" style="margin:10px 0 0;display:inline-block;opacity:.85">Clique en dehors, Échap, ou flèches ← →</p>
+      </div>
+      <div class="modalBody">
+        <div id="modalGrid" class="modalGrid"></div>
+      </div>
     </div>
-    <div class="modalBody">
-      <div id="modalGrid" class="modalGrid"></div>
-    </div>
+    <button id="navRight" class="navArrow navRight" type="button" aria-label="Suivant">›</button>
   </div>
 </div>
 
@@ -206,6 +250,8 @@ const modalOverlay = document.getElementById("modalOverlay");
 const modalTitleEl = document.getElementById("modalTitle");
 const modalSubEl = document.getElementById("modalSub");
 const modalGridEl = document.getElementById("modalGrid");
+const navLeftBtn = document.getElementById("navLeft");
+const navRightBtn = document.getElementById("navRight");
 
 function showError(msg){ errBox.style.display="block"; errBox.textContent = msg; }
 function clearError(){ errBox.style.display="none"; errBox.textContent = ""; }
@@ -392,8 +438,29 @@ function cardHTML(r, f, idx){
   `;
 }
 
-/* Modal */
-function openModalForRow(row, f){
+/* Modal navigation state */
+let lastRendered = [];
+let currentIndex = -1;
+let currentFields = null;
+
+function setArrowsState(){
+  const n = lastRendered.length;
+  const disable = n <= 1;
+  navLeftBtn.disabled = disable;
+  navRightBtn.disabled = disable;
+}
+
+function openModalAtIndex(idx){
+  if(!currentFields) return;
+  if(!lastRendered.length) return;
+
+  const n = lastRendered.length;
+  const safeIdx = Math.max(0, Math.min(n - 1, idx));
+  currentIndex = safeIdx;
+
+  const row = lastRendered[currentIndex];
+  const f = currentFields;
+
   const title = String(row[f.name] ?? "").trim();
   const park  = f.park ? String(row[f.park] ?? "").trim() : "";
 
@@ -415,6 +482,7 @@ function openModalForRow(row, f){
     `<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`
   ).join("") || `<div class="empty">Aucun détail.</div>`;
 
+  setArrowsState();
   modalOverlay.classList.add("open");
   modalOverlay.setAttribute("aria-hidden","false");
 }
@@ -422,13 +490,34 @@ function openModalForRow(row, f){
 function closeModal(){
   modalOverlay.classList.remove("open");
   modalOverlay.setAttribute("aria-hidden","true");
+  currentIndex = -1;
 }
+
+function prevModal(){
+  if(lastRendered.length <= 1) return;
+  const n = lastRendered.length;
+  openModalAtIndex((currentIndex - 1 + n) % n);
+}
+function nextModal(){
+  if(lastRendered.length <= 1) return;
+  const n = lastRendered.length;
+  openModalAtIndex((currentIndex + 1) % n);
+}
+
+navLeftBtn.addEventListener("click", (e)=>{ e.stopPropagation(); prevModal(); });
+navRightBtn.addEventListener("click", (e)=>{ e.stopPropagation(); nextModal(); });
 
 modalOverlay.addEventListener("click", (e)=>{
   if(e.target === modalOverlay) closeModal();
 });
+
 document.addEventListener("keydown", (e)=>{
-  if(e.key === "Escape" && modalOverlay.classList.contains("open")) closeModal();
+  const open = modalOverlay.classList.contains("open");
+  if(!open) return;
+
+  if(e.key === "Escape"){ closeModal(); return; }
+  if(e.key === "ArrowLeft"){ e.preventDefault(); prevModal(); return; }
+  if(e.key === "ArrowRight"){ e.preventDefault(); nextModal(); return; }
 });
 
 (async function init(){
@@ -450,6 +539,7 @@ document.addEventListener("keydown", (e)=>{
       maker: pickField(sample, ["Fabricant","Manufacturer","Constructeur","maker","builder"]),
       year: pickField(sample, ["Ouverture","Année","Annee","Year","opened","opening_year"]),
     };
+    currentFields = f;
 
     if(!f.name) throw new Error("Champ 'Nom de coaster' introuvable. Vérifie la clé (Nom/Name/Coaster…).");
     if(!f.maker) makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé.</div>`;
@@ -535,8 +625,6 @@ document.addEventListener("keydown", (e)=>{
 
     updateSecondaryOptions();
 
-    let lastRendered = [];
-
     function render(){
       const q = norm(qEl.value);
       const {min, max} = updateSliderUI(absMin, absMax);
@@ -568,6 +656,7 @@ document.addEventListener("keydown", (e)=>{
 
       filtered = sortRows(filtered, sortSel.value, sort2Sel.value, f);
       lastRendered = filtered;
+      setArrowsState();
 
       if(filtered.length === 0){
         grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
@@ -578,13 +667,11 @@ document.addEventListener("keydown", (e)=>{
 
       grid.querySelectorAll(".card").forEach(card=>{
         const idx = Number(card.getAttribute("data-idx"));
-        const row = lastRendered[idx];
-
-        card.addEventListener("click", ()=> openModalForRow(row, f));
+        card.addEventListener("click", ()=> openModalAtIndex(idx));
         card.addEventListener("keydown", (e)=>{
           if(e.key === "Enter" || e.key === " "){
             e.preventDefault();
-            openModalForRow(row, f);
+            openModalAtIndex(idx);
           }
         });
       });

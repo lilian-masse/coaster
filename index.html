@@ -38,40 +38,64 @@
   .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-
-  /* Card */
   .card{
     border:1px solid #e6e6e6;border-radius:14px;background:#fff;
     box-shadow:0 1px 6px rgba(0,0,0,.04);
-    overflow:hidden;
-  }
-  .cardBtn{
-    width:100%;
-    text-align:left;
-    border:0;
-    background:transparent;
     padding:14px;
     cursor:pointer;
   }
+  .card:focus{outline:2px solid #cfcfcf;outline-offset:2px}
   .title{font-weight:750;margin:0 0 6px;font-size:16px}
   .sub{opacity:.75;margin:0 0 10px;font-size:13px}
   .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}
   .k{opacity:.6}
   .v{word-break:break-word}
 
-  .details{
-    border-top:1px solid #eee;
-    padding:12px 14px 14px;
-    display:none;
-  }
-  .card.open .details{display:block}
-  .detailsTitle{
-    display:flex;justify-content:space-between;align-items:center;
-    margin:0 0 10px;font-size:13px;opacity:.8
-  }
-
   .empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.85}
   .error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px 12px;border-radius:12px;margin:12px 0}
+
+  /* MODALE */
+  .modalOverlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:1000;
+  }
+  .modalOverlay.open{display:flex}
+  .modal{
+    width:min(780px, 100%);
+    max-height:min(82vh, 820px);
+    overflow:auto;
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    border:1px solid #eee;
+  }
+  .modalHeader{
+    position:sticky;top:0;
+    background:#fff;
+    border-bottom:1px solid #eee;
+    padding:14px 16px;
+    display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
+  }
+  .modalTitleWrap{min-width:0}
+  .modalTitle{font-weight:800;margin:0;font-size:18px;line-height:1.25}
+  .modalSub{margin:4px 0 0;opacity:.7;font-size:13px}
+  .modalClose{
+    width:auto;
+    padding:8px 10px;
+    font-size:13px;
+  }
+  .modalBody{padding:14px 16px 18px}
+  .modalGrid{display:grid;grid-template-columns:160px 1fr;gap:8px 12px;font-size:14px}
+  .modalK{opacity:.65}
+  .modalV{word-break:break-word}
+  @media (max-width:560px){
+    .modalGrid{grid-template-columns:1fr;gap:6px}
+  }
 </style>
 </head>
 
@@ -146,10 +170,26 @@
 <div id="err" class="error"></div>
 <div id="grid" class="grid"></div>
 
+<!-- MODALE -->
+<div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal" role="document">
+    <div class="modalHeader">
+      <div class="modalTitleWrap">
+        <h2 id="modalTitle" class="modalTitle">—</h2>
+        <p id="modalSub" class="modalSub"></p>
+      </div>
+      <button id="modalClose" class="modalClose" type="button">Fermer</button>
+    </div>
+    <div class="modalBody">
+      <div id="modalGrid" class="modalGrid"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const dataUrl = "./data/coasters_clean.json";
 
-/* --- DOM --- */
+/* DOM */
 const qEl = document.getElementById("q");
 const sortSel = document.getElementById("sort");
 const sort2Sel = document.getElementById("sort2");
@@ -170,6 +210,13 @@ const fill = document.getElementById("rangeFill");
 const minLabel = document.getElementById("minLabel");
 const maxLabel = document.getElementById("maxLabel");
 
+/* Modal */
+const modalOverlay = document.getElementById("modalOverlay");
+const modalCloseBtn = document.getElementById("modalClose");
+const modalTitleEl = document.getElementById("modalTitle");
+const modalSubEl = document.getElementById("modalSub");
+const modalGridEl = document.getElementById("modalGrid");
+
 function showError(msg){ errBox.style.display="block"; errBox.textContent = msg; }
 function clearError(){ errBox.style.display="none"; errBox.textContent = ""; }
 
@@ -187,7 +234,6 @@ function pickField(obj, candidates){
     const hit = lower.get(String(c).toLowerCase());
     if(hit) return hit;
   }
-  // fallback: contient le mot
   for(const k of keys){
     const kl = k.toLowerCase();
     if(candidates.some(c => kl.includes(String(c).toLowerCase()))) return k;
@@ -203,11 +249,10 @@ function toNumber(v){
   return Number.isFinite(n) ? n : null;
 }
 
-// ✅ timestamps positifs & négatifs (avant 1970)
+// timestamps positifs & négatifs
 function toYear(v){
   const n = toNumber(v);
   if(n === null) return null;
-
   if(n >= 1800 && n <= 2200) return Math.trunc(n);
 
   const a = Math.abs(n);
@@ -300,7 +345,6 @@ function titleizeKey(k){
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* --- Checklist renderer --- */
 function drawChecklist(containerEl, labels, selectedSet, searchEl, onChange){
   function draw(){
     const ft = norm(searchEl.value);
@@ -335,28 +379,43 @@ function drawChecklist(containerEl, labels, selectedSet, searchEl, onChange){
   };
 }
 
-/* --- Card with click-to-expand --- */
-function cardHTML(r, f, idx, expanded){
+/* Cards (compact only) */
+function cardHTML(r, f, idx){
   const title = String(r[f.name] ?? "").trim();
   const park = f.park ? String(r[f.park] ?? "").trim() : "";
   const y = f.year ? toYear(r[f.year]) : null;
 
-  // compact (toujours visible)
-  const compactRows = [];
-  if(f.maker) compactRows.push(["Fabricant", r[f.maker]]);
-  if(f.year)  compactRows.push(["Ouverture", (y ?? "")]);
+  const rows = [];
+  if(f.maker) rows.push(["Fabricant", r[f.maker]]);
+  if(f.year)  rows.push(["Ouverture", (y ?? "")]);
 
-  const compactKV = compactRows
+  const kv = rows
     .filter(([_,v]) => String(v ?? "").trim() !== "")
     .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
     .join("");
 
-  // details : toutes les colonnes non vides, en évitant doublons (nom/parc)
-  const excludeKeys = new Set([f.name, f.park]); // parc en sous-titre uniquement
-  const detailPairs = Object.entries(r)
+  return `
+    <article class="card" tabindex="0" role="button" aria-label="Ouvrir les détails" data-idx="${idx}">
+      <h2 class="title">${esc(title)}</h2>
+      ${park ? `<p class="sub">${esc(park)}</p>` : ""}
+      <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
+    </article>
+  `;
+}
+
+/* Modal */
+function openModalForRow(row, f){
+  const title = String(row[f.name] ?? "").trim();
+  const park  = f.park ? String(row[f.park] ?? "").trim() : "";
+
+  modalTitleEl.textContent = title || "—";
+  modalSubEl.textContent = park || "";
+
+  // toutes les caractéristiques non vides, en évitant doublons (nom/parc)
+  const excludeKeys = new Set([f.name, f.park]);
+  const pairs = Object.entries(row)
     .filter(([k,v]) => !excludeKeys.has(k) && String(v ?? "").trim() !== "")
     .map(([k,v]) => {
-      // si c'est l'année: afficher l'année
       if(f.year && k === f.year){
         const yy = toYear(v);
         return [titleizeKey(k), (yy ?? v)];
@@ -364,32 +423,27 @@ function cardHTML(r, f, idx, expanded){
       return [titleizeKey(k), v];
     });
 
-  const detailKV = detailPairs.map(([k,v]) =>
-    `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`
-  ).join("");
+  modalGridEl.innerHTML = pairs.map(([k,v]) =>
+    `<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`
+  ).join("") || `<div class="empty">Aucun détail.</div>`;
 
-  const openClass = expanded ? "open" : "";
-  const ariaExpanded = expanded ? "true" : "false";
-
-  return `
-    <article class="card ${openClass}" data-idx="${idx}">
-      <button class="cardBtn" type="button" aria-expanded="${ariaExpanded}">
-        <h2 class="title">${esc(title)}</h2>
-        ${park ? `<p class="sub">${esc(park)}</p>` : ""}
-        <div class="kv">${compactKV || `<div class="empty">Aucune info</div>`}</div>
-      </button>
-      <div class="details">
-        <div class="detailsTitle">
-          <span>Détails</span>
-          <span class="pill">clic pour replier</span>
-        </div>
-        <div class="kv">
-          ${detailKV || `<div class="empty">Aucun détail.</div>`}
-        </div>
-      </div>
-    </article>
-  `;
+  modalOverlay.classList.add("open");
+  modalOverlay.setAttribute("aria-hidden", "false");
+  modalCloseBtn.focus();
 }
+
+function closeModal(){
+  modalOverlay.classList.remove("open");
+  modalOverlay.setAttribute("aria-hidden", "true");
+}
+
+modalCloseBtn.addEventListener("click", closeModal);
+modalOverlay.addEventListener("click", (e)=>{
+  if(e.target === modalOverlay) closeModal();
+});
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape" && modalOverlay.classList.contains("open")) closeModal();
+});
 
 (async function init(){
   clearError();
@@ -414,12 +468,8 @@ function cardHTML(r, f, idx, expanded){
     if(!f.name){
       throw new Error("Champ 'Nom de coaster' introuvable. Vérifie la clé (Nom/Name/Coaster…).");
     }
-    if(!f.maker){
-      makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé.</div>`;
-    }
-    if(!f.park){
-      parkBox.innerHTML = `<div class="empty">Champ "Parc" non trouvé.</div>`;
-    }
+    if(!f.maker) makerBox.innerHTML = `<div class="empty">Champ "Fabricant" non trouvé.</div>`;
+    if(!f.park)  parkBox.innerHTML  = `<div class="empty">Champ "Parc" non trouvé.</div>`;
 
     // plage année globale
     let absMin = 1900, absMax = new Date().getUTCFullYear();
@@ -495,23 +545,13 @@ function cardHTML(r, f, idx, expanded){
       sort2Sel.value = "year_asc";
       prevPrimary = sortSel.value;
 
-      expandedKey = null; // replier
       updateSecondaryOptions();
       render();
     });
 
     updateSecondaryOptions();
 
-    // Gestion “fiche ouverte”
-    // On garde 1 fiche ouverte à la fois (plus propre). Si tu veux multi-ouvert, je te le fais.
-    let expandedKey = null;
-
-    function keyForRow(r, idx){
-      // clé stable : nom + parc + idx (fallback)
-      const n = String(r[f.name] ?? "").trim();
-      const p = f.park ? String(r[f.park] ?? "").trim() : "";
-      return `${n}__${p}__${idx}`;
-    }
+    let lastRendered = []; // tableau des lignes filtrées (pour ouvrir la modale)
 
     function render(){
       const q = norm(qEl.value);
@@ -543,28 +583,30 @@ function cardHTML(r, f, idx, expanded){
       });
 
       filtered = sortRows(filtered, sortSel.value, sort2Sel.value, f);
+      lastRendered = filtered;
 
       if(filtered.length === 0){
         grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
         return;
       }
 
-      grid.innerHTML = filtered.map((r, i) => {
-        const k = keyForRow(r, i);
-        const expanded = (expandedKey === k);
-        return cardHTML(r, f, i, expanded);
-      }).join("");
+      grid.innerHTML = filtered.map((r, i) => cardHTML(r, f, i)).join("");
 
-      // click handlers (accordéon)
-      grid.querySelectorAll(".cardBtn").forEach(btn=>{
-        btn.addEventListener("click", ()=>{
-          const card = btn.closest(".card");
-          const idx = Number(card.getAttribute("data-idx"));
-          const r = filtered[idx];
-          const k = keyForRow(r, idx);
+      // clic => modale
+      grid.querySelectorAll(".card").forEach(card=>{
+        const idx = Number(card.getAttribute("data-idx"));
+        const row = lastRendered[idx];
 
-          expandedKey = (expandedKey === k) ? null : k;
-          render();
+        card.addEventListener("click", ()=>{
+          openModalForRow(row, f);
+        });
+
+        // clavier (Entrée/Espace)
+        card.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter" || e.key === " "){
+            e.preventDefault();
+            openModalForRow(row, f);
+          }
         });
       });
     }

@@ -99,7 +99,7 @@
       margin: 0;
       padding: 0;
       background: none;
-      pointer-events: none; /* on active uniquement le thumb */
+      pointer-events: none;
       -webkit-appearance: none;
       appearance: none;
       height: 18px;
@@ -263,7 +263,6 @@
 
     <div class="field actions">
       <button id="clear" type="button">Réinitialiser</button>
-      <button id="clearYears" type="button">Réinitialiser ouverture</button>
     </div>
   </div>
 
@@ -469,11 +468,9 @@
     }
 
     function clampMinMax(minEl, maxEl){
-      // Empêche le min de dépasser le max et inversement
       let a = parseInt(minEl.value, 10);
       let b = parseInt(maxEl.value, 10);
       if(a > b){
-        // swap
         const t = a; a = b; b = t;
         minEl.value = String(a);
         maxEl.value = String(b);
@@ -490,7 +487,6 @@
         ? "toutes les années"
         : `${max - min + 1} an(s)`;
 
-      // update fill
       const fill = document.getElementById("yearRangeFill");
       const total = (yMaxAbs - yMinAbs) || 1;
       const leftPct = ((min - yMinAbs) / total) * 100;
@@ -550,7 +546,7 @@
 
         console.log("Champs détectés:", f);
 
-        // Déterminer l'intervalle d'années (min/max) à partir des données
+        // Intervalle d'années global
         let yMinAbs = 1900;
         let yMaxAbs = new Date().getUTCFullYear();
 
@@ -605,8 +601,6 @@
           if(state.q) parts.push(`Recherche: “${state.q}”`);
           if(state.makers.size) parts.push(`Fabricants: ${state.makers.size}`);
           if(state.parks.size) parts.push(`Parcs: ${state.parks.size}`);
-
-          // n’affiche l’intervalle que si différent du total
           if(state.ymin !== yMinAbs || state.ymax !== yMaxAbs){
             parts.push(`Ouverture: ${state.ymin}–${state.ymax}`);
           }
@@ -621,13 +615,7 @@
             const {min: ymin, max: ymax} = clampMinMax(yearMinEl, yearMaxEl);
             updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
 
-            const state = {
-              q: norm(qEl.value),
-              makers: makersSet,
-              parks: parksSet,
-              ymin, ymax,
-              sort: sortSel.value
-            };
+            const state = { q: norm(qEl.value), makers: makersSet, parks: parksSet, ymin, ymax, sort: sortSel.value };
 
             let filtered = rows.filter(r => {
               if(!matchesQuery(r, state.q)) return false;
@@ -641,7 +629,6 @@
 
               if(f.yearField){
                 const y = toYear(r[f.yearField]);
-                // Si l'enregistrement n'a pas d'année, on l'exclut seulement si l'utilisateur restreint l'intervalle
                 if(y === null){
                   if(state.ymin !== yMinAbs || state.ymax !== yMaxAbs) return false;
                 } else {
@@ -671,39 +658,24 @@
           }
         }
 
-        // Events
         qEl.addEventListener("input", render);
         sortSel.addEventListener("change", render);
-
-        // sliders
         yearMinEl.addEventListener("input", render);
         yearMaxEl.addEventListener("input", render);
 
         document.getElementById("clear").addEventListener("click", () => {
           qEl.value = "";
           sortSel.value = "relevance";
-
           if(makerCtl) makerCtl.clear();
           if(parkCtl) parkCtl.clear();
           makerSearch.value = "";
           parkSearch.value = "";
-
-          // reset years
-          yearMinEl.value = String(yMinAbs);
-          yearMaxEl.value = String(yMaxAbs);
-          updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
-
-          render();
-        });
-
-        document.getElementById("clearYears").addEventListener("click", () => {
           yearMinEl.value = String(yMinAbs);
           yearMaxEl.value = String(yMaxAbs);
           updateYearUI(yearMinEl, yearMaxEl, yMinAbs, yMaxAbs);
           render();
         });
 
-        // first render
         render();
 
       } catch(e){

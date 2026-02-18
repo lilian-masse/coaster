@@ -8,7 +8,7 @@
 <style>
   :root{
     --b:#e6e6e6;--bg:#fff;--shadow:0 1px 6px rgba(0,0,0,.04);
-    --cardsMinH: 1040px; /* ✅ hauteur stable de la zone fiches */
+    --cardsMinH: 520px;
   }
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
   h1{margin:0 0 10px}
@@ -20,7 +20,6 @@
   .box{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
   .boxTitle{font-weight:700;font-size:13px;margin:0 0 8px}
 
-  /* scroll zone + bannière sticky "sélectionnés" */
   .listWrap{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px;position:relative}
   .selBanner{
     position:sticky;top:0;z-index:5;
@@ -58,7 +57,6 @@
   .fill{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
   .rangeMeta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
 
-  /* ✅ NOUVEAU : frame stable pour les résultats */
   .cardsFrame{
     border:1px solid var(--b);
     border-radius:16px;
@@ -68,9 +66,8 @@
     min-height: var(--cardsMinH);
     box-sizing:border-box;
   }
-  /* scroll interne si la grille devient longue */
   .cardsScroll{
-    max-height: calc(100vh - 120px); /* évite d'être trop grand */
+    max-height: calc(100vh - 120px);
     overflow:auto;
     padding:2px;
   }
@@ -170,7 +167,6 @@
 
 <div id="err" class="error"></div>
 
-<!-- ✅ NOUVEAU : frame stable -->
 <div class="cardsFrame">
   <div class="cardsScroll">
     <div id="grid" class="grid"></div>
@@ -764,12 +760,27 @@ function sortRows(list, mode1, mode2, f){
     const {min, max} = sliderVal[id] || abs;
     return {min:Number(min), max:Number(max)};
   }
+
+  // ✅ IMPORTANT: dyn range must never collapse into a single value while there are results
+  // We keep at least 1 step of width when possible: [min, max] with max>=min+1 (unless abs range is also 1 wide)
   function setDyn(id, dynMin, dynMax){
     const abs = sliderAbs[id];
     if(!abs) return;
-    const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
-    const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
-    sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
+
+    let lo = Math.round(dynMin);
+    let hi = Math.round(dynMax);
+
+    lo = Math.max(abs.min, Math.min(abs.max, lo));
+    hi = Math.max(abs.min, Math.min(abs.max, hi));
+    if(lo > hi){ const t=lo; lo=hi; hi=t; }
+
+    // widen if collapsed and we can widen
+    if(lo === hi && abs.max > abs.min){
+      if(hi < abs.max) hi = hi + 1;
+      else if(lo > abs.min) lo = lo - 1;
+    }
+
+    sliderDyn[id] = {min: lo, max: hi};
   }
 
   function enforceSeatConstraints(){
@@ -898,8 +909,7 @@ function sortRows(list, mode1, mode2, f){
     if(e.key==="ArrowRight"){ e.preventDefault(); nextModal(); return; }
   });
 
-  // Numeric sliders must never lead to 0 results
-  const lastGoodSliderValue = {}; // id -> {min,max}
+  const lastGoodSliderValue = {};
 
   function countResults(){
     let c = 0;
@@ -919,6 +929,20 @@ function sortRows(list, mode1, mode2, f){
     ui.maxEl.value = String(Math.round(snap.max));
     updateDualUI(id);
   }
+
+  // ✅ FIX: if the current slider becomes "locked" (dyn.min==dyn.max), expand dyn range so user can move again
+  function ensureNotLocked(id){
+    const abs = sliderAbs[id];
+    const dyn = sliderDyn[id];
+    if(!abs || !dyn) return;
+    if(dyn.min === dyn.max && abs.max > abs.min){
+      // expand by 1 step if possible
+      if(dyn.max < abs.max) dyn.max += 1;
+      else if(dyn.min > abs.min) dyn.min -= 1;
+      sliderDyn[id] = {min: dyn.min, max: dyn.max};
+    }
+  }
+
   function onNumericSliderAttempt(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
@@ -928,13 +952,22 @@ function sortRows(list, mode1, mode2, f){
     ui.maxEl.value = String(Math.round(Number(ui.maxEl.value)));
     clampSwap(ui.minEl, ui.maxEl);
 
+    // update without collapsing dyn too hard
     updateDualUI(id);
+
+    // enforce constraints (may change dyn)
     enforceSeatConstraints();
+
+    // ✅ ensure sliders never get "stuck"
+    ensureNotLocked(id);
+    updateDualUI(id);
 
     const n = countResults();
     if(n === 0){
       restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
       enforceSeatConstraints();
+      ensureNotLocked(id);
+      updateDualUI(id);
       render();
       return;
     }
@@ -958,7 +991,15 @@ function sortRows(list, mode1, mode2, f){
       const ui = sliderUI[spec.id];
       if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
     }
+
     enforceSeatConstraints();
+
+    // ✅ ensure none are locked after constraints
+    for(const spec of NUM_SPECS){
+      ensureNotLocked(spec.id);
+      const ui = sliderUI[spec.id];
+      if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
+    }
 
     let filtered = allRows.filter(passesAll);
     filtered = sortRows(filtered, sortSel.value, sort2Sel.value, {year:numFields.year, park:fields.park});
@@ -1006,26 +1047,41 @@ function sortRows(list, mode1, mode2, f){
     waterField = pickField(sample, WATER_CANDIDATES);
 
     // build facets & sliders
+    // (facets + stable rank like before)
+    // NOTE: Keeping implementation concise here—same logic as previous versions is preserved.
+    // To avoid breaking anything, we reuse the same approach:
+
+    // create UI first
+    // master options / ranks will be computed after loading allRows
     createFacetUI();
     createSliderUI();
 
-    // prepare data
     allRows = rows.map(r=>{
       const rr = {...r};
-      rr.__water = parseWater(rr);
+      rr.__water = (function(){
+        if(waterField){
+          const s = norm(rr[waterField]);
+          if(!s) return false;
+          return ["1","true","oui","yes","y","water","eau","splash"].some(t => s === t || s.includes(t));
+        }
+        const blob = Object.values(rr).map(v=>String(v??"")).join(" ").toLowerCase();
+        return blob.includes("eau") || blob.includes("water") || blob.includes("splash");
+      })();
       computeDerivedSeats(rr);
       return rr;
     });
 
-    // master options + stable rank
+    // stable rank computation
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
-      if(!key){ facetMasterOptions[spec.id] = []; facetStableRank[spec.id] = new Map(); continue; }
-
+      if(!key){
+        facetMasterOptions[spec.id] = [];
+        facetStableRank[spec.id] = new Map();
+        continue;
+      }
       const opts = allRows
         .map(r => normalizeFacetValue(spec.id, r[key]))
         .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
-
       const uniq = Array.from(new Set(opts));
 
       const globalCounts = new Map();
@@ -1044,13 +1100,11 @@ function sortRows(list, mode1, mode2, f){
       });
 
       facetMasterOptions[spec.id] = orderedDefault;
-
       const rankMap = new Map();
       orderedDefault.forEach((v,i)=>rankMap.set(v,i));
       facetStableRank[spec.id] = rankMap;
     }
 
-    // init sliders
     initSlidersFromData();
     enforceSeatConstraints();
 
@@ -1066,6 +1120,11 @@ function sortRows(list, mode1, mode2, f){
       lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
     }
     enforceSeatConstraints();
+    for(const spec of NUM_SPECS){
+      ensureNotLocked(spec.id);
+      const ui = sliderUI[spec.id];
+      if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
+    }
 
     qEl.addEventListener("input", render);
 
@@ -1103,6 +1162,11 @@ function sortRows(list, mode1, mode2, f){
         lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
       }
       enforceSeatConstraints();
+      for(const spec of NUM_SPECS){
+        ensureNotLocked(spec.id);
+        const ui = sliderUI[spec.id];
+        if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
+      }
 
       sortSel.value = "park_asc";
       sort2Sel.value = "year_asc";

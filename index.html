@@ -16,7 +16,18 @@
 
   .box{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
   .boxTitle{font-weight:700;font-size:13px;margin:0 0 8px}
-  .list{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px}
+
+  /* ✅ scroll zone + bannière sticky "sélectionnés" */
+  .listWrap{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px;position:relative}
+  .selBanner{
+    position:sticky;top:0;z-index:5;
+    display:none;
+    padding:6px 8px;margin:-8px 0 8px; /* colle au top de la zone */
+    background:rgba(255,255,255,.92);
+    border:1px solid #eee;border-radius:10px;
+    font-size:12px;font-weight:700;
+    backdrop-filter: blur(3px);
+  }
   .row{display:flex;gap:8px;align-items:center;padding:6px 2px;font-size:13px}
   .row input{width:auto}
   .row small{opacity:.65;margin-left:auto}
@@ -231,6 +242,7 @@ const FACET_SPECS = [
   { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
 ];
 
+/* pas de décimaux => step=1 partout */
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
   { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
@@ -257,7 +269,10 @@ function createFacetBox(spec){
   box.innerHTML = `
     <div class="boxTitle">${esc(spec.label)}</div>
     <input id="search_${spec.id}" placeholder="Filtrer…">
-    <div id="list_${spec.id}" class="list"></div>
+    <div id="list_${spec.id}" class="listWrap">
+      <div id="banner_${spec.id}" class="selBanner"></div>
+      <div id="items_${spec.id}"></div>
+    </div>
     <div class="tools">
       <button id="clear_${spec.id}" type="button">Effacer</button>
     </div>
@@ -335,8 +350,6 @@ function sortRows(list, mode1, mode2, f){
   const sliderDyn = {};
   const sliderVal = {};
   const facetMasterOptions = {};
-
-  // ✅ NEW: stable ordering per facet (tie-breaker) based on initial (default) order
   const facetStableRank = {}; // facetId -> Map(value -> rank)
 
   let waterOnly = false;
@@ -430,17 +443,23 @@ function sortRows(list, mode1, mode2, f){
       facetBar.appendChild(box);
 
       const searchEl = box.querySelector(`#search_${spec.id}`);
-      const listEl = box.querySelector(`#list_${spec.id}`);
+      const listEl = box.querySelector(`#list_${spec.id}`);      // scroll container
+      const itemsEl = box.querySelector(`#items_${spec.id}`);    // content
+      const bannerEl = box.querySelector(`#banner_${spec.id}`);  // sticky banner
       const clearBtn = box.querySelector(`#clear_${spec.id}`);
 
-      facetUI[spec.id] = {searchEl, listEl, clearBtn};
+      facetUI[spec.id] = {searchEl, listEl, itemsEl, bannerEl, clearBtn};
       selected[spec.id] = new Set();
 
       clearBtn.addEventListener("click", ()=>{
         selected[spec.id].clear();
         render();
       });
+
       searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
+
+      // ✅ NEW: on scroll, update the “X sélectionné(s)” banner visibility
+      listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
     }
   }
 
@@ -602,13 +621,6 @@ function sortRows(list, mode1, mode2, f){
     return c;
   }
 
-  /* ---------------------------------------------------------
-     ✅ FIX DEMANDÉ :
-     - cochés d'abord
-     - ensuite par count décroissant
-     - et POUR LES ÉGALITÉS DE COUNT : conserver l'ordre "par défaut"
-       (stableRank), pas l'ordre alphabétique.
-  ---------------------------------------------------------- */
   function stableRankOf(facetId, value){
     const m = facetStableRank[facetId];
     if(!m) return 1e9;
@@ -625,9 +637,46 @@ function sortRows(list, mode1, mode2, f){
       const cb = counts.get(b) || 0;
       if(cb !== ca) return cb - ca; // count desc
 
-      // ✅ tie-breaker: stable default order
-      return stableRankOf(facetId, a) - stableRankOf(facetId, b);
+      return stableRankOf(facetId, a) - stableRankOf(facetId, b); // stable tie-break
     });
+  }
+
+  // ✅ NEW: show banner only when selectedCount>0 AND none of the selected rows are visible in the scroll viewport
+  function updateSelectedBanner(facetId){
+    const ui = facetUI[facetId];
+    if(!ui) return;
+
+    const selCount = selected[facetId]?.size || 0;
+    if(selCount === 0){
+      ui.bannerEl.style.display = "none";
+      ui.bannerEl.textContent = "";
+      return;
+    }
+
+    // find visible selected rows
+    const wrap = ui.listEl;
+    const top = wrap.scrollTop;
+    const bottom = top + wrap.clientHeight;
+
+    let visibleSelected = 0;
+    const checkedRows = ui.itemsEl.querySelectorAll('input[type="checkbox"]:checked');
+
+    checkedRows.forEach(cb=>{
+      const row = cb.closest(".row");
+      if(!row) return;
+      const rTop = row.offsetTop;
+      const rBottom = rTop + row.offsetHeight;
+      const isVisible = (rBottom > top) && (rTop < bottom);
+      if(isVisible) visibleSelected++;
+    });
+
+    if(visibleSelected === 0){
+      ui.bannerEl.textContent = `${selCount} sélectionné${selCount>1?"s":""}`;
+      ui.bannerEl.style.display = "block";
+    } else {
+      ui.bannerEl.style.display = "none";
+      ui.bannerEl.textContent = "";
+    }
   }
 
   function drawFacetList(facetId){
@@ -635,8 +684,9 @@ function sortRows(list, mode1, mode2, f){
     const key = fields[facetId];
 
     if(!key){
-      ui.listEl.innerHTML = `<div class="empty">Champ introuvable</div>`;
+      ui.itemsEl.innerHTML = `<div class="empty">Champ introuvable</div>`;
       ui.searchEl.disabled = true;
+      updateSelectedBanner(facetId);
       return;
     }
 
@@ -649,10 +699,9 @@ function sortRows(list, mode1, mode2, f){
     let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
 
     options = sortOptionsSelectedCountStable(facetId, options, counts, selectedSet);
-
     const shown = options.filter(v => norm(v).includes(q));
 
-    ui.listEl.innerHTML = shown.map(v=>{
+    ui.itemsEl.innerHTML = shown.map(v=>{
       const c = counts.get(v) || 0;
       const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
       const checked = selectedSet.has(v) ? "checked" : "";
@@ -665,7 +714,7 @@ function sortRows(list, mode1, mode2, f){
       `;
     }).join("") || `<div class="empty">Aucune option</div>`;
 
-    ui.listEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    ui.itemsEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
       cb.addEventListener("change", ()=>{
         const v = cb.value;
         if(cb.checked) selectedSet.add(v);
@@ -673,6 +722,9 @@ function sortRows(list, mode1, mode2, f){
         render();
       });
     });
+
+    // after re-render, recompute banner (and it will react to scroll too)
+    updateSelectedBanner(facetId);
   }
 
   function updateAllFacetUIs(){
@@ -681,6 +733,9 @@ function sortRows(list, mode1, mode2, f){
     const c = computeWaterCount();
     waterCountEl.textContent = String(c);
     waterOnlyEl.disabled = (c === 0 && !waterOnly);
+
+    // ensure banner state is correct even if list wasn't scrolled
+    for(const spec of FACET_SPECS) updateSelectedBanner(spec.id);
   }
 
   function getRange(id){
@@ -941,10 +996,14 @@ function sortRows(list, mode1, mode2, f){
       return rr;
     });
 
-    // master options for showing 0 counts + stable rank based on initial order (count desc, then alpha)
+    // master options + stable rank (default order: global count desc then alpha)
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
-      if(!key){ facetMasterOptions[spec.id] = []; facetStableRank[spec.id] = new Map(); continue; }
+      if(!key){
+        facetMasterOptions[spec.id] = [];
+        facetStableRank[spec.id] = new Map();
+        continue;
+      }
 
       const opts = allRows
         .map(r => normalizeFacetValue(spec.id, r[key]))
@@ -952,16 +1011,14 @@ function sortRows(list, mode1, mode2, f){
 
       const uniq = Array.from(new Set(opts));
 
-      // default counts without any filter applied = global counts
       const globalCounts = new Map();
-      for(const v of uniq) globalCounts.set(v, 0);
+      uniq.forEach(v => globalCounts.set(v, 0));
       for(const r of allRows){
         const v = normalizeFacetValue(spec.id, r[key]);
-        if(!v) continue;
-        if(globalCounts.has(v)) globalCounts.set(v, globalCounts.get(v) + 1);
+        if(!v || !globalCounts.has(v)) continue;
+        globalCounts.set(v, (globalCounts.get(v)||0) + 1);
       }
 
-      // default order = count desc, then alpha (only at initial baseline)
       const orderedDefault = uniq.slice().sort((a,b)=>{
         const ca = globalCounts.get(a) || 0;
         const cb = globalCounts.get(b) || 0;
@@ -971,7 +1028,6 @@ function sortRows(list, mode1, mode2, f){
 
       facetMasterOptions[spec.id] = orderedDefault;
 
-      // stable rank map
       const rankMap = new Map();
       orderedDefault.forEach((v,i)=>rankMap.set(v,i));
       facetStableRank[spec.id] = rankMap;
@@ -980,7 +1036,7 @@ function sortRows(list, mode1, mode2, f){
     initSlidersFromData();
     enforceSeatConstraints();
 
-    // ensure full span at load + lastGood = full span
+    // force full span at load + lastGood = full span
     for(const spec of NUM_SPECS){
       const abs = sliderAbs[spec.id];
       const ui = sliderUI[spec.id];
@@ -1015,6 +1071,7 @@ function sortRows(list, mode1, mode2, f){
       for(const spec of FACET_SPECS){
         selected[spec.id].clear();
         facetUI[spec.id].searchEl.value = "";
+        facetUI[spec.id].listEl.scrollTop = 0; // reset scroll
       }
 
       for(const spec of NUM_SPECS){

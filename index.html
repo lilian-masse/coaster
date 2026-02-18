@@ -183,6 +183,11 @@ function toNumber(v){
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
+function toInt(v){
+  const n = toNumber(v);
+  if(n === null) return null;
+  return Math.round(n);
+}
 function toYear(v){
   const n = toNumber(v);
   if(n === null) return null;
@@ -226,13 +231,14 @@ const FACET_SPECS = [
   { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
 ];
 
+/* ✅ demande: PAS de décimaux => step=1 partout */
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
-  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:0.1 },
-  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:0.1 },
+  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
+  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:1, integer:true },
   { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
-  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1 },
-  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:0.1 },
+  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1, integer:true },
+  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:1, integer:true },
   { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
 
   { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
@@ -329,13 +335,12 @@ function sortRows(list, mode1, mode2, f){
   const sliderAbs = {};
   const sliderDyn = {};
   const sliderVal = {};
-  const facetMasterOptions = {}; // ✅ NEW: all possible values per facet (including those that can become 0)
+  const facetMasterOptions = {}; // all possible facet values (for showing 0)
 
   let waterOnly = false;
   let lastRendered = [];
   let currentIndex = -1;
 
-  // defaults for empty fields
   function normalizeFacetValue(facetId, raw){
     let v = String(raw ?? "").trim();
     if(facetId === "launchAngle" && !v) return "Incliné";
@@ -360,15 +365,15 @@ function sortRows(list, mode1, mode2, f){
     const dKey = numFields.carsPerTrain;
     const eKey = numFields.seatsPerTrain;
 
-    const a = aKey ? toNumber(row[aKey]) : null;
-    const b = bKey ? toNumber(row[bKey]) : null;
-    const c = cKey ? toNumber(row[cKey]) : null;
-    const d = dKey ? toNumber(row[dKey]) : null;
-    const e = eKey ? toNumber(row[eKey]) : null;
+    const a = aKey ? toInt(row[aKey]) : null;
+    const b = bKey ? toInt(row[bKey]) : null;
+    const c = cKey ? toInt(row[cKey]) : null;
+    const d = dKey ? toInt(row[dKey]) : null;
+    const e = eKey ? toInt(row[eKey]) : null;
 
     if(cKey && c === null && a !== null && b !== null) row[cKey] = a * b;
 
-    const cNow = cKey ? toNumber(row[cKey]) : null;
+    const cNow = cKey ? toInt(row[cKey]) : null;
     if(eKey && e === null && d !== null && cNow !== null) row[eKey] = cNow * d;
   }
 
@@ -395,8 +400,9 @@ function sortRows(list, mode1, mode2, f){
     ui.minEl.max = String(dyn.max);
     ui.maxEl.max = String(dyn.max);
 
-    let minV = Number(ui.minEl.value);
-    let maxV = Number(ui.maxEl.value);
+    // ✅ pas de décimaux: on force à des entiers
+    let minV = Math.round(Number(ui.minEl.value));
+    let maxV = Math.round(Number(ui.maxEl.value));
     minV = Math.max(dyn.min, Math.min(dyn.max, minV));
     maxV = Math.max(dyn.min, Math.min(dyn.max, maxV));
     if(minV > maxV){ const t=minV; minV=maxV; maxV=t; }
@@ -452,7 +458,6 @@ function sortRows(list, mode1, mode2, f){
 
       sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
 
-      // numeric sliders: never allow 0 results
       minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
       maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
     }
@@ -473,7 +478,7 @@ function sortRows(list, mode1, mode2, f){
       }
 
       let values = allRows
-        .map(r => spec.isYear ? toYear(r[key]) : toNumber(r[key]))
+        .map(r => spec.isYear ? toYear(r[key]) : toInt(r[key]))
         .filter(v => Number.isFinite(v));
 
       if(values.length === 0){
@@ -487,17 +492,18 @@ function sortRows(list, mode1, mode2, f){
 
       let min = Math.min(...values);
       let max = Math.max(...values);
-      const step = spec.step ?? 1;
-      const integer = !!spec.integer || step === 1;
-      if(integer){ min = Math.floor(min); max = Math.ceil(max); }
 
-      sliderAbs[spec.id] = {min, max, step, integer};
+      // ✅ entiers
+      min = Math.floor(min);
+      max = Math.ceil(max);
+
+      sliderAbs[spec.id] = {min, max, step:1, integer:true};
       sliderDyn[spec.id] = {min, max};
 
-      ui.minEl.step = String(step);
-      ui.maxEl.step = String(step);
+      ui.minEl.step = "1";
+      ui.maxEl.step = "1";
 
-      // ✅ requested: default to min..max
+      // default full span min..max
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -530,7 +536,7 @@ function sortRows(list, mode1, mode2, f){
       if(!key || !ui || ui.minEl.disabled) continue;
 
       const {min, max} = sliderVal[spec.id] || sliderAbs[spec.id];
-      const val = spec.isYear ? toYear(row[key]) : toNumber(row[key]);
+      const val = spec.isYear ? toYear(row[key]) : toInt(row[key]);
 
       if(val === null){
         const abs = sliderAbs[spec.id];
@@ -601,8 +607,12 @@ function sortRows(list, mode1, mode2, f){
     return c;
   }
 
-  function sortOptionsByCountsDesc(options, counts){
+  // ✅ tri: cochés d'abord, puis count desc, puis alpha
+  function sortOptionsSelectedFirst(options, counts, selectedSet){
     return options.slice().sort((a,b)=>{
+      const sa = selectedSet.has(a) ? 1 : 0;
+      const sb = selectedSet.has(b) ? 1 : 0;
+      if(sb !== sa) return sb - sa; // selected first
       const ca = counts.get(a) || 0;
       const cb = counts.get(b) || 0;
       if(cb !== ca) return cb - ca;
@@ -624,18 +634,16 @@ function sortRows(list, mode1, mode2, f){
     const selectedSet = selected[facetId];
     const counts = computeFacetCounts(facetId);
 
-    // ✅ requested: show options even if count=0
     const baseOptions = facetMasterOptions[facetId] || [];
     const optSet = new Set([...baseOptions, ...Array.from(selectedSet)]);
     let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
 
-    // sort by count desc (0 goes bottom), then alpha
-    options = sortOptionsByCountsDesc(options, counts);
+    options = sortOptionsSelectedFirst(options, counts, selectedSet);
 
     const shown = options.filter(v => norm(v).includes(q));
 
     ui.listEl.innerHTML = shown.map(v=>{
-      const c = counts.get(v) || 0;
+      const c = counts.get(v) || 0;          // ✅ affiche 0
       const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
       const checked = selectedSet.has(v) ? "checked" : "";
       return `
@@ -675,8 +683,8 @@ function sortRows(list, mode1, mode2, f){
   function setDyn(id, dynMin, dynMax){
     const abs = sliderAbs[id];
     if(!abs) return;
-    const dmin = Math.max(abs.min, Math.min(abs.max, dynMin));
-    const dmax = Math.max(abs.min, Math.min(abs.max, dynMax));
+    const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
+    const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
     sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
   }
 
@@ -806,10 +814,7 @@ function sortRows(list, mode1, mode2, f){
     if(e.key==="ArrowRight"){ e.preventDefault(); nextModal(); return; }
   });
 
-  /* ---------------------------------------------------------
-     Numeric sliders must never lead to 0 results.
-     If change => 0 results, revert that slider to last good.
-  ---------------------------------------------------------- */
+  // Numeric sliders must never lead to 0 results
   const lastGoodSliderValue = {}; // id -> {min,max}
 
   function countResults(){
@@ -817,30 +822,30 @@ function sortRows(list, mode1, mode2, f){
     for(const r of allRows) if(passesAll(r)) c++;
     return c;
   }
-
   function snapshotSlider(id){
     const ui = sliderUI[id];
     if(!ui || ui.minEl.disabled) return null;
     return {min:Number(ui.minEl.value), max:Number(ui.maxEl.value)};
   }
-
   function restoreSlider(id, snap){
     if(!snap) return;
     const ui = sliderUI[id];
     if(!ui || ui.minEl.disabled) return;
-    ui.minEl.value = String(snap.min);
-    ui.maxEl.value = String(snap.max);
+    ui.minEl.value = String(Math.round(snap.min));
+    ui.maxEl.value = String(Math.round(snap.max));
     updateDualUI(id);
   }
-
   function onNumericSliderAttempt(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled) return;
 
+    // round + keep min<=max
+    ui.minEl.value = String(Math.round(Number(ui.minEl.value)));
+    ui.maxEl.value = String(Math.round(Number(ui.maxEl.value)));
     clampSwap(ui.minEl, ui.maxEl);
-    updateDualUI(id);
 
+    updateDualUI(id);
     enforceSeatConstraints();
 
     const n = countResults();
@@ -850,7 +855,6 @@ function sortRows(list, mode1, mode2, f){
       render();
       return;
     }
-
     lastGoodSliderValue[id] = snapshotSlider(id) || {min:abs.min, max:abs.max};
     render();
   }
@@ -929,7 +933,7 @@ function sortRows(list, mode1, mode2, f){
       return rr;
     });
 
-    // ✅ NEW: build master options once (for showing 0 counts)
+    // master options for showing 0 counts
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
       if(!key){ facetMasterOptions[spec.id] = []; continue; }
@@ -942,7 +946,7 @@ function sortRows(list, mode1, mode2, f){
     initSlidersFromData();
     enforceSeatConstraints();
 
-    // ✅ requested (again): force numeric ranges to min..max at load (after seat constraints)
+    // ensure full span at load + lastGood = full span
     for(const spec of NUM_SPECS){
       const abs = sliderAbs[spec.id];
       const ui = sliderUI[spec.id];
@@ -951,16 +955,9 @@ function sortRows(list, mode1, mode2, f){
       ui.minEl.value = String(abs.min);
       ui.maxEl.value = String(abs.max);
       updateDualUI(spec.id);
-    }
-    enforceSeatConstraints();
-
-    // init lastGoodSliderValue to defaults (full span)
-    for(const spec of NUM_SPECS){
-      const abs = sliderAbs[spec.id];
-      const ui = sliderUI[spec.id];
-      if(!abs || !ui || ui.minEl.disabled) continue;
       lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
     }
+    enforceSeatConstraints();
 
     qEl.addEventListener("input", render);
 

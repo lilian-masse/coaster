@@ -6,7 +6,10 @@
 <title>Coasters — Fiches</title>
 
 <style>
-  :root{--b:#e6e6e6;--bg:#fff;--shadow:0 1px 6px rgba(0,0,0,.04)}
+  :root{
+    --b:#e6e6e6;--bg:#fff;--shadow:0 1px 6px rgba(0,0,0,.04);
+    --cardsMinH: 520px; /* ✅ hauteur stable de la zone fiches */
+  }
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
   h1{margin:0 0 10px}
   .bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:22px;align-items:start}
@@ -17,12 +20,12 @@
   .box{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
   .boxTitle{font-weight:700;font-size:13px;margin:0 0 8px}
 
-  /* ✅ scroll zone + bannière sticky "sélectionnés" */
+  /* scroll zone + bannière sticky "sélectionnés" */
   .listWrap{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px;position:relative}
   .selBanner{
     position:sticky;top:0;z-index:5;
     display:none;
-    padding:6px 8px;margin:-8px 0 8px; /* colle au top de la zone */
+    padding:6px 8px;margin:-8px 0 8px;
     background:rgba(255,255,255,.92);
     border:1px solid #eee;border-radius:10px;
     font-size:12px;font-weight:700;
@@ -55,6 +58,23 @@
   .fill{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
   .rangeMeta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
 
+  /* ✅ NOUVEAU : frame stable pour les résultats */
+  .cardsFrame{
+    border:1px solid var(--b);
+    border-radius:16px;
+    background:#fff;
+    box-shadow:var(--shadow);
+    padding:12px;
+    min-height: var(--cardsMinH);
+    box-sizing:border-box;
+  }
+  /* scroll interne si la grille devient longue */
+  .cardsScroll{
+    max-height: calc(100vh - 120px); /* évite d'être trop grand */
+    overflow:auto;
+    padding:2px;
+  }
+
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
   .card{border:1px solid var(--b);border-radius:14px;background:#fff;box-shadow:var(--shadow);padding:14px;cursor:pointer}
   .card:focus{outline:2px solid #cfcfcf;outline-offset:2px}
@@ -64,7 +84,7 @@
   .k{opacity:.6}
   .v{word-break:break-word}
 
-  .empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.85}
+  .empty{padding:18px;border:1px dashed #ccc;border-radius:12px;opacity:.85;background:#fff}
   .error{display:none;white-space:pre-wrap;border:1px solid #f0c2c2;background:#fff5f5;color:#7a1f1f;padding:10px 12px;border-radius:12px;margin:12px 0}
 
   .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}
@@ -149,7 +169,13 @@
 <div class="bar" id="sliderBar"></div>
 
 <div id="err" class="error"></div>
-<div id="grid" class="grid"></div>
+
+<!-- ✅ NOUVEAU : frame stable -->
+<div class="cardsFrame">
+  <div class="cardsScroll">
+    <div id="grid" class="grid"></div>
+  </div>
+</div>
 
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="modalWrap">
@@ -242,7 +268,6 @@ const FACET_SPECS = [
   { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
 ];
 
-/* pas de décimaux => step=1 partout */
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
   { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
@@ -350,7 +375,7 @@ function sortRows(list, mode1, mode2, f){
   const sliderDyn = {};
   const sliderVal = {};
   const facetMasterOptions = {};
-  const facetStableRank = {}; // facetId -> Map(value -> rank)
+  const facetStableRank = {};
 
   let waterOnly = false;
   let lastRendered = [];
@@ -443,9 +468,9 @@ function sortRows(list, mode1, mode2, f){
       facetBar.appendChild(box);
 
       const searchEl = box.querySelector(`#search_${spec.id}`);
-      const listEl = box.querySelector(`#list_${spec.id}`);      // scroll container
-      const itemsEl = box.querySelector(`#items_${spec.id}`);    // content
-      const bannerEl = box.querySelector(`#banner_${spec.id}`);  // sticky banner
+      const listEl = box.querySelector(`#list_${spec.id}`);
+      const itemsEl = box.querySelector(`#items_${spec.id}`);
+      const bannerEl = box.querySelector(`#banner_${spec.id}`);
       const clearBtn = box.querySelector(`#clear_${spec.id}`);
 
       facetUI[spec.id] = {searchEl, listEl, itemsEl, bannerEl, clearBtn};
@@ -457,8 +482,6 @@ function sortRows(list, mode1, mode2, f){
       });
 
       searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
-
-      // ✅ NEW: on scroll, update the “X sélectionné(s)” banner visibility
       listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
     }
   }
@@ -631,17 +654,16 @@ function sortRows(list, mode1, mode2, f){
     return options.slice().sort((a,b)=>{
       const sa = selectedSet.has(a) ? 1 : 0;
       const sb = selectedSet.has(b) ? 1 : 0;
-      if(sb !== sa) return sb - sa; // selected first
+      if(sb !== sa) return sb - sa;
 
       const ca = counts.get(a) || 0;
       const cb = counts.get(b) || 0;
-      if(cb !== ca) return cb - ca; // count desc
+      if(cb !== ca) return cb - ca;
 
-      return stableRankOf(facetId, a) - stableRankOf(facetId, b); // stable tie-break
+      return stableRankOf(facetId, a) - stableRankOf(facetId, b);
     });
   }
 
-  // ✅ NEW: show banner only when selectedCount>0 AND none of the selected rows are visible in the scroll viewport
   function updateSelectedBanner(facetId){
     const ui = facetUI[facetId];
     if(!ui) return;
@@ -653,7 +675,6 @@ function sortRows(list, mode1, mode2, f){
       return;
     }
 
-    // find visible selected rows
     const wrap = ui.listEl;
     const top = wrap.scrollTop;
     const bottom = top + wrap.clientHeight;
@@ -723,7 +744,6 @@ function sortRows(list, mode1, mode2, f){
       });
     });
 
-    // after re-render, recompute banner (and it will react to scroll too)
     updateSelectedBanner(facetId);
   }
 
@@ -734,7 +754,6 @@ function sortRows(list, mode1, mode2, f){
     waterCountEl.textContent = String(c);
     waterOnlyEl.disabled = (c === 0 && !waterOnly);
 
-    // ensure banner state is correct even if list wasn't scrolled
     for(const spec of FACET_SPECS) updateSelectedBanner(spec.id);
   }
 
@@ -986,9 +1005,11 @@ function sortRows(list, mode1, mode2, f){
     for(const spec of NUM_SPECS) numFields[spec.id] = pickField(sample, spec.candidates);
     waterField = pickField(sample, WATER_CANDIDATES);
 
+    // build facets & sliders
     createFacetUI();
     createSliderUI();
 
+    // prepare data
     allRows = rows.map(r=>{
       const rr = {...r};
       rr.__water = parseWater(rr);
@@ -996,14 +1017,10 @@ function sortRows(list, mode1, mode2, f){
       return rr;
     });
 
-    // master options + stable rank (default order: global count desc then alpha)
+    // master options + stable rank
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
-      if(!key){
-        facetMasterOptions[spec.id] = [];
-        facetStableRank[spec.id] = new Map();
-        continue;
-      }
+      if(!key){ facetMasterOptions[spec.id] = []; facetStableRank[spec.id] = new Map(); continue; }
 
       const opts = allRows
         .map(r => normalizeFacetValue(spec.id, r[key]))
@@ -1033,10 +1050,11 @@ function sortRows(list, mode1, mode2, f){
       facetStableRank[spec.id] = rankMap;
     }
 
+    // init sliders
     initSlidersFromData();
     enforceSeatConstraints();
 
-    // force full span at load + lastGood = full span
+    // full span at load + lastGood = full span
     for(const spec of NUM_SPECS){
       const abs = sliderAbs[spec.id];
       const ui = sliderUI[spec.id];
@@ -1071,7 +1089,7 @@ function sortRows(list, mode1, mode2, f){
       for(const spec of FACET_SPECS){
         selected[spec.id].clear();
         facetUI[spec.id].searchEl.value = "";
-        facetUI[spec.id].listEl.scrollTop = 0; // reset scroll
+        facetUI[spec.id].listEl.scrollTop = 0;
       }
 
       for(const spec of NUM_SPECS){

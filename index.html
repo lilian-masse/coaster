@@ -6,10 +6,7 @@
 <title>Coasters — Fiches</title>
 
 <style>
-  :root{
-    --b:#e6e6e6;--bg:#fff;--shadow:0 1px 6px rgba(0,0,0,.04);
-    --cardsMinH: 520px;
-  }
+  :root{--b:#e6e6e6;--bg:#fff;--shadow:0 1px 6px rgba(0,0,0,.04);--cardsMinH:520px}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:24px}
   h1{margin:0 0 10px}
   .bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:22px;align-items:start}
@@ -21,15 +18,8 @@
   .boxTitle{font-weight:700;font-size:13px;margin:0 0 8px}
 
   .listWrap{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px;position:relative}
-  .selBanner{
-    position:sticky;top:0;z-index:5;
-    display:none;
-    padding:6px 8px;margin:-8px 0 8px;
-    background:rgba(255,255,255,.92);
-    border:1px solid #eee;border-radius:10px;
-    font-size:12px;font-weight:700;
-    backdrop-filter: blur(3px);
-  }
+  .selBanner{position:sticky;top:0;z-index:5;display:none;padding:6px 8px;margin:-8px 0 8px;background:rgba(255,255,255,.92);
+    border:1px solid #eee;border-radius:10px;font-size:12px;font-weight:700;backdrop-filter:blur(3px)}
   .row{display:flex;gap:8px;align-items:center;padding:6px 2px;font-size:13px}
   .row input{width:auto}
   .row small{opacity:.65;margin-left:auto}
@@ -42,35 +32,17 @@
   .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px;opacity:.9}
 
   .dual{position:relative;height:36px}
-  .dual input[type="range"]{
-    position:absolute;left:0;top:9px;width:100%;
-    margin:0;padding:0;background:none;
-    pointer-events:none;-webkit-appearance:none;appearance:none;height:18px
-  }
+  .dual input[type="range"]{position:absolute;left:0;top:9px;width:100%;margin:0;padding:0;background:none;pointer-events:none;
+    -webkit-appearance:none;appearance:none;height:18px}
   .dual input[type="range"]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:transparent}
-  .dual input[type="range"]::-webkit-slider-thumb{
-    -webkit-appearance:none;appearance:none;pointer-events:auto;
-    height:16px;width:16px;border-radius:50%;
-    border:1px solid #999;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.12);cursor:pointer
-  }
+  .dual input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;pointer-events:auto;height:16px;width:16px;border-radius:50%;
+    border:1px solid #999;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.12);cursor:pointer}
   .track{position:absolute;left:0;right:0;top:15px;height:6px;background:#eee;border-radius:999px}
   .fill{position:absolute;top:15px;height:6px;background:#ccc;border-radius:999px}
   .rangeMeta{display:flex;justify-content:space-between;font-size:12px;opacity:.75;margin-top:6px}
 
-  .cardsFrame{
-    border:1px solid var(--b);
-    border-radius:16px;
-    background:#fff;
-    box-shadow:var(--shadow);
-    padding:12px;
-    min-height: var(--cardsMinH);
-    box-sizing:border-box;
-  }
-  .cardsScroll{
-    max-height: calc(100vh - 120px);
-    overflow:auto;
-    padding:2px;
-  }
+  .cardsFrame{border:1px solid var(--b);border-radius:16px;background:#fff;box-shadow:var(--shadow);padding:12px;min-height:var(--cardsMinH);box-sizing:border-box}
+  .cardsScroll{max-height:calc(100vh - 120px);overflow:auto;padding:2px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
   .card{border:1px solid var(--b);border-radius:14px;background:#fff;box-shadow:var(--shadow);padding:14px;cursor:pointer}
@@ -86,8 +58,8 @@
 
   .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}
   .modalOverlay.open{display:flex}
-  .modalWrap{position:relative;width:min(820px, 100%);display:flex;align-items:center;justify-content:center}
-  .modal{width:100%;max-height:min(82vh, 820px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid #eee}
+  .modalWrap{position:relative;width:min(820px,100%);display:flex;align-items:center;justify-content:center}
+  .modal{width:100%;max-height:min(82vh,820px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid #eee}
   .modalHeader{position:sticky;top:0;background:#fff;border-bottom:1px solid #eee;padding:14px 16px}
   .modalTitle{font-weight:800;margin:0;font-size:18px;line-height:1.25}
   .modalSub{margin:4px 0 0;opacity:.7;font-size:13px}
@@ -95,46 +67,22 @@
   .modalGrid{display:grid;grid-template-columns:180px 1fr;gap:8px 12px;font-size:14px}
   .modalK{opacity:.65}
   .modalV{word-break:break-word}
-  @media (max-width:560px){ .modalGrid{grid-template-columns:1fr;gap:6px} }
+  @media (max-width:560px){.modalGrid{grid-template-columns:1fr;gap:6px}}
 
-  .navArrow{
-    position:absolute;top:50%;transform:translateY(-50%);
-    width:46px;height:46px;border-radius:999px;
-    border:1px solid rgba(255,255,255,.35);
-    background:rgba(0,0,0,.28);color:#fff;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;user-select:none;font-size:26px;line-height:1;padding:0;
-  }
+  .navArrow{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:999px;border:1px solid rgba(255,255,255,.35);
+    background:rgba(0,0,0,.28);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;font-size:26px;line-height:1;padding:0}
   .navArrow:hover{background:rgba(0,0,0,.38)}
   .navArrow:focus{outline:2px solid rgba(255,255,255,.65);outline-offset:2px}
   .navLeft{left:-10px}
   .navRight{right:-10px}
   .navArrow[disabled]{display:none}
-  @media (max-width:520px){
-    .navLeft{left:4px}.navRight{right:4px}.navArrow{width:42px;height:42px;font-size:24px}
-  }
+  @media (max-width:520px){.navLeft{left:4px}.navRight{right:4px}.navArrow{width:42px;height:42px;font-size:24px}}
 
   .sectionTitle{font-weight:800;margin:18px 0 8px;font-size:14px;opacity:.85}
 
-  /* ✅ groupe “Sièges” vertical + même largeur */
-  .seatGroup{
-    border:1px solid var(--b);
-    border-radius:14px;
-    background:#fff;
-    box-shadow:var(--shadow);
-    padding:12px;
-  }
-  .seatGroupTitle{
-    font-weight:800;
-    font-size:14px;
-    opacity:.85;
-    margin:0 0 10px;
-  }
-  .seatGroupCol{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
+  .seatGroup{border:1px solid var(--b);border-radius:14px;background:#fff;box-shadow:var(--shadow);padding:12px}
+  .seatGroupTitle{font-weight:800;font-size:14px;opacity:.85;margin:0 0 10px}
+  .seatGroupCol{display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 
@@ -142,10 +90,7 @@
 <h1>Coasters</h1>
 
 <div class="bar">
-  <div>
-    <label>Recherche</label>
-    <input id="q" placeholder="Rechercher…">
-  </div>
+  <div><label>Recherche</label><input id="q" placeholder="Rechercher…"></div>
 
   <div>
     <label>Tri principal</label>
@@ -174,9 +119,7 @@
     </label>
   </div>
 
-  <div style="align-self:end">
-    <button id="clear" type="button">Réinitialiser</button>
-  </div>
+  <div style="align-self:end"><button id="clear" type="button">Réinitialiser</button></div>
 </div>
 
 <div class="sectionTitle">Filtres</div>
@@ -188,9 +131,7 @@
 <div id="err" class="error"></div>
 
 <div class="cardsFrame">
-  <div class="cardsScroll">
-    <div id="grid" class="grid"></div>
-  </div>
+  <div class="cardsScroll"><div id="grid" class="grid"></div></div>
 </div>
 
 <div id="modalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
@@ -202,9 +143,7 @@
         <p id="modalSub" class="modalSub"></p>
         <p class="pill" style="margin:10px 0 0;display:inline-block;opacity:.85">Clique en dehors, Échap, ou flèches ← →</p>
       </div>
-      <div class="modalBody">
-        <div id="modalGrid" class="modalGrid"></div>
-      </div>
+      <div class="modalBody"><div id="modalGrid" class="modalGrid"></div></div>
     </div>
     <button id="navRight" class="navArrow navRight" type="button" aria-label="Suivant">›</button>
   </div>
@@ -217,64 +156,32 @@ const $ = (id)=>document.getElementById(id);
 function showError(msg){ $("err").style.display="block"; $("err").textContent = msg; }
 function clearError(){ $("err").style.display="none"; $("err").textContent = ""; }
 
-function norm(s){
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/\s+/g," ")
-    .trim();
-}
-function esc(s){
-  return String(s ?? "")
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-}
-function toNumber(v){
-  const s = String(v ?? "").trim();
-  if(!s) return null;
-  const cleaned = s.replace(/[^0-9.\-]/g,"");
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
-}
-function toInt(v){
-  const n = toNumber(v);
-  if(n === null) return null;
-  return Math.round(n);
-}
+function norm(s){return String(s??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+function toNumber(v){const s=String(v??"").trim(); if(!s) return null; const cleaned=s.replace(/[^0-9.\-]/g,""); const n=Number(cleaned); return Number.isFinite(n)?n:null;}
+function toInt(v){const n=toNumber(v); return n===null?null:Math.round(n);}
 function toYear(v){
-  const n = toNumber(v);
-  if(n === null) return null;
-  if(n >= 1800 && n <= 2200) return Math.trunc(n);
-  const a = Math.abs(n);
-  if(a > 1e11){ const y = new Date(n).getUTCFullYear(); return Number.isFinite(y) ? y : null; }
-  if(a > 1e9){ const y = new Date(n*1000).getUTCFullYear(); return Number.isFinite(y) ? y : null; }
+  const n=toNumber(v); if(n===null) return null;
+  if(n>=1800 && n<=2200) return Math.trunc(n);
+  const a=Math.abs(n);
+  if(a>1e11){ const y=new Date(n).getUTCFullYear(); return Number.isFinite(y)?y:null; }
+  if(a>1e9){ const y=new Date(n*1000).getUTCFullYear(); return Number.isFinite(y)?y:null; }
   return null;
 }
-function titleizeKey(k){
-  const s = String(k ?? "").replace(/_/g," ").trim();
-  if(!s) return "Champ";
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-function sortFamily(mode){ return String(mode||"").split("_")[0]; }
-function pickField(obj, candidates){
-  const keys = Object.keys(obj || {});
-  const map = new Map(keys.map(k => [norm(k), k]));
-  for(const c of candidates){
-    const hit = map.get(norm(c));
-    if(hit) return hit;
-  }
-  for(const k of keys){
-    const nk = norm(k);
-    if(candidates.some(c => nk.includes(norm(c)))) return k;
-  }
+function titleizeKey(k){const s=String(k??"").replace(/_/g," ").trim(); return s? s.charAt(0).toUpperCase()+s.slice(1):"Champ";}
+function sortFamily(mode){return String(mode||"").split("_")[0];}
+function pickField(obj,candidates){
+  const keys=Object.keys(obj||{}); const map=new Map(keys.map(k=>[norm(k),k]));
+  for(const c of candidates){ const hit=map.get(norm(c)); if(hit) return hit; }
+  for(const k of keys){ const nk=norm(k); if(candidates.some(c=>nk.includes(norm(c)))) return k; }
   return null;
 }
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-function ceilDiv(a, b){ return Math.ceil(a / Math.max(1, b)); }
-function floorDiv(a, b){ return Math.floor(a / Math.max(1, b)); }
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function ceilDiv(a,b){return Math.ceil(a/Math.max(1,b));}
+function floorDiv(a,b){return Math.floor(a/Math.max(1,b));}
 
 /* ---------- Specs ---------- */
-const FACET_SPECS = [
+const FACET_SPECS=[
   { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
   { id:"park", label:"Parc", candidates:["Parc","Park"] },
   { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
@@ -287,47 +194,44 @@ const FACET_SPECS = [
   { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
 ];
 
-const NUM_SPECS = [
-  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
-  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
-  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:1, integer:true },
-  { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
-  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1, integer:true },
-  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:1, integer:true },
-  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
+const NUM_SPECS=[
+  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true },
+  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"] },
+  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"] },
+  { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"] },
+  { id:"length", label:"Longueur", candidates:["Longueur","Length"] },
+  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"] },
+  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"] },
 
-  { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
-  { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
-  { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"], step:1, integer:true },
-  { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
-  { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"], step:1, integer:true },
+  { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"] },
+  { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"] },
+  { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"] },
+  { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"] },
+  { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"] },
 ];
 
-const SEAT_GROUP = ["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"];
-
-const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];
+const SEAT_GROUP=["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"];
+const WATER_CANDIDATES=["Eau","Water","Splash","Aquatique"];
 
 /* ---------- UI builders ---------- */
 function createFacetBox(spec){
-  const box = document.createElement("div");
-  box.className = "box";
-  box.innerHTML = `
+  const box=document.createElement("div");
+  box.className="box";
+  box.innerHTML=`
     <div class="boxTitle">${esc(spec.label)}</div>
     <input id="search_${spec.id}" placeholder="Filtrer…">
     <div id="list_${spec.id}" class="listWrap">
       <div id="banner_${spec.id}" class="selBanner"></div>
       <div id="items_${spec.id}"></div>
     </div>
-    <div class="tools">
-      <button id="clear_${spec.id}" type="button">Effacer</button>
-    </div>
+    <div class="tools"><button id="clear_${spec.id}" type="button">Effacer</button></div>
   `;
   return box;
 }
 function createDualSlider(spec){
-  const wrap = document.createElement("div");
-  wrap.className = "rangeWrap";
-  wrap.innerHTML = `
+  const wrap=document.createElement("div");
+  wrap.className="rangeWrap";
+  wrap.innerHTML=`
     <div class="rangeHead">
       <span class="name">${esc(spec.label)}</span>
       <span class="pill" id="pill_${spec.id}">—</span>
@@ -347,19 +251,19 @@ function createDualSlider(spec){
 }
 
 /* ---------- Sorting ---------- */
-function sortRows(list, mode1, mode2, f){
-  const getYear = (r)=> f.year ? (toYear(r[f.year]) ?? null) : null;
-  const getPark = (r)=> f.park ? String(r[f.park] ?? "") : "";
-  function cmp(mode, a, b){
-    if(mode === "year_desc") return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
-    if(mode === "year_asc")  return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
-    if(mode === "park_asc")  return getPark(a).localeCompare(getPark(b), "fr");
+function sortRows(list,mode1,mode2,f){
+  const getYear=(r)=>f.year?(toYear(r[f.year])??null):null;
+  const getPark=(r)=>f.park?String(r[f.park]??""):"";
+  function cmp(mode,a,b){
+    if(mode==="year_desc") return (getYear(b)??-Infinity)-(getYear(a)??-Infinity);
+    if(mode==="year_asc") return (getYear(a)??Infinity)-(getYear(b)??Infinity);
+    if(mode==="park_asc") return getPark(a).localeCompare(getPark(b),"fr");
     return 0;
   }
   return list.slice().sort((a,b)=>{
-    let c = cmp(mode1,a,b); if(c!==0) return c;
-    c = cmp(mode2,a,b); if(c!==0) return c;
-    c = cmp("park_asc",a,b); if(c!==0) return c;
+    let c=cmp(mode1,a,b); if(c!==0) return c;
+    c=cmp(mode2,a,b); if(c!==0) return c;
+    c=cmp("park_asc",a,b); if(c!==0) return c;
     return cmp("year_asc",a,b);
   });
 }
@@ -367,473 +271,356 @@ function sortRows(list, mode1, mode2, f){
 (async function(){
   clearError();
 
-  const facetBar = $("facetBar");
-  const sliderBar = $("sliderBar");
-  const grid = $("grid");
-  const qEl = $("q");
-  const sortSel = $("sort");
-  const sort2Sel = $("sort2");
-  const waterOnlyEl = $("waterOnly");
-  const waterCountEl = $("waterCount");
+  const facetBar=$("facetBar");
+  const sliderBar=$("sliderBar");
+  const grid=$("grid");
+  const qEl=$("q");
+  const sortSel=$("sort");
+  const sort2Sel=$("sort2");
+  const waterOnlyEl=$("waterOnly");
+  const waterCountEl=$("waterCount");
 
-  const navLeftBtn = $("navLeft");
-  const navRightBtn = $("navRight");
-  const modalOverlay = $("modalOverlay");
-  const modalTitleEl = $("modalTitle");
-  const modalSubEl = $("modalSub");
-  const modalGridEl = $("modalGrid");
+  const navLeftBtn=$("navLeft");
+  const navRightBtn=$("navRight");
+  const modalOverlay=$("modalOverlay");
+  const modalTitleEl=$("modalTitle");
+  const modalSubEl=$("modalSub");
+  const modalGridEl=$("modalGrid");
 
-  let allRows = [];
-  let fields = {};
-  let numFields = {};
-  let waterField = null;
+  let allRows=[];
+  let fields={};
+  let numFields={};
+  let waterField=null;
 
-  const selected = {};
-  const facetUI = {};
-  const sliderUI = {};
-  const sliderAbs = {};   // hard bounds from Excel
-  const sliderVal = {};   // current chosen ranges
-  const facetMasterOptions = {};
-  const facetStableRank = {};
+  const selected={};
+  const facetUI={};
+  const sliderUI={};
+  const sliderAbs={};  // Excel min/max (hard)
+  const sliderVal={};  // current selection (min/max)
 
-  // ✅ same visual scale for the “seat group”
-  let seatScaleMin = null;
-  let seatScaleMax = null;
+  const facetMasterOptions={};
+  const facetStableRank={};
 
-  let waterOnly = false;
-  let lastRendered = [];
-  let currentIndex = -1;
+  let seatScaleMin=null, seatScaleMax=null;
+  let waterOnly=false;
+  let lastRendered=[];
+  let currentIndex=-1;
 
-  function normalizeFacetValue(facetId, raw){
-    let v = String(raw ?? "").trim();
-    if(facetId === "launchAngle" && !v) return "Incliné";
-    if(facetId === "structure" && !v) return "Acier";
+  function normalizeFacetValue(facetId,raw){
+    let v=String(raw??"").trim();
+    if(facetId==="launchAngle" && !v) return "Incliné";
+    if(facetId==="structure" && !v) return "Acier";
     return v;
   }
 
   function parseWater(row){
     if(waterField){
-      const s = norm(row[waterField]);
+      const s=norm(row[waterField]);
       if(!s) return false;
-      return ["1","true","oui","yes","y","water","eau","splash"].some(t => s === t || s.includes(t));
+      return ["1","true","oui","yes","y","water","eau","splash"].some(t=>s===t||s.includes(t));
     }
-    const blob = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
-    return blob.includes("eau") || blob.includes("water") || blob.includes("splash");
+    const blob=Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
+    return blob.includes("eau")||blob.includes("water")||blob.includes("splash");
   }
 
   function computeDerivedSeats(row){
-    const aKey = numFields.seatsPerRow;
-    const bKey = numFields.rowsPerCar;
-    const cKey = numFields.seatsPerCar;
-    const dKey = numFields.carsPerTrain;
-    const eKey = numFields.seatsPerTrain;
+    const aKey=numFields.seatsPerRow;
+    const bKey=numFields.rowsPerCar;
+    const cKey=numFields.seatsPerCar;
+    const dKey=numFields.carsPerTrain;
+    const eKey=numFields.seatsPerTrain;
 
-    const a = aKey ? toInt(row[aKey]) : null;
-    const b = bKey ? toInt(row[bKey]) : null;
-    const c = cKey ? toInt(row[cKey]) : null;
-    const d = dKey ? toInt(row[dKey]) : null;
-    const e = eKey ? toInt(row[eKey]) : null;
+    const a=aKey?toInt(row[aKey]):null;
+    const b=bKey?toInt(row[bKey]):null;
+    const c=cKey?toInt(row[cKey]):null;
+    const d=dKey?toInt(row[dKey]):null;
+    const e=eKey?toInt(row[eKey]):null;
 
-    if(cKey && c === null && a !== null && b !== null) row[cKey] = a * b;
-
-    const cNow = cKey ? toInt(row[cKey]) : null;
-    if(eKey && e === null && d !== null && cNow !== null) row[eKey] = cNow * d;
+    if(cKey && c===null && a!==null && b!==null) row[cKey]=a*b;
+    const cNow=cKey?toInt(row[cKey]):null;
+    if(eKey && e===null && d!==null && cNow!==null) row[eKey]=cNow*d;
   }
 
-  function clampSwap(minEl, maxEl){
-    let a = Number(minEl.value);
-    let b = Number(maxEl.value);
-    if(a > b){
-      const t=a; a=b; b=t;
-      minEl.value = String(a);
-      maxEl.value = String(b);
-    }
-    return {min:a, max:b};
+  function clampSwap(minEl,maxEl){
+    let a=Number(minEl.value), b=Number(maxEl.value);
+    if(a>b){const t=a; a=b; b=t; minEl.value=String(a); maxEl.value=String(b);}
+    return {min:a,max:b};
   }
 
   function getUIRange(id){
-    const ui = sliderUI[id];
+    const ui=sliderUI[id];
     if(!ui || ui.minEl.disabled) return null;
-    const minV = Math.round(Number(ui.minEl.value));
-    const maxV = Math.round(Number(ui.maxEl.value));
-    return {min: Math.min(minV,maxV), max: Math.max(minV,maxV)};
+    const a=Math.round(Number(ui.minEl.value));
+    const b=Math.round(Number(ui.maxEl.value));
+    return {min:Math.min(a,b), max:Math.max(a,b)};
   }
-
-  function setUIRange(id, minV, maxV){
-    const ui = sliderUI[id];
+  function setUIRange(id,minV,maxV){
+    const ui=sliderUI[id];
     if(!ui || ui.minEl.disabled) return;
-    ui.minEl.value = String(Math.round(minV));
-    ui.maxEl.value = String(Math.round(maxV));
-    clampSwap(ui.minEl, ui.maxEl);
+    ui.minEl.value=String(Math.round(minV));
+    ui.maxEl.value=String(Math.round(maxV));
+    clampSwap(ui.minEl,ui.maxEl);
     updateDualUI(id);
   }
-
-  function clampToAbs(id, r){
-    const abs = sliderAbs[id];
+  function clampToAbs(id,r){
+    const abs=sliderAbs[id];
     if(!abs) return r;
-    let mn = clamp(Math.round(r.min), abs.min, abs.max);
-    let mx = clamp(Math.round(r.max), abs.min, abs.max);
-    if(mn > mx){ const t=mn; mn=mx; mx=t; }
-    return {min:mn, max:mx};
+    let mn=clamp(Math.round(r.min), abs.min, abs.max);
+    let mx=clamp(Math.round(r.max), abs.min, abs.max);
+    if(mn>mx){const t=mn; mn=mx; mx=t;}
+    return {min:mn,max:mx};
   }
 
   function updateDualUI(id){
-    const ui = sliderUI[id];
-    const abs = sliderAbs[id];
+    const ui=sliderUI[id];
+    const abs=sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled || ui.maxEl.disabled) return;
 
-    // ✅ “same scale” only for the seat group:
-    const isSeat = SEAT_GROUP.includes(id);
-    const scaleMin = (isSeat && seatScaleMin !== null) ? seatScaleMin : abs.min;
-    const scaleMax = (isSeat && seatScaleMax !== null) ? seatScaleMax : abs.max;
+    const isSeat=SEAT_GROUP.includes(id);
+    const scaleMin=(isSeat && seatScaleMin!==null)? seatScaleMin : abs.min;
+    const scaleMax=(isSeat && seatScaleMax!==null)? seatScaleMax : abs.max;
 
-    // input min/max = global scale (so the track is the same for all 5)
-    ui.minEl.min = String(scaleMin);
-    ui.maxEl.min = String(scaleMin);
-    ui.minEl.max = String(scaleMax);
-    ui.maxEl.max = String(scaleMax);
+    ui.minEl.min=String(scaleMin);
+    ui.maxEl.min=String(scaleMin);
+    ui.minEl.max=String(scaleMax);
+    ui.maxEl.max=String(scaleMax);
 
-    // BUT: we clamp values to the Excel abs bounds (hard)
-    let minV = Math.round(Number(ui.minEl.value));
-    let maxV = Math.round(Number(ui.maxEl.value));
-    if(minV > maxV){ const t=minV; minV=maxV; maxV=t; }
+    let minV=Math.round(Number(ui.minEl.value));
+    let maxV=Math.round(Number(ui.maxEl.value));
+    if(minV>maxV){const t=minV; minV=maxV; maxV=t;}
 
-    minV = clamp(minV, abs.min, abs.max);
-    maxV = clamp(maxV, abs.min, abs.max);
-    if(minV > maxV) minV = maxV;
+    minV=clamp(minV, abs.min, abs.max);
+    maxV=clamp(maxV, abs.min, abs.max);
+    if(minV>maxV) minV=maxV;
 
-    ui.minEl.value = String(minV);
-    ui.maxEl.value = String(maxV);
+    ui.minEl.value=String(minV);
+    ui.maxEl.value=String(maxV);
+    sliderVal[id]={min:minV,max:maxV};
 
-    sliderVal[id] = {min:minV, max:maxV};
+    const total=(scaleMax-scaleMin)||1;
+    const left=((minV-scaleMin)/total)*100;
+    const right=((maxV-scaleMin)/total)*100;
+    ui.fillEl.style.left=left+"%";
+    ui.fillEl.style.width=Math.max(0,right-left)+"%";
 
-    // fill based on SCALE (not abs) so visuals align
-    const total = (scaleMax - scaleMin) || 1;
-    const left = ((minV - scaleMin) / total) * 100;
-    const right = ((maxV - scaleMin) / total) * 100;
-    ui.fillEl.style.left = left + "%";
-    ui.fillEl.style.width = Math.max(0, right - left) + "%";
-
-    ui.labMin.textContent = String(minV);
-    ui.labMax.textContent = String(maxV);
-    ui.pill.textContent = `${minV} → ${maxV}`;
+    ui.labMin.textContent=String(minV);
+    ui.labMax.textContent=String(maxV);
+    ui.pill.textContent=`${minV} → ${maxV}`;
   }
 
   function createFacetUI(){
-    facetBar.innerHTML = "";
+    facetBar.innerHTML="";
     for(const spec of FACET_SPECS){
-      const box = createFacetBox(spec);
+      const box=createFacetBox(spec);
       facetBar.appendChild(box);
 
-      const searchEl = box.querySelector(`#search_${spec.id}`);
-      const listEl = box.querySelector(`#list_${spec.id}`);
-      const itemsEl = box.querySelector(`#items_${spec.id}`);
-      const bannerEl = box.querySelector(`#banner_${spec.id}`);
-      const clearBtn = box.querySelector(`#clear_${spec.id}`);
+      const searchEl=box.querySelector(`#search_${spec.id}`);
+      const listEl=box.querySelector(`#list_${spec.id}`);
+      const itemsEl=box.querySelector(`#items_${spec.id}`);
+      const bannerEl=box.querySelector(`#banner_${spec.id}`);
+      const clearBtn=box.querySelector(`#clear_${spec.id}`);
 
-      facetUI[spec.id] = {searchEl, listEl, itemsEl, bannerEl, clearBtn};
-      selected[spec.id] = new Set();
+      facetUI[spec.id]={searchEl,listEl,itemsEl,bannerEl,clearBtn};
+      selected[spec.id]=new Set();
 
-      clearBtn.addEventListener("click", ()=>{
-        selected[spec.id].clear();
-        render();
-      });
-
-      searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
-      listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
+      clearBtn.addEventListener("click",()=>{ selected[spec.id].clear(); render(); });
+      searchEl.addEventListener("input",()=>drawFacetList(spec.id));
+      listEl.addEventListener("scroll",()=>updateSelectedBanner(spec.id));
     }
   }
 
   function createSliderUI(){
-    sliderBar.innerHTML = "";
-
-    // ✅ Seat group container (vertical, aligned)
-    const seatBox = document.createElement("div");
-    seatBox.className = "seatGroup";
-    seatBox.style.gridColumn = "1 / -1"; // full width row (more stable)
-    seatBox.innerHTML = `
-      <div class="seatGroupTitle">Sièges / trains (liés)</div>
-      <div class="seatGroupCol" id="seatGroupCol"></div>
-    `;
-    const seatCol = seatBox.querySelector("#seatGroupCol");
-
-    // regular sliders container: keep as before (grid from sliderBar)
-    // we’ll append non-seat sliders directly to sliderBar, but seat sliders go in seatCol
-    let seatInserted = false;
+    sliderBar.innerHTML="";
+    const seatBox=document.createElement("div");
+    seatBox.className="seatGroup";
+    seatBox.style.gridColumn="1 / -1";
+    seatBox.innerHTML=`<div class="seatGroupTitle">Sièges / trains (liés)</div><div class="seatGroupCol" id="seatGroupCol"></div>`;
+    const seatCol=seatBox.querySelector("#seatGroupCol");
+    let seatInserted=false;
 
     for(const spec of NUM_SPECS){
-      const wrap = createDualSlider(spec);
+      const wrap=createDualSlider(spec);
 
-      const minEl = wrap.querySelector(`#${spec.id}_min`);
-      const maxEl = wrap.querySelector(`#${spec.id}_max`);
-      const fillEl = wrap.querySelector(`#fill_${spec.id}`);
-      const labMin = wrap.querySelector(`#lab_${spec.id}_min`);
-      const labMax = wrap.querySelector(`#lab_${spec.id}_max`);
-      const pill = wrap.querySelector(`#pill_${spec.id}`);
+      const minEl=wrap.querySelector(`#${spec.id}_min`);
+      const maxEl=wrap.querySelector(`#${spec.id}_max`);
+      const fillEl=wrap.querySelector(`#fill_${spec.id}`);
+      const labMin=wrap.querySelector(`#lab_${spec.id}_min`);
+      const labMax=wrap.querySelector(`#lab_${spec.id}_max`);
+      const pill=wrap.querySelector(`#pill_${spec.id}`);
+      sliderUI[spec.id]={minEl,maxEl,fillEl,labMin,labMax,pill,spec};
 
-      sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
-
-      const isSeat = SEAT_GROUP.includes(spec.id);
-
-      // handlers:
+      const isSeat=SEAT_GROUP.includes(spec.id);
       if(isSeat){
-        minEl.addEventListener("input", ()=> onSeatGroupAttempt(spec.id));
-        maxEl.addEventListener("input", ()=> onSeatGroupAttempt(spec.id));
-      } else {
-        minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
-        maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
+        minEl.addEventListener("input",()=>onSeatGroupAttempt(spec.id));
+        maxEl.addEventListener("input",()=>onSeatGroupAttempt(spec.id));
+      }else{
+        minEl.addEventListener("input",()=>onNumericSliderAttempt(spec.id));
+        maxEl.addEventListener("input",()=>onNumericSliderAttempt(spec.id));
       }
 
       if(isSeat){
-        if(!seatInserted){
-          sliderBar.appendChild(seatBox);
-          seatInserted = true;
-        }
+        if(!seatInserted){ sliderBar.appendChild(seatBox); seatInserted=true; }
         seatCol.appendChild(wrap);
-      } else {
+      }else{
         sliderBar.appendChild(wrap);
       }
     }
   }
 
   function initSlidersFromData(){
-    // compute abs bounds per slider (Excel min/max)
     for(const spec of NUM_SPECS){
-      const key = numFields[spec.id];
-      const ui = sliderUI[spec.id];
+      const key=numFields[spec.id];
+      const ui=sliderUI[spec.id];
 
       if(!key){
-        ui.minEl.disabled = true;
-        ui.maxEl.disabled = true;
-        ui.pill.textContent = "— (champ introuvable)";
-        ui.labMin.textContent = "—";
-        ui.labMax.textContent = "—";
+        ui.minEl.disabled=true; ui.maxEl.disabled=true;
+        ui.pill.textContent="— (champ introuvable)"; ui.labMin.textContent="—"; ui.labMax.textContent="—";
         continue;
       }
 
-      let values = allRows
-        .map(r => spec.isYear ? toYear(r[key]) : toInt(r[key]))
-        .filter(v => Number.isFinite(v));
-
-      if(values.length === 0){
-        ui.minEl.disabled = true;
-        ui.maxEl.disabled = true;
-        ui.pill.textContent = "— (pas de valeurs)";
-        ui.labMin.textContent = "—";
-        ui.labMax.textContent = "—";
+      let values=allRows.map(r=>spec.isYear?toYear(r[key]):toInt(r[key])).filter(v=>Number.isFinite(v));
+      if(values.length===0){
+        ui.minEl.disabled=true; ui.maxEl.disabled=true;
+        ui.pill.textContent="— (pas de valeurs)"; ui.labMin.textContent="—"; ui.labMax.textContent="—";
         continue;
       }
 
-      let min = Math.floor(Math.min(...values));
-      let max = Math.ceil(Math.max(...values));
-      sliderAbs[spec.id] = {min, max, step:1};
+      const min=Math.floor(Math.min(...values));
+      const max=Math.ceil(Math.max(...values));
+      sliderAbs[spec.id]={min,max,step:1};
 
-      ui.minEl.step = "1";
-      ui.maxEl.step = "1";
-
-      // default full span
-      ui.minEl.value = String(min);
-      ui.maxEl.value = String(max);
+      ui.minEl.step="1"; ui.maxEl.step="1";
+      ui.minEl.value=String(min); ui.maxEl.value=String(max); // ✅ min/max par défaut
     }
 
-    // ✅ compute same scale for seat group (min of mins, max of maxs)
-    const seatAbs = SEAT_GROUP
-      .map(id => sliderAbs[id])
-      .filter(Boolean);
-
+    // ✅ même échelle pour le groupe sièges
+    const seatAbs=SEAT_GROUP.map(id=>sliderAbs[id]).filter(Boolean);
     if(seatAbs.length){
-      seatScaleMin = Math.min(...seatAbs.map(a => a.min));
-      seatScaleMax = Math.max(...seatAbs.map(a => a.max));
+      seatScaleMin=Math.min(...seatAbs.map(a=>a.min));
+      seatScaleMax=Math.max(...seatAbs.map(a=>a.max));
     }
 
-    // update UI after scale computed
     for(const spec of NUM_SPECS){
-      const ui = sliderUI[spec.id];
-      if(!ui || ui.minEl.disabled) continue;
-      updateDualUI(spec.id);
+      const ui=sliderUI[spec.id];
+      if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
     }
   }
 
-  /* ---------- filtering pipeline ---------- */
-  function passesSearch(row){
-    const q = norm(qEl.value);
-    if(!q) return true;
-    const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
-    return text.includes(q);
-  }
-
-  function passesFacets(row){
-    for(const spec of FACET_SPECS){
-      const set = selected[spec.id];
-      if(!set || set.size === 0) continue;
-      const key = fields[spec.id];
-      const v = normalizeFacetValue(spec.id, row[key]);
-      if(!set.has(v)) return false;
-    }
-    return true;
-  }
-
-  function passesSliders(row){
-    for(const spec of NUM_SPECS){
-      const key = numFields[spec.id];
-      const ui = sliderUI[spec.id];
-      if(!key || !ui || ui.minEl.disabled) continue;
-
-      const abs = sliderAbs[spec.id];
-      const chosen = sliderVal[spec.id] || abs;
-
-      const val = spec.isYear ? toYear(row[key]) : toInt(row[key]);
-
-      if(val === null){
-        if(chosen.min !== abs.min || chosen.max !== abs.max) return false;
-      } else {
-        if(val < chosen.min || val > chosen.max) return false;
-      }
-    }
-    return true;
-  }
-
-  function passesWater(row){
-    if(!waterOnly) return true;
-    return !!row.__water;
-  }
-
-  function passesAll(row){
-    const n = String(row[fields.name] ?? "").trim();
-    if(!n) return false;
-    return passesSearch(row) && passesSliders(row) && passesFacets(row) && passesWater(row);
-  }
-
+  /* ---------- Facets UI ---------- */
   function baseRowsExcludingFacet(excludeFacetId){
     return allRows.filter(r=>{
-      const n = String(r[fields.name] ?? "").trim();
+      const n=String(r[fields.name]??"").trim();
       if(!n) return false;
       if(!passesSearch(r)) return false;
       if(!passesSliders(r)) return false;
       if(!passesWater(r)) return false;
 
       for(const spec of FACET_SPECS){
-        if(spec.id === excludeFacetId) continue;
-        const set = selected[spec.id];
+        if(spec.id===excludeFacetId) continue;
+        const set=selected[spec.id];
         if(set && set.size){
-          const key = fields[spec.id];
-          const v = normalizeFacetValue(spec.id, r[key]);
+          const key=fields[spec.id];
+          const v=normalizeFacetValue(spec.id, r[key]);
           if(!set.has(v)) return false;
         }
       }
       return true;
     });
   }
-
   function computeFacetCounts(facetId){
-    const key = fields[facetId];
+    const key=fields[facetId];
     if(!key) return new Map();
-    const base = baseRowsExcludingFacet(facetId);
-    const m = new Map();
+    const base=baseRowsExcludingFacet(facetId);
+    const m=new Map();
     for(const r of base){
-      const v = normalizeFacetValue(facetId, r[key]);
+      const v=normalizeFacetValue(facetId, r[key]);
       if(!v) continue;
-      m.set(v, (m.get(v) || 0) + 1);
+      m.set(v,(m.get(v)||0)+1);
     }
     return m;
   }
-
   function computeWaterCount(){
-    const base = allRows.filter(r=>{
-      const n = String(r[fields.name] ?? "").trim();
+    const base=allRows.filter(r=>{
+      const n=String(r[fields.name]??"").trim();
       if(!n) return false;
       if(!passesSearch(r)) return false;
       if(!passesSliders(r)) return false;
       if(!passesFacets(r)) return false;
       return true;
     });
-    let c = 0;
-    for(const r of base) if(r.__water) c++;
+    let c=0; for(const r of base) if(r.__water) c++;
     return c;
   }
-
-  function stableRankOf(facetId, value){
-    const m = facetStableRank[facetId];
+  function stableRankOf(facetId,value){
+    const m=facetStableRank[facetId];
     if(!m) return 1e9;
     return m.get(value) ?? 1e9;
   }
-
-  function sortOptionsSelectedCountStable(facetId, options, counts, selectedSet){
+  function sortOptionsSelectedCountStable(facetId,options,counts,selectedSet){
     return options.slice().sort((a,b)=>{
-      const sa = selectedSet.has(a) ? 1 : 0;
-      const sb = selectedSet.has(b) ? 1 : 0;
-      if(sb !== sa) return sb - sa;
-
-      const ca = counts.get(a) || 0;
-      const cb = counts.get(b) || 0;
-      if(cb !== ca) return cb - ca;
-
-      return stableRankOf(facetId, a) - stableRankOf(facetId, b);
+      const sa=selectedSet.has(a)?1:0;
+      const sb=selectedSet.has(b)?1:0;
+      if(sb!==sa) return sb-sa;
+      const ca=counts.get(a)||0;
+      const cb=counts.get(b)||0;
+      if(cb!==ca) return cb-ca;
+      return stableRankOf(facetId,a)-stableRankOf(facetId,b);
     });
   }
-
   function updateSelectedBanner(facetId){
-    const ui = facetUI[facetId];
+    const ui=facetUI[facetId];
     if(!ui) return;
 
-    const selCount = selected[facetId]?.size || 0;
-    if(selCount === 0){
-      ui.bannerEl.style.display = "none";
-      ui.bannerEl.textContent = "";
-      return;
-    }
+    const selCount=selected[facetId]?.size||0;
+    if(selCount===0){ ui.bannerEl.style.display="none"; ui.bannerEl.textContent=""; return; }
 
-    const wrap = ui.listEl;
-    const top = wrap.scrollTop;
-    const bottom = top + wrap.clientHeight;
+    const wrap=ui.listEl;
+    const top=wrap.scrollTop;
+    const bottom=top+wrap.clientHeight;
 
-    let visibleSelected = 0;
-    const checkedRows = ui.itemsEl.querySelectorAll('input[type="checkbox"]:checked');
-
+    let visibleSelected=0;
+    const checkedRows=ui.itemsEl.querySelectorAll('input[type="checkbox"]:checked');
     checkedRows.forEach(cb=>{
-      const row = cb.closest(".row");
-      if(!row) return;
-      const rTop = row.offsetTop;
-      const rBottom = rTop + row.offsetHeight;
-      const isVisible = (rBottom > top) && (rTop < bottom);
-      if(isVisible) visibleSelected++;
+      const row=cb.closest(".row"); if(!row) return;
+      const rTop=row.offsetTop;
+      const rBottom=rTop+row.offsetHeight;
+      if(rBottom>top && rTop<bottom) visibleSelected++;
     });
 
-    if(visibleSelected === 0){
-      ui.bannerEl.textContent = `${selCount} sélectionné${selCount>1?"s":""}`;
-      ui.bannerEl.style.display = "block";
-    } else {
-      ui.bannerEl.style.display = "none";
-      ui.bannerEl.textContent = "";
+    if(visibleSelected===0){
+      ui.bannerEl.textContent=`${selCount} sélectionné${selCount>1?"s":""}`;
+      ui.bannerEl.style.display="block";
+    }else{
+      ui.bannerEl.style.display="none";
+      ui.bannerEl.textContent="";
     }
   }
-
   function drawFacetList(facetId){
-    const ui = facetUI[facetId];
-    const key = fields[facetId];
+    const ui=facetUI[facetId];
+    const key=fields[facetId];
 
     if(!key){
-      ui.itemsEl.innerHTML = `<div class="empty">Champ introuvable</div>`;
-      ui.searchEl.disabled = true;
+      ui.itemsEl.innerHTML=`<div class="empty">Champ introuvable</div>`;
+      ui.searchEl.disabled=true;
       updateSelectedBanner(facetId);
       return;
     }
 
-    const q = norm(ui.searchEl.value);
-    const selectedSet = selected[facetId];
-    const counts = computeFacetCounts(facetId);
+    const q=norm(ui.searchEl.value);
+    const selectedSet=selected[facetId];
+    const counts=computeFacetCounts(facetId);
 
-    const baseOptions = facetMasterOptions[facetId] || [];
-    const optSet = new Set([...baseOptions, ...Array.from(selectedSet)]);
-    let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+    const baseOptions=facetMasterOptions[facetId]||[];
+    const optSet=new Set([...baseOptions, ...Array.from(selectedSet)]);
+    let options=Array.from(optSet).filter(v=>v && !["-","—","n/a","na","unknown"].includes(norm(v)));
 
-    options = sortOptionsSelectedCountStable(facetId, options, counts, selectedSet);
-    const shown = options.filter(v => norm(v).includes(q));
+    options=sortOptionsSelectedCountStable(facetId,options,counts,selectedSet);
+    const shown=options.filter(v=>norm(v).includes(q));
 
-    ui.itemsEl.innerHTML = shown.map(v=>{
-      const c = counts.get(v) || 0;
-      const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
-      const checked = selectedSet.has(v) ? "checked" : "";
+    ui.itemsEl.innerHTML=shown.map(v=>{
+      const c=counts.get(v)||0;
+      const disabled=(c===0 && !selectedSet.has(v))?"disabled":"";
+      const checked=selectedSet.has(v)?"checked":"";
       return `
         <label class="row">
           <input type="checkbox" value="${esc(v)}" ${checked} ${disabled}>
@@ -844,414 +631,77 @@ function sortRows(list, mode1, mode2, f){
     }).join("") || `<div class="empty">Aucune option</div>`;
 
     ui.itemsEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-      cb.addEventListener("change", ()=>{
-        const v = cb.value;
-        if(cb.checked) selectedSet.add(v);
-        else selectedSet.delete(v);
+      cb.addEventListener("change",()=>{
+        const v=cb.value;
+        if(cb.checked) selectedSet.add(v); else selectedSet.delete(v);
         render();
       });
     });
 
     updateSelectedBanner(facetId);
   }
-
   function updateAllFacetUIs(){
     for(const spec of FACET_SPECS) drawFacetList(spec.id);
-
-    const c = computeWaterCount();
-    waterCountEl.textContent = String(c);
-    waterOnlyEl.disabled = (c === 0 && !waterOnly);
-
+    const c=computeWaterCount();
+    waterCountEl.textContent=String(c);
+    waterOnlyEl.disabled=(c===0 && !waterOnly);
     for(const spec of FACET_SPECS) updateSelectedBanner(spec.id);
   }
 
-  /* -------------------------------------------------------
-     ✅ SEAT GROUP AUTO-PUSH (no blocking between the 5)
-     Relations:
-       A = seatsPerRow
-       B = rowsPerCar
-       C = seatsPerCar = A*B
-       D = carsPerTrain
-       E = seatsPerTrain = C*D
-     ------------------------------------------------------- */
-  function readSeatRanges(){
-    const ids = {
-      A:"seatsPerRow",
-      B:"rowsPerCar",
-      C:"seatsPerCar",
-      D:"carsPerTrain",
-      E:"seatsPerTrain"
-    };
-    const A = clampToAbs(ids.A, getUIRange(ids.A) || sliderAbs[ids.A]);
-    const B = clampToAbs(ids.B, getUIRange(ids.B) || sliderAbs[ids.B]);
-    const C = clampToAbs(ids.C, getUIRange(ids.C) || sliderAbs[ids.C]);
-    const D = clampToAbs(ids.D, getUIRange(ids.D) || sliderAbs[ids.D]);
-    const E = clampToAbs(ids.E, getUIRange(ids.E) || sliderAbs[ids.E]);
-    return {ids, A,B,C,D,E};
+  /* ---------- Filtering ---------- */
+  function passesSearch(row){
+    const q=norm(qEl.value);
+    if(!q) return true;
+    const text=Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
+    return text.includes(q);
   }
-
-  function writeSeatRanges({ids, A,B,C,D,E}){
-    setUIRange(ids.A, A.min, A.max);
-    setUIRange(ids.B, B.min, B.max);
-    setUIRange(ids.C, C.min, C.max);
-    setUIRange(ids.D, D.min, D.max);
-    setUIRange(ids.E, E.min, E.max);
-  }
-
-  function enforceSeatAbsOnly(state){
-    for(const k of ["A","B","C","D","E"]){
-      state[k] = clampToAbs(state.ids[k], state[k]);
-      if(state[k].min < 1) state[k].min = 1;
-      if(state[k].max < 1) state[k].max = 1;
-      if(state[k].min > state[k].max) state[k].min = state[k].max;
+  function passesFacets(row){
+    for(const spec of FACET_SPECS){
+      const set=selected[spec.id];
+      if(!set || set.size===0) continue;
+      const key=fields[spec.id];
+      const v=normalizeFacetValue(spec.id,row[key]);
+      if(!set.has(v)) return false;
     }
-    return state;
+    return true;
   }
+  function passesSliders(row){
+    for(const spec of NUM_SPECS){
+      const key=numFields[spec.id];
+      const ui=sliderUI[spec.id];
+      if(!key || !ui || ui.minEl.disabled) continue;
 
-  function computeCfromAB(A,B){
-    return {min: A.min * B.min, max: A.max * B.max};
-  }
-  function computeEfromCD(C,D){
-    return {min: C.min * D.min, max: C.max * D.max};
-  }
+      const abs=sliderAbs[spec.id];
+      const chosen=sliderVal[spec.id] || abs;
+      const val=spec.isYear?toYear(row[key]):toInt(row[key]);
 
-  function syncSeatGroup(changedId){
-    const st0 = enforceSeatAbsOnly(readSeatRanges());
-    let {ids, A,B,C,D,E} = st0;
-
-    const absA = sliderAbs[ids.A], absB = sliderAbs[ids.B], absC = sliderAbs[ids.C], absD = sliderAbs[ids.D], absE = sliderAbs[ids.E];
-    if(!absA || !absB || !absC || !absD || !absE){
-      return; // if any missing, skip
-    }
-
-    function clampAll(){
-      A = clampToAbs(ids.A, A);
-      B = clampToAbs(ids.B, B);
-      C = clampToAbs(ids.C, C);
-      D = clampToAbs(ids.D, D);
-      E = clampToAbs(ids.E, E);
-      A.min=Math.max(1,A.min);A.max=Math.max(1,A.max);
-      B.min=Math.max(1,B.min);B.max=Math.max(1,B.max);
-      C.min=Math.max(1,C.min);C.max=Math.max(1,C.max);
-      D.min=Math.max(1,D.min);D.max=Math.max(1,D.max);
-      E.min=Math.max(1,E.min);E.max=Math.max(1,E.max);
-      if(A.min>A.max)A.min=A.max;
-      if(B.min>B.max)B.min=B.max;
-      if(C.min>C.max)C.min=C.max;
-      if(D.min>D.max)D.min=D.max;
-      if(E.min>E.max)E.min=E.max;
-    }
-
-    function solveFromAB(){
-      // C derived
-      C = computeCfromAB(A,B);
-      // hard clamp C by pushing A/B if needed (block only by Excel bounds)
-      if(C.max > absC.max){
-        // reduce whichever was changed (A or B), else reduce the bigger "lever" (A)
-        if(changedId === ids.A){
-          const newAmax = floorDiv(absC.max, B.max);
-          A.max = clamp(newAmax, absA.min, absA.max);
-          if(A.min > A.max) A.min = A.max;
-        } else if(changedId === ids.B){
-          const newBmax = floorDiv(absC.max, A.max);
-          B.max = clamp(newBmax, absB.min, absB.max);
-          if(B.min > B.max) B.min = B.max;
-        } else {
-          // default: reduce B.max if it helps, else A.max
-          let nb = floorDiv(absC.max, A.max);
-          if(nb >= absB.min){
-            B.max = clamp(nb, absB.min, absB.max);
-            if(B.min > B.max) B.min = B.max;
-          } else {
-            let na = floorDiv(absC.max, B.max);
-            A.max = clamp(na, absA.min, absA.max);
-            if(A.min > A.max) A.min = A.max;
-          }
-        }
-        C = computeCfromAB(A,B);
-      }
-      if(C.min < absC.min){
-        // need raise A.min or B.min
-        if(changedId === ids.A){
-          const newAmin = ceilDiv(absC.min, B.min);
-          A.min = clamp(newAmin, absA.min, absA.max);
-          if(A.min > A.max) A.max = A.min;
-        } else if(changedId === ids.B){
-          const newBmin = ceilDiv(absC.min, A.min);
-          B.min = clamp(newBmin, absB.min, absB.max);
-          if(B.min > B.max) B.max = B.min;
-        } else {
-          let nb = ceilDiv(absC.min, A.min);
-          if(nb <= absB.max){
-            B.min = clamp(nb, absB.min, absB.max);
-            if(B.min > B.max) B.max = B.min;
-          } else {
-            let na = ceilDiv(absC.min, B.min);
-            A.min = clamp(na, absA.min, absA.max);
-            if(A.min > A.max) A.max = A.min;
-          }
-        }
-        C = computeCfromAB(A,B);
-      }
-
-      // now C inside Excel bounds
-      C = clampToAbs(ids.C, C);
-      if(C.min > C.max) C.min = C.max;
-    }
-
-    function pushDforE(){
-      // E derived from C,D; if E outside absE -> push D automatically
-      E = computeEfromCD(C,D);
-
-      // reduce D.max if E.max too high
-      if(E.max > absE.max){
-        const newDmax = floorDiv(absE.max, Math.max(1, C.max));
-        D.max = clamp(newDmax, absD.min, absD.max);
-        if(D.min > D.max) D.min = D.max;
-        E = computeEfromCD(C,D);
-      }
-      // increase D.min if E.min too low
-      if(E.min < absE.min){
-        const newDmin = ceilDiv(absE.min, Math.max(1, C.min));
-        D.min = clamp(newDmin, absD.min, absD.max);
-        if(D.min > D.max) D.max = D.min;
-        E = computeEfromCD(C,D);
-      }
-
-      // if still outside, we must block upstream (C via A/B or D if user changed)
-      E = clampToAbs(ids.E, E);
-
-      // keep E consistent as derived:
-      E = computeEfromCD(C,D);
-      // final clamp
-      if(E.max > absE.max){
-        // we cannot push further without breaking Excel bounds -> reduce C (thus A/B) if possible
-        const targetCmax = floorDiv(absE.max, Math.max(1, D.max));
-        if(targetCmax < C.max){
-          // reduce B.max first (or A.max) depending on lever
-          let newBmax = floorDiv(targetCmax, Math.max(1, A.max));
-          if(newBmax >= absB.min){
-            B.max = clamp(newBmax, absB.min, absB.max);
-            if(B.min > B.max) B.min = B.max;
-          } else {
-            let newAmax = floorDiv(targetCmax, Math.max(1, B.max));
-            A.max = clamp(newAmax, absA.min, absA.max);
-            if(A.min > A.max) A.min = A.max;
-          }
-          solveFromAB();
-          E = computeEfromCD(C,D);
-        }
-      }
-      if(E.min < absE.min){
-        const targetCmin = ceilDiv(absE.min, Math.max(1, D.min));
-        if(targetCmin > C.min){
-          let newBmin = ceilDiv(targetCmin, Math.max(1, A.min));
-          if(newBmin <= absB.max){
-            B.min = clamp(newBmin, absB.min, absB.max);
-            if(B.min > B.max) B.max = B.min;
-          } else {
-            let newAmin = ceilDiv(targetCmin, Math.max(1, B.min));
-            A.min = clamp(newAmin, absA.min, absA.max);
-            if(A.min > A.max) A.max = A.min;
-          }
-          solveFromAB();
-          E = computeEfromCD(C,D);
-        }
+      if(val===null){
+        if(chosen.min!==abs.min || chosen.max!==abs.max) return false;
+      }else{
+        if(val<chosen.min || val>chosen.max) return false;
       }
     }
-
-    // --- main sync strategy ---
-    if(changedId === ids.A || changedId === ids.B){
-      solveFromAB();
-      pushDforE(); // push D if needed, not block A/B
-    } else if(changedId === ids.D){
-      // keep A,B as-is, recompute C and push D (itself) within absE
-      solveFromAB();
-      // D is user-changed: clamp D to keep E in Excel (block only by excel)
-      const minNeed = ceilDiv(absE.min, Math.max(1, C.min));
-      const maxNeed = floorDiv(absE.max, Math.max(1, C.max));
-      D.min = clamp(D.min, absD.min, absD.max);
-      D.max = clamp(D.max, absD.min, absD.max);
-      // hard clamp to feasible band:
-      D.min = clamp(D.min, minNeed, absD.max);
-      D.max = clamp(D.max, absD.min, maxNeed);
-      if(D.min > D.max) D.min = D.max;
-      pushDforE();
-    } else if(changedId === ids.C){
-      // user wants C -> adjust B primarily (push B), keep A
-      // B.min = ceil(C.min / A.min), B.max = floor(C.max / A.max)
-      let bmin = ceilDiv(C.min, Math.max(1, A.min));
-      let bmax = floorDiv(C.max, Math.max(1, A.max));
-      bmin = clamp(bmin, absB.min, absB.max);
-      bmax = clamp(bmax, absB.min, absB.max);
-      if(bmin > bmax){
-        // can't satisfy: clamp C to feasible with current A and absB
-        const feasibleCmin = A.min * absB.min;
-        const feasibleCmax = A.max * absB.max;
-        C.min = clamp(C.min, feasibleCmin, feasibleCmax);
-        C.max = clamp(C.max, feasibleCmin, feasibleCmax);
-        if(C.min > C.max) C.min = C.max;
-        bmin = ceilDiv(C.min, Math.max(1, A.min));
-        bmax = floorDiv(C.max, Math.max(1, A.max));
-        bmin = clamp(bmin, absB.min, absB.max);
-        bmax = clamp(bmax, absB.min, absB.max);
-        if(bmin > bmax) bmin = bmax;
-      }
-      B = {min:bmin, max:bmax};
-      solveFromAB(); // recompute C consistently
-      pushDforE();
-    } else if(changedId === ids.E){
-      // user wants E -> adjust D primarily (push D), keep C (from A,B)
-      solveFromAB();
-      let dmin = ceilDiv(E.min, Math.max(1, C.min));
-      let dmax = floorDiv(E.max, Math.max(1, C.max));
-      dmin = clamp(dmin, absD.min, absD.max);
-      dmax = clamp(dmax, absD.min, absD.max);
-      if(dmin > dmax){
-        // clamp E to feasible given C and absD
-        const feasibleEmin = C.min * absD.min;
-        const feasibleEmax = C.max * absD.max;
-        E.min = clamp(E.min, feasibleEmin, feasibleEmax);
-        E.max = clamp(E.max, feasibleEmin, feasibleEmax);
-        if(E.min > E.max) E.min = E.max;
-        dmin = ceilDiv(E.min, Math.max(1, C.min));
-        dmax = floorDiv(E.max, Math.max(1, C.max));
-        dmin = clamp(dmin, absD.min, absD.max);
-        dmax = clamp(dmax, absD.min, absD.max);
-        if(dmin > dmax) dmin = dmax;
-      }
-      D = {min:dmin, max:dmax};
-      pushDforE();
-    }
-
-    clampAll();
-
-    // always keep derived sliders exact to relations at the end
-    C = clampToAbs(ids.C, computeCfromAB(A,B));
-    if(C.min > C.max) C.min = C.max;
-
-    E = clampToAbs(ids.E, computeEfromCD(C,D));
-    if(E.min > E.max) E.min = E.max;
-
-    // write back
-    writeSeatRanges({ids, A,B,C,D,E});
+    return true;
   }
-
-  /* -------------------------------------------------------
-     Generic numeric slider handler (non-seat sliders)
-     Keep the existing "never 0 result" behavior.
-     ------------------------------------------------------- */
-  const lastGoodSliderValue = {};
-  function countResults(){
-    let c = 0;
-    for(const r of allRows) if(passesAll(r)) c++;
-    return c;
-  }
-  function snapshotSlider(id){
-    const ui = sliderUI[id];
-    if(!ui || ui.minEl.disabled) return null;
-    return {min:Number(ui.minEl.value), max:Number(ui.maxEl.value)};
-  }
-  function restoreSlider(id, snap){
-    if(!snap) return;
-    const ui = sliderUI[id];
-    if(!ui || ui.minEl.disabled) return;
-    ui.minEl.value = String(Math.round(snap.min));
-    ui.maxEl.value = String(Math.round(snap.max));
-    updateDualUI(id);
-  }
-
-  function onNumericSliderAttempt(id){
-    const ui = sliderUI[id];
-    const abs = sliderAbs[id];
-    if(!ui || !abs || ui.minEl.disabled) return;
-
-    ui.minEl.value = String(Math.round(Number(ui.minEl.value)));
-    ui.maxEl.value = String(Math.round(Number(ui.maxEl.value)));
-    clampSwap(ui.minEl, ui.maxEl);
-
-    updateDualUI(id);
-
-    const n = countResults();
-    if(n === 0){
-      restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
-      render();
-      return;
-    }
-    lastGoodSliderValue[id] = snapshotSlider(id) || {min:abs.min, max:abs.max};
-    render();
-  }
-
-  /* -------------------------------------------------------
-     ✅ Seat group handler:
-     - hard clamp to Excel bounds
-     - then auto-push the others
-     - still keeps "never 0 result": if would make 0, revert only the changed one
-     ------------------------------------------------------- */
-  const lastGoodSeatState = { // snapshot of the 5
-    has:false,
-    values:null
-  };
-
-  function snapshotSeatState(){
-    const st = readSeatRanges();
-    return {
-      seatsPerRow: getUIRange("seatsPerRow"),
-      rowsPerCar: getUIRange("rowsPerCar"),
-      seatsPerCar: getUIRange("seatsPerCar"),
-      carsPerTrain: getUIRange("carsPerTrain"),
-      seatsPerTrain: getUIRange("seatsPerTrain"),
-    };
-  }
-  function restoreSeatState(snap){
-    if(!snap) return;
-    setUIRange("seatsPerRow", snap.seatsPerRow.min, snap.seatsPerRow.max);
-    setUIRange("rowsPerCar", snap.rowsPerCar.min, snap.rowsPerCar.max);
-    setUIRange("seatsPerCar", snap.seatsPerCar.min, snap.seatsPerCar.max);
-    setUIRange("carsPerTrain", snap.carsPerTrain.min, snap.carsPerTrain.max);
-    setUIRange("seatsPerTrain", snap.seatsPerTrain.min, snap.seatsPerTrain.max);
-  }
-
-  function onSeatGroupAttempt(changedId){
-    // hard clamp the changed slider to its Excel bounds immediately
-    const r = clampToAbs(changedId, getUIRange(changedId) || sliderAbs[changedId]);
-    setUIRange(changedId, r.min, r.max);
-
-    // sync others (push)
-    syncSeatGroup(changedId);
-
-    // “never 0 result” fallback
-    const n = countResults();
-    if(n === 0){
-      if(lastGoodSeatState.has){
-        restoreSeatState(lastGoodSeatState.values);
-        // ensure relations still hold after restore:
-        syncSeatGroup("seatsPerRow");
-      }
-      render();
-      return;
-    }
-
-    lastGoodSeatState.has = true;
-    lastGoodSeatState.values = snapshotSeatState();
-
-    render();
+  function passesWater(row){ return waterOnly ? !!row.__water : true; }
+  function passesAll(row){
+    const n=String(row[fields.name]??"").trim();
+    if(!n) return false;
+    return passesSearch(row) && passesSliders(row) && passesFacets(row) && passesWater(row);
   }
 
   /* ---------- Cards / modal ---------- */
-  function cardHTML(r, idx){
-    const name = String(r[fields.name] ?? "").trim();
-    const park = fields.park ? String(r[fields.park] ?? "").trim() : "";
-    const y = numFields.year ? toYear(r[numFields.year]) : null;
+  function cardHTML(r,idx){
+    const name=String(r[fields.name]??"").trim();
+    const park=fields.park?String(r[fields.park]??"").trim():"";
+    const y=numFields.year?toYear(r[numFields.year]):null;
 
-    const rows = [];
+    const rows=[];
     if(fields.maker) rows.push(["Fabricant", r[fields.maker]]);
     if(numFields.year) rows.push(["Ouverture", (y ?? "")]);
 
-    const kv = rows
-      .filter(([_,v]) => String(v ?? "").trim() !== "")
-      .map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`)
-      .join("");
+    const kv=rows.filter(([_,v])=>String(v??"").trim()!=="")
+      .map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`).join("");
 
     return `
       <article class="card" tabindex="0" role="button" aria-label="Ouvrir les détails" data-idx="${idx}">
@@ -1261,53 +711,43 @@ function sortRows(list, mode1, mode2, f){
       </article>
     `;
   }
-
   function updateArrowsState(){
-    const n = lastRendered.length;
-    if(n <= 1){ navLeftBtn.disabled = true; navRightBtn.disabled = true; return; }
-    navLeftBtn.disabled = (currentIndex <= 0);
-    navRightBtn.disabled = (currentIndex >= n - 1);
+    const n=lastRendered.length;
+    if(n<=1){ navLeftBtn.disabled=true; navRightBtn.disabled=true; return; }
+    navLeftBtn.disabled=(currentIndex<=0);
+    navRightBtn.disabled=(currentIndex>=n-1);
   }
-
   function openModalAtIndex(idx){
-    const n = lastRendered.length;
+    const n=lastRendered.length;
     if(!n) return;
-    currentIndex = Math.max(0, Math.min(n-1, idx));
-    const row = lastRendered[currentIndex];
+    currentIndex=Math.max(0,Math.min(n-1,idx));
+    const row=lastRendered[currentIndex];
+    const name=String(row[fields.name]??"").trim();
+    const park=fields.park?String(row[fields.park]??"").trim():"";
+    modalTitleEl.textContent=name||"—";
+    modalSubEl.textContent=park||"";
 
-    const name = String(row[fields.name] ?? "").trim();
-    const park  = fields.park ? String(row[fields.park] ?? "").trim() : "";
-
-    modalTitleEl.textContent = name || "—";
-    modalSubEl.textContent = park || "";
-
-    const excludeKeys = new Set([fields.name, fields.park]);
-    const pairs = Object.entries(row)
-      .filter(([k,v]) => !excludeKeys.has(k) && !String(k).startsWith("__") && String(v ?? "").trim() !== "")
-      .map(([k,v]) => {
-        if(numFields.year && k === numFields.year){
-          const yy = toYear(v);
-          return [titleizeKey(k), (yy ?? v)];
+    const excludeKeys=new Set([fields.name, fields.park]);
+    const pairs=Object.entries(row)
+      .filter(([k,v])=>!excludeKeys.has(k) && !String(k).startsWith("__") && String(v??"").trim()!=="")
+      .map(([k,v])=>{
+        if(numFields.year && k===numFields.year){
+          const yy=toYear(v);
+          return [titleizeKey(k),(yy??v)];
         }
-        return [titleizeKey(k), v];
+        return [titleizeKey(k),v];
       });
 
-    modalGridEl.innerHTML = pairs.map(([k,v]) =>
-      `<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`
-    ).join("") || `<div class="empty">Aucun détail.</div>`;
+    modalGridEl.innerHTML=pairs.map(([k,v])=>`<div class="modalK">${esc(k)}</div><div class="modalV">${esc(v)}</div>`).join("")
+      || `<div class="empty">Aucun détail.</div>`;
 
     updateArrowsState();
     modalOverlay.classList.add("open");
     modalOverlay.setAttribute("aria-hidden","false");
   }
-
-  function closeModal(){
-    modalOverlay.classList.remove("open");
-    modalOverlay.setAttribute("aria-hidden","true");
-    currentIndex = -1;
-  }
-  function prevModal(){ if(!navLeftBtn.disabled) openModalAtIndex(currentIndex - 1); }
-  function nextModal(){ if(!navRightBtn.disabled) openModalAtIndex(currentIndex + 1); }
+  function closeModal(){ modalOverlay.classList.remove("open"); modalOverlay.setAttribute("aria-hidden","true"); currentIndex=-1; }
+  function prevModal(){ if(!navLeftBtn.disabled) openModalAtIndex(currentIndex-1); }
+  function nextModal(){ if(!navRightBtn.disabled) openModalAtIndex(currentIndex+1); }
 
   navLeftBtn.addEventListener("click",(e)=>{e.stopPropagation();prevModal();});
   navRightBtn.addEventListener("click",(e)=>{e.stopPropagation();nextModal();});
@@ -1319,39 +759,310 @@ function sortRows(list, mode1, mode2, f){
     if(e.key==="ArrowRight"){ e.preventDefault(); nextModal(); return; }
   });
 
+  /* -------------------------------------------------------
+     ✅ SEAT GROUP – propagation MAX only (per your rules)
+     A=seatsPerRow, B=rowsPerCar, C=seatsPerCar, D=carsPerTrain, E=seatsPerTrain
+     Relations: C=A*B ; E=C*D
+     Max-rules:
+       - ↓C.max => ↓B.max priority, else ↓A.max
+       - ↑C.max or ↑D.max => ↑E.max (derived)
+       - ↓E.max => ↓D.max priority, else ↓C.max (then B/A behind)
+     Always clamp to Excel abs.
+     ------------------------------------------------------- */
+  function readSeat(){
+    const ids={A:"seatsPerRow",B:"rowsPerCar",C:"seatsPerCar",D:"carsPerTrain",E:"seatsPerTrain"};
+    const A=clampToAbs(ids.A, getUIRange(ids.A) || sliderAbs[ids.A]);
+    const B=clampToAbs(ids.B, getUIRange(ids.B) || sliderAbs[ids.B]);
+    const C=clampToAbs(ids.C, getUIRange(ids.C) || sliderAbs[ids.C]);
+    const D=clampToAbs(ids.D, getUIRange(ids.D) || sliderAbs[ids.D]);
+    const E=clampToAbs(ids.E, getUIRange(ids.E) || sliderAbs[ids.E]);
+    return {ids,A,B,C,D,E};
+  }
+  function writeSeat(st){
+    setUIRange(st.ids.A, st.A.min, st.A.max);
+    setUIRange(st.ids.B, st.B.min, st.B.max);
+    setUIRange(st.ids.C, st.C.min, st.C.max);
+    setUIRange(st.ids.D, st.D.min, st.D.max);
+    setUIRange(st.ids.E, st.E.min, st.E.max);
+  }
+
+  function seatRecalcFromAB(st){
+    // keep mins as-is; recalc C by AB for both bounds, then clamp
+    st.C.max = st.A.max * st.B.max;
+    st.C.min = st.A.min * st.B.min;
+    st.C = clampToAbs(st.ids.C, st.C);
+  }
+  function seatRecalcEfromCD(st){
+    st.E.max = st.C.max * st.D.max;
+    st.E.min = st.C.min * st.D.min;
+    st.E = clampToAbs(st.ids.E, st.E);
+  }
+
+  // push-down helper when E.max exceeds Excel absE.max: prefer reducing D.max, else reduce C.max (=> B then A)
+  function ensureEmaxWithinExcel(st){
+    const absE = sliderAbs[st.ids.E];
+    const absD = sliderAbs[st.ids.D];
+    const absC = sliderAbs[st.ids.C];
+    const absA = sliderAbs[st.ids.A];
+    const absB = sliderAbs[st.ids.B];
+
+    if(!absE || !absD || !absC || !absA || !absB) return;
+
+    // recompute current E.max
+    st.E.max = st.C.max * st.D.max;
+
+    if(st.E.max <= absE.max) return;
+
+    // 1) reduce D.max first (priority)
+    const newDmax = floorDiv(absE.max, Math.max(1, st.C.max));
+    st.D.max = clamp(newDmax, absD.min, absD.max);
+    if(st.D.min > st.D.max) st.D.min = st.D.max;
+
+    st.E.max = st.C.max * st.D.max;
+    if(st.E.max <= absE.max) return;
+
+    // 2) still too high -> must reduce C.max (which reduces E.max)
+    const targetCmax = floorDiv(absE.max, Math.max(1, st.D.max));
+    st.C.max = clamp(targetCmax, absC.min, absC.max);
+    if(st.C.min > st.C.max) st.C.min = st.C.max;
+
+    // Reduce B.max priority, else A.max, to realize C.max <= A.max*B.max
+    // (we keep st.C.max as target and adjust AB accordingly)
+    let needC = st.C.max;
+
+    // try reduce B.max first
+    let bMax = floorDiv(needC, Math.max(1, st.A.max));
+    if(bMax < absB.min){
+      // can't: clamp B.max to min and reduce A.max
+      st.B.max = absB.min;
+      let aMax = floorDiv(needC, Math.max(1, st.B.max));
+      st.A.max = clamp(aMax, absA.min, absA.max);
+      if(st.A.min > st.A.max) st.A.min = st.A.max;
+    }else{
+      st.B.max = clamp(bMax, absB.min, absB.max);
+      if(st.B.min > st.B.max) st.B.min = st.B.max;
+    }
+
+    seatRecalcFromAB(st); // updates C (clamp)
+    st.C.max = Math.min(st.C.max, needC);
+
+    seatRecalcEfromCD(st);
+  }
+
+  function syncSeatMax(changedId){
+    const st = readSeat();
+    const {ids} = st;
+    const absA=sliderAbs[ids.A], absB=sliderAbs[ids.B], absC=sliderAbs[ids.C], absD=sliderAbs[ids.D], absE=sliderAbs[ids.E];
+    if(!absA || !absB || !absC || !absD || !absE) return;
+
+    // Always hard-clamp current selections to Excel first:
+    st.A = clampToAbs(ids.A, st.A); st.B=clampToAbs(ids.B, st.B); st.C=clampToAbs(ids.C, st.C); st.D=clampToAbs(ids.D, st.D); st.E=clampToAbs(ids.E, st.E);
+
+    // Ensure mins <= max
+    for(const k of ["A","B","C","D","E"]){
+      if(st[k].min > st[k].max) st[k].min = st[k].max;
+      if(st[k].min < 1) st[k].min = 1;
+      if(st[k].max < 1) st[k].max = 1;
+    }
+
+    // --------- MAX PROPAGATION ONLY ---------
+    if(changedId === ids.A || changedId === ids.B){
+      // C.max follows A.max*B.max
+      seatRecalcFromAB(st);
+      // E.max follows C.max*D.max; clamp by pushing D then C if needed
+      seatRecalcEfromCD(st);
+      ensureEmaxWithinExcel(st);
+    }
+    else if(changedId === ids.C){
+      // user changed C.max: adjust B.max first, else A.max (priority rowsPerCar)
+      const targetCmax = st.C.max;
+
+      let newBmax = floorDiv(targetCmax, Math.max(1, st.A.max));
+      if(newBmax >= absB.min){
+        st.B.max = clamp(newBmax, absB.min, absB.max);
+        if(st.B.min > st.B.max) st.B.min = st.B.max;
+      } else {
+        st.B.max = absB.min;
+        let newAmax = floorDiv(targetCmax, Math.max(1, st.B.max));
+        st.A.max = clamp(newAmax, absA.min, absA.max);
+        if(st.A.min > st.A.max) st.A.min = st.A.max;
+      }
+
+      // re-derive C.max from AB (can't exceed targetCmax)
+      seatRecalcFromAB(st);
+      st.C.max = Math.min(st.C.max, targetCmax);
+      st.C = clampToAbs(ids.C, st.C);
+
+      // E may increase/decrease accordingly
+      seatRecalcEfromCD(st);
+      ensureEmaxWithinExcel(st);
+    }
+    else if(changedId === ids.D){
+      // user changed D.max: E.max follows; if exceeds Excel, reduce D.max (block only by excel)
+      seatRecalcFromAB(st);
+      seatRecalcEfromCD(st);
+      ensureEmaxWithinExcel(st);
+    }
+    else if(changedId === ids.E){
+      // user changed E.max: reduce D.max first, else reduce C.max (=> B then A)
+      const targetEmax = st.E.max;
+
+      // keep C as derived from AB
+      seatRecalcFromAB(st);
+
+      // try push D.max down first
+      let newDmax = floorDiv(targetEmax, Math.max(1, st.C.max));
+      st.D.max = clamp(newDmax, absD.min, absD.max);
+      if(st.D.min > st.D.max) st.D.min = st.D.max;
+
+      seatRecalcEfromCD(st);
+      if(st.E.max > targetEmax){
+        // still too high -> need reduce C.max then realize via B then A
+        const targetCmax = floorDiv(targetEmax, Math.max(1, st.D.max));
+        st.C.max = clamp(targetCmax, absC.min, absC.max);
+        if(st.C.min > st.C.max) st.C.min = st.C.max;
+
+        // realize C.max by reducing B.max priority else A.max
+        let bMax = floorDiv(st.C.max, Math.max(1, st.A.max));
+        if(bMax < absB.min){
+          st.B.max = absB.min;
+          let aMax = floorDiv(st.C.max, Math.max(1, st.B.max));
+          st.A.max = clamp(aMax, absA.min, absA.max);
+          if(st.A.min > st.A.max) st.A.min = st.A.max;
+        }else{
+          st.B.max = clamp(bMax, absB.min, absB.max);
+          if(st.B.min > st.B.max) st.B.min = st.B.max;
+        }
+
+        seatRecalcFromAB(st);
+        st.C.max = Math.min(st.C.max, targetCmax);
+        st.C = clampToAbs(ids.C, st.C);
+
+        seatRecalcEfromCD(st);
+        st.E.max = Math.min(st.E.max, targetEmax);
+        st.E = clampToAbs(ids.E, st.E);
+      }
+
+      // Also respect Excel absE.max always
+      st.E.max = clamp(st.E.max, absE.min, absE.max);
+      if(st.E.min > st.E.max) st.E.min = st.E.max;
+    }
+
+    // final clamps
+    st.A=clampToAbs(ids.A, st.A); st.B=clampToAbs(ids.B, st.B);
+    st.C=clampToAbs(ids.C, st.C); st.D=clampToAbs(ids.D, st.D); st.E=clampToAbs(ids.E, st.E);
+    writeSeat(st);
+  }
+
+  /* ---------- Numeric sliders: never 0 result (non-seat) ---------- */
+  const lastGoodSliderValue={};
+  function countResults(){ let c=0; for(const r of allRows) if(passesAll(r)) c++; return c; }
+  function snapshotSlider(id){
+    const ui=sliderUI[id];
+    if(!ui || ui.minEl.disabled) return null;
+    return {min:Number(ui.minEl.value), max:Number(ui.maxEl.value)};
+  }
+  function restoreSlider(id,snap){
+    if(!snap) return;
+    const ui=sliderUI[id];
+    if(!ui || ui.minEl.disabled) return;
+    ui.minEl.value=String(Math.round(snap.min));
+    ui.maxEl.value=String(Math.round(snap.max));
+    updateDualUI(id);
+  }
+  function onNumericSliderAttempt(id){
+    const ui=sliderUI[id];
+    const abs=sliderAbs[id];
+    if(!ui || !abs || ui.minEl.disabled) return;
+
+    ui.minEl.value=String(Math.round(Number(ui.minEl.value)));
+    ui.maxEl.value=String(Math.round(Number(ui.maxEl.value)));
+    clampSwap(ui.minEl,ui.maxEl);
+
+    updateDualUI(id);
+
+    const n=countResults();
+    if(n===0){
+      restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
+      render();
+      return;
+    }
+    lastGoodSliderValue[id]=snapshotSlider(id) || {min:abs.min, max:abs.max};
+    render();
+  }
+
+  /* ---------- Seat group handler ---------- */
+  const lastGoodSeatState={has:false, snap:null};
+  function snapshotSeat(){
+    return {
+      seatsPerRow:getUIRange("seatsPerRow"),
+      rowsPerCar:getUIRange("rowsPerCar"),
+      seatsPerCar:getUIRange("seatsPerCar"),
+      carsPerTrain:getUIRange("carsPerTrain"),
+      seatsPerTrain:getUIRange("seatsPerTrain"),
+    };
+  }
+  function restoreSeat(s){
+    if(!s) return;
+    setUIRange("seatsPerRow", s.seatsPerRow.min, s.seatsPerRow.max);
+    setUIRange("rowsPerCar", s.rowsPerCar.min, s.rowsPerCar.max);
+    setUIRange("seatsPerCar", s.seatsPerCar.min, s.seatsPerCar.max);
+    setUIRange("carsPerTrain", s.carsPerTrain.min, s.carsPerTrain.max);
+    setUIRange("seatsPerTrain", s.seatsPerTrain.min, s.seatsPerTrain.max);
+  }
+
+  function onSeatGroupAttempt(changedId){
+    // clamp changed slider to excel immediately
+    const r=clampToAbs(changedId, getUIRange(changedId) || sliderAbs[changedId]);
+    setUIRange(changedId, r.min, r.max);
+
+    // sync MAX propagation
+    syncSeatMax(changedId);
+
+    // never 0 result
+    const n=countResults();
+    if(n===0){
+      if(lastGoodSeatState.has) restoreSeat(lastGoodSeatState.snap);
+      render();
+      return;
+    }
+    lastGoodSeatState.has=true;
+    lastGoodSeatState.snap=snapshotSeat();
+    render();
+  }
+
   function render(){
-    const fam1 = sortFamily(sortSel.value);
+    const fam1=sortFamily(sortSel.value);
     for(const opt of Array.from(sort2Sel.options)){
-      opt.disabled = (sortFamily(opt.value) === fam1);
+      opt.disabled=(sortFamily(opt.value)===fam1);
     }
-    if(sortFamily(sort2Sel.value) === fam1){
-      const firstValid = Array.from(sort2Sel.options).find(o => !o.disabled);
-      if(firstValid) sort2Sel.value = firstValid.value;
+    if(sortFamily(sort2Sel.value)===fam1){
+      const firstValid=Array.from(sort2Sel.options).find(o=>!o.disabled);
+      if(firstValid) sort2Sel.value=firstValid.value;
     }
 
-    waterOnly = !!waterOnlyEl.checked;
+    waterOnly=!!waterOnlyEl.checked;
 
-    // ensure all sliderVal updated
+    // update all sliderVal
     for(const spec of NUM_SPECS){
-      const ui = sliderUI[spec.id];
+      const ui=sliderUI[spec.id];
       if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
     }
 
-    let filtered = allRows.filter(passesAll);
-    filtered = sortRows(filtered, sortSel.value, sort2Sel.value, {year:numFields.year, park:fields.park});
-    lastRendered = filtered;
+    let filtered=allRows.filter(passesAll);
+    filtered=sortRows(filtered, sortSel.value, sort2Sel.value, {year:numFields.year, park:fields.park});
+    lastRendered=filtered;
 
-    if(filtered.length === 0){
-      grid.innerHTML = `<div class="empty">Aucun résultat.</div>`;
-    } else {
-      grid.innerHTML = filtered.map((r,i)=>cardHTML(r,i)).join("");
+    if(filtered.length===0){
+      grid.innerHTML=`<div class="empty">Aucun résultat.</div>`;
+    }else{
+      grid.innerHTML=filtered.map((r,i)=>cardHTML(r,i)).join("");
       grid.querySelectorAll(".card").forEach(card=>{
-        const idx = Number(card.getAttribute("data-idx"));
-        card.addEventListener("click", ()=> openModalAtIndex(idx));
+        const idx=Number(card.getAttribute("data-idx"));
+        card.addEventListener("click",()=>openModalAtIndex(idx));
         card.addEventListener("keydown",(e)=>{
           if(e.key==="Enter" || e.key===" "){
-            e.preventDefault();
-            openModalAtIndex(idx);
+            e.preventDefault(); openModalAtIndex(idx);
           }
         });
       });
@@ -1360,129 +1071,120 @@ function sortRows(list, mode1, mode2, f){
     updateAllFacetUIs();
 
     if(modalOverlay.classList.contains("open")){
-      if(lastRendered.length === 0){ closeModal(); return; }
-      if(currentIndex >= lastRendered.length) currentIndex = lastRendered.length - 1;
+      if(lastRendered.length===0){ closeModal(); return; }
+      if(currentIndex>=lastRendered.length) currentIndex=lastRendered.length-1;
       updateArrowsState();
     }
   }
 
   try{
-    const res = await fetch(dataUrl, { cache:"no-store" });
+    const res=await fetch(dataUrl,{cache:"no-store"});
     if(!res.ok) throw new Error(`Fetch échoué (${res.status}) sur ${dataUrl}`);
-    const rows = await res.json();
+    const rows=await res.json();
     if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
-    if(rows.length === 0){ grid.innerHTML = `<div class="empty">Aucune donnée.</div>`; return; }
+    if(rows.length===0){ grid.innerHTML=`<div class="empty">Aucune donnée.</div>`; return; }
 
-    const sample = rows[0];
+    const sample=rows[0];
 
-    fields.name = pickField(sample, ["Nom","Name","Coaster","Attraction","Ride"]);
+    fields.name=pickField(sample,["Nom","Name","Coaster","Attraction","Ride"]);
     if(!fields.name) throw new Error("Champ 'Nom de coaster' introuvable (Nom/Name/Coaster…).");
 
-    for(const spec of FACET_SPECS) fields[spec.id] = pickField(sample, spec.candidates);
-    for(const spec of NUM_SPECS) numFields[spec.id] = pickField(sample, spec.candidates);
-    waterField = pickField(sample, WATER_CANDIDATES);
+    for(const spec of FACET_SPECS) fields[spec.id]=pickField(sample,spec.candidates);
+    for(const spec of NUM_SPECS) numFields[spec.id]=pickField(sample,spec.candidates);
+    waterField=pickField(sample,WATER_CANDIDATES);
 
     createFacetUI();
     createSliderUI();
 
-    allRows = rows.map(r=>{
-      const rr = {...r};
-      rr.__water = parseWater(rr);
+    allRows=rows.map(r=>{
+      const rr={...r};
+      rr.__water=parseWater(rr);
       computeDerivedSeats(rr);
       return rr;
     });
 
     // stable facet ranks
     for(const spec of FACET_SPECS){
-      const key = fields[spec.id];
-      if(!key){
-        facetMasterOptions[spec.id] = [];
-        facetStableRank[spec.id] = new Map();
-        continue;
-      }
-      const opts = allRows
-        .map(r => normalizeFacetValue(spec.id, r[key]))
-        .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
-      const uniq = Array.from(new Set(opts));
+      const key=fields[spec.id];
+      if(!key){ facetMasterOptions[spec.id]=[]; facetStableRank[spec.id]=new Map(); continue; }
 
-      const globalCounts = new Map();
-      uniq.forEach(v => globalCounts.set(v, 0));
+      const opts=allRows.map(r=>normalizeFacetValue(spec.id,r[key]))
+        .filter(v=>v && !["-","—","n/a","na","unknown"].includes(norm(v)));
+      const uniq=Array.from(new Set(opts));
+
+      const globalCounts=new Map();
+      uniq.forEach(v=>globalCounts.set(v,0));
       for(const r of allRows){
-        const v = normalizeFacetValue(spec.id, r[key]);
+        const v=normalizeFacetValue(spec.id,r[key]);
         if(!v || !globalCounts.has(v)) continue;
-        globalCounts.set(v, (globalCounts.get(v)||0) + 1);
+        globalCounts.set(v,(globalCounts.get(v)||0)+1);
       }
 
-      const orderedDefault = uniq.slice().sort((a,b)=>{
-        const ca = globalCounts.get(a) || 0;
-        const cb = globalCounts.get(b) || 0;
-        if(cb !== ca) return cb - ca;
-        return String(a).localeCompare(String(b), "fr");
+      const orderedDefault=uniq.slice().sort((a,b)=>{
+        const ca=globalCounts.get(a)||0;
+        const cb=globalCounts.get(b)||0;
+        if(cb!==ca) return cb-ca;
+        return String(a).localeCompare(String(b),"fr");
       });
 
-      facetMasterOptions[spec.id] = orderedDefault;
-      const rankMap = new Map();
-      orderedDefault.forEach((v,i)=>rankMap.set(v,i));
-      facetStableRank[spec.id] = rankMap;
+      facetMasterOptions[spec.id]=orderedDefault;
+      const rankMap=new Map(); orderedDefault.forEach((v,i)=>rankMap.set(v,i));
+      facetStableRank[spec.id]=rankMap;
     }
 
     initSlidersFromData();
 
-    // ✅ initialize seat relations consistently once (push)
-    syncSeatGroup("seatsPerRow");
-    lastGoodSeatState.has = true;
-    lastGoodSeatState.values = snapshotSeatState();
-
-    // snapshot for non-seat sliders
+    // init “never 0” snapshots for non-seat sliders
     for(const spec of NUM_SPECS){
       if(SEAT_GROUP.includes(spec.id)) continue;
-      const abs = sliderAbs[spec.id];
-      if(abs) lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
+      const abs=sliderAbs[spec.id];
+      if(abs) lastGoodSliderValue[spec.id]={min:abs.min,max:abs.max};
     }
 
-    qEl.addEventListener("input", render);
+    // init seat snapshot
+    lastGoodSeatState.has=true;
+    lastGoodSeatState.snap=snapshotSeat();
 
-    let prevPrimary = sortSel.value;
-    sortSel.addEventListener("change", ()=>{
-      const newPrimary = sortSel.value;
-      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
-        sort2Sel.value = prevPrimary;
+    qEl.addEventListener("input",render);
+
+    let prevPrimary=sortSel.value;
+    sortSel.addEventListener("change",()=>{
+      const newPrimary=sortSel.value;
+      if(sortFamily(newPrimary)===sortFamily(sort2Sel.value)){
+        sort2Sel.value=prevPrimary;
       }
-      prevPrimary = newPrimary;
+      prevPrimary=newPrimary;
       render();
     });
-    sort2Sel.addEventListener("change", render);
+    sort2Sel.addEventListener("change",render);
+    waterOnlyEl.addEventListener("change",render);
 
-    waterOnlyEl.addEventListener("change", render);
-
-    $("clear").addEventListener("click", ()=>{
-      qEl.value = "";
-      waterOnlyEl.checked = false;
+    $("clear").addEventListener("click",()=>{
+      qEl.value="";
+      waterOnlyEl.checked=false;
 
       for(const spec of FACET_SPECS){
         selected[spec.id].clear();
-        facetUI[spec.id].searchEl.value = "";
-        facetUI[spec.id].listEl.scrollTop = 0;
+        facetUI[spec.id].searchEl.value="";
+        facetUI[spec.id].listEl.scrollTop=0;
       }
 
-      // reset sliders to Excel full span
+      // reset all sliders to Excel min/max (✅ Ouverture..Débit full range too)
       for(const spec of NUM_SPECS){
-        const abs = sliderAbs[spec.id];
-        const ui = sliderUI[spec.id];
+        const abs=sliderAbs[spec.id];
+        const ui=sliderUI[spec.id];
         if(!abs || !ui || ui.minEl.disabled) continue;
-        ui.minEl.value = String(abs.min);
-        ui.maxEl.value = String(abs.max);
+        ui.minEl.value=String(abs.min);
+        ui.maxEl.value=String(abs.max);
         updateDualUI(spec.id);
       }
 
-      // re-sync seat relations
-      syncSeatGroup("seatsPerRow");
-      lastGoodSeatState.has = true;
-      lastGoodSeatState.values = snapshotSeatState();
+      lastGoodSeatState.has=true;
+      lastGoodSeatState.snap=snapshotSeat();
 
-      sortSel.value = "park_asc";
-      sort2Sel.value = "year_asc";
-      prevPrimary = sortSel.value;
+      sortSel.value="park_asc";
+      sort2Sel.value="year_asc";
+      prevPrimary=sortSel.value;
 
       closeModal();
       render();
@@ -1490,10 +1192,10 @@ function sortRows(list, mode1, mode2, f){
 
     render();
 
-  } catch(e){
+  }catch(e){
     console.error(e);
     showError(
-      "Erreur:\n" + (e?.message ?? String(e)) +
+      "Erreur:\n"+(e?.message ?? String(e))+
       "\n\nÀ vérifier:\n- data/coasters_clean.json existe\n- JSON valide (tableau)\n- GitHub Pages (pas file://)"
     );
   }

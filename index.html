@@ -16,12 +16,27 @@
 
   .box{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
   .boxTitle{font-weight:700;font-size:13px;margin:0 0 8px}
-  .list{max-height:190px;overflow:auto;border-top:1px solid #eee;margin-top:8px;padding-top:8px}
+
+  .list{
+    max-height:190px;overflow:auto;
+    border-top:1px solid #eee;margin-top:8px;padding-top:0;
+  }
   .row{display:flex;gap:8px;align-items:center;padding:6px 2px;font-size:13px}
   .row input{width:auto}
   .row small{opacity:.65;margin-left:auto}
   .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .tools button{width:auto;padding:8px 10px;font-size:13px}
+
+  /* ✅ sticky indicator inside scroll zone */
+  .stickySel{
+    position:sticky;top:0;z-index:5;
+    background:#fff;
+    border-bottom:1px solid #eee;
+    padding:8px 2px;
+    font-size:12px;
+    opacity:.85;
+    display:none;
+  }
 
   .rangeWrap{border:1px solid var(--b);border-radius:12px;padding:10px;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.03)}
   .rangeHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
@@ -231,7 +246,7 @@ const FACET_SPECS = [
   { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
 ];
 
-/* ✅ demande: PAS de décimaux => step=1 partout */
+// ✅ PAS de décimaux => step=1 partout
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
   { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
@@ -331,11 +346,12 @@ function sortRows(list, mode1, mode2, f){
 
   const selected = {};
   const facetUI = {};
+  const facetHasScrollListener = {}; // ✅ ensure we bind once
   const sliderUI = {};
   const sliderAbs = {};
   const sliderDyn = {};
   const sliderVal = {};
-  const facetMasterOptions = {}; // all possible facet values (for showing 0)
+  const facetMasterOptions = {};
 
   let waterOnly = false;
   let lastRendered = [];
@@ -400,7 +416,6 @@ function sortRows(list, mode1, mode2, f){
     ui.minEl.max = String(dyn.max);
     ui.maxEl.max = String(dyn.max);
 
-    // ✅ pas de décimaux: on force à des entiers
     let minV = Math.round(Number(ui.minEl.value));
     let maxV = Math.round(Number(ui.maxEl.value));
     minV = Math.max(dyn.min, Math.min(dyn.max, minV));
@@ -490,12 +505,8 @@ function sortRows(list, mode1, mode2, f){
         continue;
       }
 
-      let min = Math.min(...values);
-      let max = Math.max(...values);
-
-      // ✅ entiers
-      min = Math.floor(min);
-      max = Math.ceil(max);
+      let min = Math.floor(Math.min(...values));
+      let max = Math.ceil(Math.max(...values));
 
       sliderAbs[spec.id] = {min, max, step:1, integer:true};
       sliderDyn[spec.id] = {min, max};
@@ -503,7 +514,6 @@ function sortRows(list, mode1, mode2, f){
       ui.minEl.step = "1";
       ui.maxEl.step = "1";
 
-      // default full span min..max
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
 
@@ -517,7 +527,6 @@ function sortRows(list, mode1, mode2, f){
     const text = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
     return text.includes(q);
   }
-
   function passesFacets(row){
     for(const spec of FACET_SPECS){
       const set = selected[spec.id];
@@ -528,7 +537,6 @@ function sortRows(list, mode1, mode2, f){
     }
     return true;
   }
-
   function passesSliders(row){
     for(const spec of NUM_SPECS){
       const key = numFields[spec.id];
@@ -547,12 +555,10 @@ function sortRows(list, mode1, mode2, f){
     }
     return true;
   }
-
   function passesWater(row){
     if(!waterOnly) return true;
     return !!row.__water;
   }
-
   function passesAll(row){
     const n = String(row[fields.name] ?? "").trim();
     if(!n) return false;
@@ -607,17 +613,77 @@ function sortRows(list, mode1, mode2, f){
     return c;
   }
 
-  // ✅ tri: cochés d'abord, puis count desc, puis alpha
-  function sortOptionsSelectedFirst(options, counts, selectedSet){
+  // ✅ Default: strictly count desc, tie => alpha
+  function sortOptionsDefault(options, counts){
     return options.slice().sort((a,b)=>{
-      const sa = selectedSet.has(a) ? 1 : 0;
-      const sb = selectedSet.has(b) ? 1 : 0;
-      if(sb !== sa) return sb - sa; // selected first
       const ca = counts.get(a) || 0;
       const cb = counts.get(b) || 0;
       if(cb !== ca) return cb - ca;
       return String(a).localeCompare(String(b), "fr");
     });
+  }
+
+  // ✅ When not default (search OR selection): selected first, then count desc, then alpha
+  function sortOptionsSelectedFirst(options, counts, selectedSet){
+    return options.slice().sort((a,b)=>{
+      const sa = selectedSet.has(a) ? 1 : 0;
+      const sb = selectedSet.has(b) ? 1 : 0;
+      if(sb !== sa) return sb - sa;
+      const ca = counts.get(a) || 0;
+      const cb = counts.get(b) || 0;
+      if(cb !== ca) return cb - ca;
+      return String(a).localeCompare(String(b), "fr");
+    });
+  }
+
+  // ✅ Sticky indicator: show "X sélectionné(s)" if some selected not visible in scroll
+  function updateStickySelectionIndicator(facetId){
+    const ui = facetUI[facetId];
+    if(!ui) return;
+    const listEl = ui.listEl;
+    const sticky = listEl.querySelector(`#sticky_${facetId}`);
+    if(!sticky) return;
+
+    const set = selected[facetId];
+    const selectedCount = set ? set.size : 0;
+
+    if(selectedCount === 0){
+      sticky.style.display = "none";
+      sticky.textContent = "";
+      return;
+    }
+
+    // measure visibility
+    const top = listEl.scrollTop;
+    const bottom = top + listEl.clientHeight;
+
+    const selectedRows = Array.from(listEl.querySelectorAll('label.row input[type="checkbox"]:checked'))
+      .map(cb => cb.closest("label.row"))
+      .filter(Boolean);
+
+    if(selectedRows.length === 0){
+      sticky.style.display = "none";
+      sticky.textContent = "";
+      return;
+    }
+
+    let anyHidden = false;
+    for(const row of selectedRows){
+      const rowTop = row.offsetTop;
+      const rowBottom = rowTop + row.offsetHeight;
+      if(rowBottom < top || rowTop > bottom){
+        anyHidden = true;
+        break;
+      }
+    }
+
+    if(anyHidden){
+      sticky.textContent = `${selectedCount} sélectionné${selectedCount>1 ? "s" : ""}`;
+      sticky.style.display = "block";
+    } else {
+      sticky.style.display = "none";
+      sticky.textContent = "";
+    }
   }
 
   function drawFacetList(facetId){
@@ -630,7 +696,7 @@ function sortRows(list, mode1, mode2, f){
       return;
     }
 
-    const q = norm(ui.searchEl.value);
+    const searchText = norm(ui.searchEl.value);
     const selectedSet = selected[facetId];
     const counts = computeFacetCounts(facetId);
 
@@ -638,22 +704,31 @@ function sortRows(list, mode1, mode2, f){
     const optSet = new Set([...baseOptions, ...Array.from(selectedSet)]);
     let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
 
-    options = sortOptionsSelectedFirst(options, counts, selectedSet);
+    // ✅ requested behavior:
+    // - if "tout est par défaut" for this facet (no selection + no facet-search): pure count desc
+    // - otherwise: selected first + count desc
+    const isFacetDefault = (selectedSet.size === 0 && !searchText);
+    options = isFacetDefault
+      ? sortOptionsDefault(options, counts)
+      : sortOptionsSelectedFirst(options, counts, selectedSet);
 
-    const shown = options.filter(v => norm(v).includes(q));
+    const shown = options.filter(v => norm(v).includes(searchText));
 
-    ui.listEl.innerHTML = shown.map(v=>{
-      const c = counts.get(v) || 0;          // ✅ affiche 0
-      const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
-      const checked = selectedSet.has(v) ? "checked" : "";
-      return `
-        <label class="row">
-          <input type="checkbox" value="${esc(v)}" ${checked} ${disabled}>
-          <span>${esc(v)}</span>
-          <small>${c}</small>
-        </label>
-      `;
-    }).join("") || `<div class="empty">Aucune option</div>`;
+    // ✅ sticky header is inside scroll zone
+    ui.listEl.innerHTML =
+      `<div class="stickySel" id="sticky_${facetId}"></div>` +
+      (shown.map(v=>{
+        const c = counts.get(v) || 0; // show 0
+        const disabled = (c === 0 && !selectedSet.has(v)) ? "disabled" : "";
+        const checked = selectedSet.has(v) ? "checked" : "";
+        return `
+          <label class="row">
+            <input type="checkbox" value="${esc(v)}" ${checked} ${disabled}>
+            <span>${esc(v)}</span>
+            <small>${c}</small>
+          </label>
+        `;
+      }).join("") || `<div class="empty">Aucune option</div>`);
 
     ui.listEl.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
       cb.addEventListener("change", ()=>{
@@ -663,6 +738,15 @@ function sortRows(list, mode1, mode2, f){
         render();
       });
     });
+
+    // bind scroll listener once
+    if(!facetHasScrollListener[facetId]){
+      facetHasScrollListener[facetId] = true;
+      ui.listEl.addEventListener("scroll", ()=> updateStickySelectionIndicator(facetId));
+    }
+
+    // update sticky now (after DOM update)
+    updateStickySelectionIndicator(facetId);
   }
 
   function updateAllFacetUIs(){
@@ -815,7 +899,7 @@ function sortRows(list, mode1, mode2, f){
   });
 
   // Numeric sliders must never lead to 0 results
-  const lastGoodSliderValue = {}; // id -> {min,max}
+  const lastGoodSliderValue = {};
 
   function countResults(){
     let c = 0;
@@ -840,7 +924,6 @@ function sortRows(list, mode1, mode2, f){
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled) return;
 
-    // round + keep min<=max
     ui.minEl.value = String(Math.round(Number(ui.minEl.value)));
     ui.maxEl.value = String(Math.round(Number(ui.maxEl.value)));
     clampSwap(ui.minEl, ui.maxEl);
@@ -860,7 +943,6 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function render(){
-    // tri anti-conflit
     const fam1 = sortFamily(sortSel.value);
     for(const opt of Array.from(sort2Sel.options)){
       opt.disabled = (sortFamily(opt.value) === fam1);
@@ -898,7 +980,7 @@ function sortRows(list, mode1, mode2, f){
       });
     }
 
-    updateAllFacetUIs();
+    updateAllFacetUIs(); // will refresh counts + sticky indicator
 
     if(modalOverlay.classList.contains("open")){
       if(lastRendered.length === 0){ closeModal(); return; }
@@ -946,7 +1028,7 @@ function sortRows(list, mode1, mode2, f){
     initSlidersFromData();
     enforceSeatConstraints();
 
-    // ensure full span at load + lastGood = full span
+    // full span at load + lastGood = full span
     for(const spec of NUM_SPECS){
       const abs = sliderAbs[spec.id];
       const ui = sliderUI[spec.id];

@@ -116,16 +116,24 @@
 
   .sectionTitle{font-weight:800;margin:18px 0 8px;font-size:14px;opacity:.85}
 
-  /* ✅ NOUVEAU: layout sliderBar avec colonne “sièges” alignée */
-  #sliderBar{
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:14px;
+  /* ✅ groupe “Sièges” vertical + même largeur */
+  .seatGroup{
+    border:1px solid var(--b);
+    border-radius:14px;
+    background:#fff;
+    box-shadow:var(--shadow);
+    padding:12px;
   }
-  .seatStack{
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:14px;
+  .seatGroupTitle{
+    font-weight:800;
+    font-size:14px;
+    opacity:.85;
+    margin:0 0 10px;
+  }
+  .seatGroupCol{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
   }
 </style>
 </head>
@@ -261,6 +269,9 @@ function pickField(obj, candidates){
   }
   return null;
 }
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+function ceilDiv(a, b){ return Math.ceil(a / Math.max(1, b)); }
+function floorDiv(a, b){ return Math.floor(a / Math.max(1, b)); }
 
 /* ---------- Specs ---------- */
 const FACET_SPECS = [
@@ -287,11 +298,12 @@ const NUM_SPECS = [
 
   { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
   { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
-
   { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"], step:1, integer:true },
   { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
   { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"], step:1, integer:true },
 ];
+
+const SEAT_GROUP = ["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"];
 
 const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];
 
@@ -312,11 +324,9 @@ function createFacetBox(spec){
   `;
   return box;
 }
-
 function createDualSlider(spec){
   const wrap = document.createElement("div");
   wrap.className = "rangeWrap";
-  wrap.dataset.sliderId = spec.id;
   wrap.innerHTML = `
     <div class="rangeHead">
       <span class="name">${esc(spec.label)}</span>
@@ -381,20 +391,18 @@ function sortRows(list, mode1, mode2, f){
   const selected = {};
   const facetUI = {};
   const sliderUI = {};
-  const sliderAbs = {}; // bornes excel (par champ)
-  const sliderVal = {}; // valeurs courantes {min,max}
+  const sliderAbs = {};   // hard bounds from Excel
+  const sliderVal = {};   // current chosen ranges
   const facetMasterOptions = {};
   const facetStableRank = {};
+
+  // ✅ same visual scale for the “seat group”
+  let seatScaleMin = null;
+  let seatScaleMax = null;
 
   let waterOnly = false;
   let lastRendered = [];
   let currentIndex = -1;
-
-  const SEAT_IDS = ["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"];
-  const isSeat = (id)=> SEAT_IDS.includes(id);
-
-  // ✅ échelle commune pour les 5 sliders sièges (visuel uniquement)
-  let seatScale = null; // {min,max}
 
   function normalizeFacetValue(facetId, raw){
     let v = String(raw ?? "").trim();
@@ -426,15 +434,11 @@ function sortRows(list, mode1, mode2, f){
     const d = dKey ? toInt(row[dKey]) : null;
     const e = eKey ? toInt(row[eKey]) : null;
 
-    // Sièges/voit = Sièges * Rangées
     if(cKey && c === null && a !== null && b !== null) row[cKey] = a * b;
 
     const cNow = cKey ? toInt(row[cKey]) : null;
-    // Sièges/train = Sièges/voit * Voit/train
     if(eKey && e === null && d !== null && cNow !== null) row[eKey] = cNow * d;
   }
-
-  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
 
   function clampSwap(minEl, maxEl){
     let a = Number(minEl.value);
@@ -447,55 +451,66 @@ function sortRows(list, mode1, mode2, f){
     return {min:a, max:b};
   }
 
-  // ✅ bornes Excel strictes
-  function clampToAbs(id, minV, maxV){
-    const abs = sliderAbs[id];
-    if(!abs) return {min:minV, max:maxV};
-    let lo = Math.round(minV);
-    let hi = Math.round(maxV);
-    lo = clamp(lo, abs.min, abs.max);
-    hi = clamp(hi, abs.min, abs.max);
-    if(lo > hi){ const t=lo; lo=hi; hi=t; }
-    return {min:lo, max:hi};
+  function getUIRange(id){
+    const ui = sliderUI[id];
+    if(!ui || ui.minEl.disabled) return null;
+    const minV = Math.round(Number(ui.minEl.value));
+    const maxV = Math.round(Number(ui.maxEl.value));
+    return {min: Math.min(minV,maxV), max: Math.max(minV,maxV)};
   }
 
-  // ✅ set slider handles (en respectant abs Excel)
-  function setSlider(id, minV, maxV){
+  function setUIRange(id, minV, maxV){
     const ui = sliderUI[id];
     if(!ui || ui.minEl.disabled) return;
-
-    const c = clampToAbs(id, minV, maxV);
-    ui.minEl.value = String(c.min);
-    ui.maxEl.value = String(c.max);
+    ui.minEl.value = String(Math.round(minV));
+    ui.maxEl.value = String(Math.round(maxV));
+    clampSwap(ui.minEl, ui.maxEl);
     updateDualUI(id);
   }
 
-  // ✅ update UI (avec échelle commune si slider siège)
+  function clampToAbs(id, r){
+    const abs = sliderAbs[id];
+    if(!abs) return r;
+    let mn = clamp(Math.round(r.min), abs.min, abs.max);
+    let mx = clamp(Math.round(r.max), abs.min, abs.max);
+    if(mn > mx){ const t=mn; mn=mx; mx=t; }
+    return {min:mn, max:mx};
+  }
+
   function updateDualUI(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled || ui.maxEl.disabled) return;
 
-    const scale = (isSeat(id) && seatScale) ? seatScale : abs; // échelle visuelle
-    ui.minEl.min = String(scale.min);
-    ui.maxEl.min = String(scale.min);
-    ui.minEl.max = String(scale.max);
-    ui.maxEl.max = String(scale.max);
+    // ✅ “same scale” only for the seat group:
+    const isSeat = SEAT_GROUP.includes(id);
+    const scaleMin = (isSeat && seatScaleMin !== null) ? seatScaleMin : abs.min;
+    const scaleMax = (isSeat && seatScaleMax !== null) ? seatScaleMax : abs.max;
 
-    // clamp des valeurs courantes sur bornes excel (abs)
+    // input min/max = global scale (so the track is the same for all 5)
+    ui.minEl.min = String(scaleMin);
+    ui.maxEl.min = String(scaleMin);
+    ui.minEl.max = String(scaleMax);
+    ui.maxEl.max = String(scaleMax);
+
+    // BUT: we clamp values to the Excel abs bounds (hard)
     let minV = Math.round(Number(ui.minEl.value));
     let maxV = Math.round(Number(ui.maxEl.value));
-    const c = clampToAbs(id, minV, maxV);
-    minV = c.min; maxV = c.max;
+    if(minV > maxV){ const t=minV; minV=maxV; maxV=t; }
+
+    minV = clamp(minV, abs.min, abs.max);
+    maxV = clamp(maxV, abs.min, abs.max);
+    if(minV > maxV) minV = maxV;
 
     ui.minEl.value = String(minV);
     ui.maxEl.value = String(maxV);
+
     sliderVal[id] = {min:minV, max:maxV};
 
-    // fill par rapport à l'échelle visuelle (scale commune si siège)
-    const total = (scale.max - scale.min) || 1;
-    const left = ((minV - scale.min) / total) * 100;
-    const right = ((maxV - scale.min) / total) * 100;
+    // fill based on SCALE (not abs) so visuals align
+    const total = (scaleMax - scaleMin) || 1;
+    const left = ((minV - scaleMin) / total) * 100;
+    const right = ((maxV - scaleMin) / total) * 100;
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
@@ -529,25 +544,25 @@ function sortRows(list, mode1, mode2, f){
     }
   }
 
-  // ✅ sliders: on met les 5 sièges dans une colonne dédiée (alignée verticalement)
   function createSliderUI(){
     sliderBar.innerHTML = "";
 
-    const seatStack = document.createElement("div");
-    seatStack.className = "seatStack";
+    // ✅ Seat group container (vertical, aligned)
+    const seatBox = document.createElement("div");
+    seatBox.className = "seatGroup";
+    seatBox.style.gridColumn = "1 / -1"; // full width row (more stable)
+    seatBox.innerHTML = `
+      <div class="seatGroupTitle">Sièges / trains (liés)</div>
+      <div class="seatGroupCol" id="seatGroupCol"></div>
+    `;
+    const seatCol = seatBox.querySelector("#seatGroupCol");
 
-    const normalStack = document.createElement("div");
-    normalStack.style.display = "grid";
-    normalStack.style.gridTemplateColumns = "1fr";
-    normalStack.style.gap = "14px";
-
-    const seatSet = new Set(SEAT_IDS);
+    // regular sliders container: keep as before (grid from sliderBar)
+    // we’ll append non-seat sliders directly to sliderBar, but seat sliders go in seatCol
+    let seatInserted = false;
 
     for(const spec of NUM_SPECS){
       const wrap = createDualSlider(spec);
-
-      if(seatSet.has(spec.id)) seatStack.appendChild(wrap);
-      else normalStack.appendChild(wrap);
 
       const minEl = wrap.querySelector(`#${spec.id}_min`);
       const maxEl = wrap.querySelector(`#${spec.id}_max`);
@@ -558,20 +573,31 @@ function sortRows(list, mode1, mode2, f){
 
       sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
 
-      minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
-      maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
-    }
+      const isSeat = SEAT_GROUP.includes(spec.id);
 
-    // ordre demandé
-    if(seatStack.children.length){
-      sliderBar.appendChild(seatStack);
-    }
-    if(normalStack.children.length){
-      sliderBar.appendChild(normalStack);
+      // handlers:
+      if(isSeat){
+        minEl.addEventListener("input", ()=> onSeatGroupAttempt(spec.id));
+        maxEl.addEventListener("input", ()=> onSeatGroupAttempt(spec.id));
+      } else {
+        minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
+        maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
+      }
+
+      if(isSeat){
+        if(!seatInserted){
+          sliderBar.appendChild(seatBox);
+          seatInserted = true;
+        }
+        seatCol.appendChild(wrap);
+      } else {
+        sliderBar.appendChild(wrap);
+      }
     }
   }
 
   function initSlidersFromData(){
+    // compute abs bounds per slider (Excel min/max)
     for(const spec of NUM_SPECS){
       const key = numFields[spec.id];
       const ui = sliderUI[spec.id];
@@ -600,35 +626,35 @@ function sortRows(list, mode1, mode2, f){
 
       let min = Math.floor(Math.min(...values));
       let max = Math.ceil(Math.max(...values));
-
-      sliderAbs[spec.id] = {min, max, step:1, integer:true};
+      sliderAbs[spec.id] = {min, max, step:1};
 
       ui.minEl.step = "1";
       ui.maxEl.step = "1";
+
+      // default full span
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
-      updateDualUI(spec.id);
     }
 
-    // ✅ calc échelle commune pour les 5 “sièges” (visuel)
-    const seatAbs = SEAT_IDS
+    // ✅ compute same scale for seat group (min of mins, max of maxs)
+    const seatAbs = SEAT_GROUP
       .map(id => sliderAbs[id])
       .filter(Boolean);
 
     if(seatAbs.length){
-      const gMin = Math.min(...seatAbs.map(a=>a.min));
-      const gMax = Math.max(...seatAbs.map(a=>a.max));
-      seatScale = {min:gMin, max:gMax};
+      seatScaleMin = Math.min(...seatAbs.map(a => a.min));
+      seatScaleMax = Math.max(...seatAbs.map(a => a.max));
+    }
 
-      // refresh UI pour qu'ils aient tous la même échelle
-      for(const id of SEAT_IDS){
-        if(sliderUI[id] && sliderAbs[id] && !sliderUI[id].minEl.disabled){
-          updateDualUI(id);
-        }
-      }
+    // update UI after scale computed
+    for(const spec of NUM_SPECS){
+      const ui = sliderUI[spec.id];
+      if(!ui || ui.minEl.disabled) continue;
+      updateDualUI(spec.id);
     }
   }
 
+  /* ---------- filtering pipeline ---------- */
   function passesSearch(row){
     const q = norm(qEl.value);
     if(!q) return true;
@@ -653,14 +679,15 @@ function sortRows(list, mode1, mode2, f){
       const ui = sliderUI[spec.id];
       if(!key || !ui || ui.minEl.disabled) continue;
 
-      const {min, max} = sliderVal[spec.id] || sliderAbs[spec.id];
+      const abs = sliderAbs[spec.id];
+      const chosen = sliderVal[spec.id] || abs;
+
       const val = spec.isYear ? toYear(row[key]) : toInt(row[key]);
 
       if(val === null){
-        const abs = sliderAbs[spec.id];
-        if(min !== abs.min || max !== abs.max) return false;
+        if(chosen.min !== abs.min || chosen.max !== abs.max) return false;
       } else {
-        if(val < min || val > max) return false;
+        if(val < chosen.min || val > chosen.max) return false;
       }
     }
     return true;
@@ -838,172 +865,283 @@ function sortRows(list, mode1, mode2, f){
     for(const spec of FACET_SPECS) updateSelectedBanner(spec.id);
   }
 
-  /* -----------------------------------------------------------
-     ✅ COUPLAGE “SIÈGES” : auto-augmentation des autres sliders
-     relations :
-       seatsPerCar   = seatsPerRow * rowsPerCar
-       seatsPerTrain = seatsPerCar * carsPerTrain
-
-     Objectif : si tu augmentes l’un des 5, les autres s’ajustent
-     automatiquement (sans dépasser les bornes Excel).
-  ----------------------------------------------------------- */
-
-  function getR(id){
-    const v = sliderVal[id] || sliderAbs[id];
-    if(!v) return null;
-    return {min:v.min, max:v.max};
+  /* -------------------------------------------------------
+     ✅ SEAT GROUP AUTO-PUSH (no blocking between the 5)
+     Relations:
+       A = seatsPerRow
+       B = rowsPerCar
+       C = seatsPerCar = A*B
+       D = carsPerTrain
+       E = seatsPerTrain = C*D
+     ------------------------------------------------------- */
+  function readSeatRanges(){
+    const ids = {
+      A:"seatsPerRow",
+      B:"rowsPerCar",
+      C:"seatsPerCar",
+      D:"carsPerTrain",
+      E:"seatsPerTrain"
+    };
+    const A = clampToAbs(ids.A, getUIRange(ids.A) || sliderAbs[ids.A]);
+    const B = clampToAbs(ids.B, getUIRange(ids.B) || sliderAbs[ids.B]);
+    const C = clampToAbs(ids.C, getUIRange(ids.C) || sliderAbs[ids.C]);
+    const D = clampToAbs(ids.D, getUIRange(ids.D) || sliderAbs[ids.D]);
+    const E = clampToAbs(ids.E, getUIRange(ids.E) || sliderAbs[ids.E]);
+    return {ids, A,B,C,D,E};
   }
 
-  function ensureRangeNotEmpty(id){
-    const ui = sliderUI[id];
-    const abs = sliderAbs[id];
-    if(!ui || !abs || ui.minEl.disabled) return;
-    const c = clampToAbs(id, Number(ui.minEl.value), Number(ui.maxEl.value));
-    if(c.min > c.max){
-      ui.minEl.value = String(c.min);
-      ui.maxEl.value = String(c.min);
-    }
-    if(c.min === c.max && abs.max > abs.min){
-      // pour éviter “poignée impossible à bouger” : ouvrir de 1 si possible
-      if(c.max < abs.max) ui.maxEl.value = String(c.max + 1);
-      else if(c.min > abs.min) ui.minEl.value = String(c.min - 1);
-    }
-    updateDualUI(id);
+  function writeSeatRanges({ids, A,B,C,D,E}){
+    setUIRange(ids.A, A.min, A.max);
+    setUIRange(ids.B, B.min, B.max);
+    setUIRange(ids.C, C.min, C.max);
+    setUIRange(ids.D, D.min, D.max);
+    setUIRange(ids.E, E.min, E.max);
   }
 
-  function bumpMax(id, needed){
-    const abs = sliderAbs[id];
-    const r = getR(id);
-    if(!abs || !r) return false;
-    const target = clamp(Math.round(needed), abs.min, abs.max);
-    if(target > r.max){
-      setSlider(id, r.min, target);
-      return true;
+  function enforceSeatAbsOnly(state){
+    for(const k of ["A","B","C","D","E"]){
+      state[k] = clampToAbs(state.ids[k], state[k]);
+      if(state[k].min < 1) state[k].min = 1;
+      if(state[k].max < 1) state[k].max = 1;
+      if(state[k].min > state[k].max) state[k].min = state[k].max;
     }
-    return false;
+    return state;
   }
 
-  function bumpMinDown(id, needed){
-    const abs = sliderAbs[id];
-    const r = getR(id);
-    if(!abs || !r) return false;
-    const target = clamp(Math.round(needed), abs.min, abs.max);
-    if(target < r.min){
-      setSlider(id, target, r.max);
-      return true;
-    }
-    return false;
+  function computeCfromAB(A,B){
+    return {min: A.min * B.min, max: A.max * B.max};
+  }
+  function computeEfromCD(C,D){
+    return {min: C.min * D.min, max: C.max * D.max};
   }
 
-  // Ajuste A et B pour permettre C (sans bloquer C)
-  function fitProductForC(){
-    const A = getR("seatsPerRow");
-    const B = getR("rowsPerCar");
-    const C = getR("seatsPerCar");
-    if(!A || !B || !C) return;
-
-    // garantir A.max * B.max >= C.max
-    let guard = 0;
-    while(A.max * B.max < C.max && guard++ < 12){
-      // essayer d’augmenter d’abord A.max, sinon B.max
-      const aNeed = Math.ceil(C.max / Math.max(1, B.max));
-      if(bumpMax("seatsPerRow", aNeed)) { /* ok */ }
-      else {
-        const bNeed = Math.ceil(C.max / Math.max(1, A.max));
-        if(!bumpMax("rowsPerCar", bNeed)) break;
-      }
-      // refresh
-      const A2 = getR("seatsPerRow"); const B2 = getR("rowsPerCar");
-      if(!A2 || !B2) break;
-      A.min=A2.min; A.max=A2.max; B.min=B2.min; B.max=B2.max;
-    }
-
-    // garantir A.min * B.min <= C.min
-    guard = 0;
-    while(A.min * B.min > C.min && guard++ < 12){
-      // essayer de baisser d’abord A.min, sinon B.min
-      const aNeed = Math.floor(C.min / Math.max(1, B.min));
-      if(bumpMinDown("seatsPerRow", aNeed)) { /* ok */ }
-      else {
-        const bNeed = Math.floor(C.min / Math.max(1, A.min));
-        if(!bumpMinDown("rowsPerCar", bNeed)) break;
-      }
-      const A2 = getR("seatsPerRow"); const B2 = getR("rowsPerCar");
-      if(!A2 || !B2) break;
-      A.min=A2.min; A.max=A2.max; B.min=B2.min; B.max=B2.max;
-    }
-
-    ensureRangeNotEmpty("seatsPerRow");
-    ensureRangeNotEmpty("rowsPerCar");
-  }
-
-  function fitProductForE(){
-    const C = getR("seatsPerCar");
-    const D = getR("carsPerTrain");
-    const E = getR("seatsPerTrain");
-    if(!C || !D || !E) return;
-
-    // garantir C.max * D.max >= E.max
-    let guard = 0;
-    while(C.max * D.max < E.max && guard++ < 12){
-      const cNeed = Math.ceil(E.max / Math.max(1, D.max));
-      if(bumpMax("seatsPerCar", cNeed)) { /* ok */ }
-      else {
-        const dNeed = Math.ceil(E.max / Math.max(1, C.max));
-        if(!bumpMax("carsPerTrain", dNeed)) break;
-      }
-      const C2 = getR("seatsPerCar"); const D2 = getR("carsPerTrain");
-      if(!C2 || !D2) break;
-      C.min=C2.min; C.max=C2.max; D.min=D2.min; D.max=D2.max;
-    }
-
-    // garantir C.min * D.min <= E.min
-    guard = 0;
-    while(C.min * D.min > E.min && guard++ < 12){
-      const cNeed = Math.floor(E.min / Math.max(1, D.min));
-      if(bumpMinDown("seatsPerCar", cNeed)) { /* ok */ }
-      else {
-        const dNeed = Math.floor(E.min / Math.max(1, C.min));
-        if(!bumpMinDown("carsPerTrain", dNeed)) break;
-      }
-      const C2 = getR("seatsPerCar"); const D2 = getR("carsPerTrain");
-      if(!C2 || !D2) break;
-      C.min=C2.min; C.max=C2.max; D.min=D2.min; D.max=D2.max;
-    }
-
-    ensureRangeNotEmpty("seatsPerCar");
-    ensureRangeNotEmpty("carsPerTrain");
-  }
-
-  // Quand l’un des 5 change, on rend tout “compatible” sans bloquer
   function syncSeatGroup(changedId){
-    // 1) clamp sur bornes Excel
-    for(const id of SEAT_IDS){
-      ensureRangeNotEmpty(id);
+    const st0 = enforceSeatAbsOnly(readSeatRanges());
+    let {ids, A,B,C,D,E} = st0;
+
+    const absA = sliderAbs[ids.A], absB = sliderAbs[ids.B], absC = sliderAbs[ids.C], absD = sliderAbs[ids.D], absE = sliderAbs[ids.E];
+    if(!absA || !absB || !absC || !absD || !absE){
+      return; // if any missing, skip
     }
 
-    // 2) relations
-    // Si C a bougé (ou si A/B bougent), on fait en sorte que A & B puissent couvrir C
-    fitProductForC();
-
-    // Après A/B ajustés, on peut éventuellement “étendre” C si A/B permettent plus et que l’utilisateur est en train d’augmenter A ou B
-    // MAIS on ne force pas C à changer si l’utilisateur n’a pas touché C : il garde son range.
-    // (C’est exactement ce que tu veux : ne pas se faire bloquer en augmentant A/B.)
-
-    // 3) relation train
-    fitProductForE();
-
-    // 4) refresh visuel échelle commune
-    for(const id of SEAT_IDS){
-      updateDualUI(id);
+    function clampAll(){
+      A = clampToAbs(ids.A, A);
+      B = clampToAbs(ids.B, B);
+      C = clampToAbs(ids.C, C);
+      D = clampToAbs(ids.D, D);
+      E = clampToAbs(ids.E, E);
+      A.min=Math.max(1,A.min);A.max=Math.max(1,A.max);
+      B.min=Math.max(1,B.min);B.max=Math.max(1,B.max);
+      C.min=Math.max(1,C.min);C.max=Math.max(1,C.max);
+      D.min=Math.max(1,D.min);D.max=Math.max(1,D.max);
+      E.min=Math.max(1,E.min);E.max=Math.max(1,E.max);
+      if(A.min>A.max)A.min=A.max;
+      if(B.min>B.max)B.min=B.max;
+      if(C.min>C.max)C.min=C.max;
+      if(D.min>D.max)D.min=D.max;
+      if(E.min>E.max)E.min=E.max;
     }
+
+    function solveFromAB(){
+      // C derived
+      C = computeCfromAB(A,B);
+      // hard clamp C by pushing A/B if needed (block only by Excel bounds)
+      if(C.max > absC.max){
+        // reduce whichever was changed (A or B), else reduce the bigger "lever" (A)
+        if(changedId === ids.A){
+          const newAmax = floorDiv(absC.max, B.max);
+          A.max = clamp(newAmax, absA.min, absA.max);
+          if(A.min > A.max) A.min = A.max;
+        } else if(changedId === ids.B){
+          const newBmax = floorDiv(absC.max, A.max);
+          B.max = clamp(newBmax, absB.min, absB.max);
+          if(B.min > B.max) B.min = B.max;
+        } else {
+          // default: reduce B.max if it helps, else A.max
+          let nb = floorDiv(absC.max, A.max);
+          if(nb >= absB.min){
+            B.max = clamp(nb, absB.min, absB.max);
+            if(B.min > B.max) B.min = B.max;
+          } else {
+            let na = floorDiv(absC.max, B.max);
+            A.max = clamp(na, absA.min, absA.max);
+            if(A.min > A.max) A.min = A.max;
+          }
+        }
+        C = computeCfromAB(A,B);
+      }
+      if(C.min < absC.min){
+        // need raise A.min or B.min
+        if(changedId === ids.A){
+          const newAmin = ceilDiv(absC.min, B.min);
+          A.min = clamp(newAmin, absA.min, absA.max);
+          if(A.min > A.max) A.max = A.min;
+        } else if(changedId === ids.B){
+          const newBmin = ceilDiv(absC.min, A.min);
+          B.min = clamp(newBmin, absB.min, absB.max);
+          if(B.min > B.max) B.max = B.min;
+        } else {
+          let nb = ceilDiv(absC.min, A.min);
+          if(nb <= absB.max){
+            B.min = clamp(nb, absB.min, absB.max);
+            if(B.min > B.max) B.max = B.min;
+          } else {
+            let na = ceilDiv(absC.min, B.min);
+            A.min = clamp(na, absA.min, absA.max);
+            if(A.min > A.max) A.max = A.min;
+          }
+        }
+        C = computeCfromAB(A,B);
+      }
+
+      // now C inside Excel bounds
+      C = clampToAbs(ids.C, C);
+      if(C.min > C.max) C.min = C.max;
+    }
+
+    function pushDforE(){
+      // E derived from C,D; if E outside absE -> push D automatically
+      E = computeEfromCD(C,D);
+
+      // reduce D.max if E.max too high
+      if(E.max > absE.max){
+        const newDmax = floorDiv(absE.max, Math.max(1, C.max));
+        D.max = clamp(newDmax, absD.min, absD.max);
+        if(D.min > D.max) D.min = D.max;
+        E = computeEfromCD(C,D);
+      }
+      // increase D.min if E.min too low
+      if(E.min < absE.min){
+        const newDmin = ceilDiv(absE.min, Math.max(1, C.min));
+        D.min = clamp(newDmin, absD.min, absD.max);
+        if(D.min > D.max) D.max = D.min;
+        E = computeEfromCD(C,D);
+      }
+
+      // if still outside, we must block upstream (C via A/B or D if user changed)
+      E = clampToAbs(ids.E, E);
+
+      // keep E consistent as derived:
+      E = computeEfromCD(C,D);
+      // final clamp
+      if(E.max > absE.max){
+        // we cannot push further without breaking Excel bounds -> reduce C (thus A/B) if possible
+        const targetCmax = floorDiv(absE.max, Math.max(1, D.max));
+        if(targetCmax < C.max){
+          // reduce B.max first (or A.max) depending on lever
+          let newBmax = floorDiv(targetCmax, Math.max(1, A.max));
+          if(newBmax >= absB.min){
+            B.max = clamp(newBmax, absB.min, absB.max);
+            if(B.min > B.max) B.min = B.max;
+          } else {
+            let newAmax = floorDiv(targetCmax, Math.max(1, B.max));
+            A.max = clamp(newAmax, absA.min, absA.max);
+            if(A.min > A.max) A.min = A.max;
+          }
+          solveFromAB();
+          E = computeEfromCD(C,D);
+        }
+      }
+      if(E.min < absE.min){
+        const targetCmin = ceilDiv(absE.min, Math.max(1, D.min));
+        if(targetCmin > C.min){
+          let newBmin = ceilDiv(targetCmin, Math.max(1, A.min));
+          if(newBmin <= absB.max){
+            B.min = clamp(newBmin, absB.min, absB.max);
+            if(B.min > B.max) B.max = B.min;
+          } else {
+            let newAmin = ceilDiv(targetCmin, Math.max(1, B.min));
+            A.min = clamp(newAmin, absA.min, absA.max);
+            if(A.min > A.max) A.max = A.min;
+          }
+          solveFromAB();
+          E = computeEfromCD(C,D);
+        }
+      }
+    }
+
+    // --- main sync strategy ---
+    if(changedId === ids.A || changedId === ids.B){
+      solveFromAB();
+      pushDforE(); // push D if needed, not block A/B
+    } else if(changedId === ids.D){
+      // keep A,B as-is, recompute C and push D (itself) within absE
+      solveFromAB();
+      // D is user-changed: clamp D to keep E in Excel (block only by excel)
+      const minNeed = ceilDiv(absE.min, Math.max(1, C.min));
+      const maxNeed = floorDiv(absE.max, Math.max(1, C.max));
+      D.min = clamp(D.min, absD.min, absD.max);
+      D.max = clamp(D.max, absD.min, absD.max);
+      // hard clamp to feasible band:
+      D.min = clamp(D.min, minNeed, absD.max);
+      D.max = clamp(D.max, absD.min, maxNeed);
+      if(D.min > D.max) D.min = D.max;
+      pushDforE();
+    } else if(changedId === ids.C){
+      // user wants C -> adjust B primarily (push B), keep A
+      // B.min = ceil(C.min / A.min), B.max = floor(C.max / A.max)
+      let bmin = ceilDiv(C.min, Math.max(1, A.min));
+      let bmax = floorDiv(C.max, Math.max(1, A.max));
+      bmin = clamp(bmin, absB.min, absB.max);
+      bmax = clamp(bmax, absB.min, absB.max);
+      if(bmin > bmax){
+        // can't satisfy: clamp C to feasible with current A and absB
+        const feasibleCmin = A.min * absB.min;
+        const feasibleCmax = A.max * absB.max;
+        C.min = clamp(C.min, feasibleCmin, feasibleCmax);
+        C.max = clamp(C.max, feasibleCmin, feasibleCmax);
+        if(C.min > C.max) C.min = C.max;
+        bmin = ceilDiv(C.min, Math.max(1, A.min));
+        bmax = floorDiv(C.max, Math.max(1, A.max));
+        bmin = clamp(bmin, absB.min, absB.max);
+        bmax = clamp(bmax, absB.min, absB.max);
+        if(bmin > bmax) bmin = bmax;
+      }
+      B = {min:bmin, max:bmax};
+      solveFromAB(); // recompute C consistently
+      pushDforE();
+    } else if(changedId === ids.E){
+      // user wants E -> adjust D primarily (push D), keep C (from A,B)
+      solveFromAB();
+      let dmin = ceilDiv(E.min, Math.max(1, C.min));
+      let dmax = floorDiv(E.max, Math.max(1, C.max));
+      dmin = clamp(dmin, absD.min, absD.max);
+      dmax = clamp(dmax, absD.min, absD.max);
+      if(dmin > dmax){
+        // clamp E to feasible given C and absD
+        const feasibleEmin = C.min * absD.min;
+        const feasibleEmax = C.max * absD.max;
+        E.min = clamp(E.min, feasibleEmin, feasibleEmax);
+        E.max = clamp(E.max, feasibleEmin, feasibleEmax);
+        if(E.min > E.max) E.min = E.max;
+        dmin = ceilDiv(E.min, Math.max(1, C.min));
+        dmax = floorDiv(E.max, Math.max(1, C.max));
+        dmin = clamp(dmin, absD.min, absD.max);
+        dmax = clamp(dmax, absD.min, absD.max);
+        if(dmin > dmax) dmin = dmax;
+      }
+      D = {min:dmin, max:dmax};
+      pushDforE();
+    }
+
+    clampAll();
+
+    // always keep derived sliders exact to relations at the end
+    C = clampToAbs(ids.C, computeCfromAB(A,B));
+    if(C.min > C.max) C.min = C.max;
+
+    E = clampToAbs(ids.E, computeEfromCD(C,D));
+    if(E.min > E.max) E.min = E.max;
+
+    // write back
+    writeSeatRanges({ids, A,B,C,D,E});
   }
 
-  /* ----------------------------------------------------------- */
-
-  // sliders must never lead to 0 results (on revert juste le slider touché)
+  /* -------------------------------------------------------
+     Generic numeric slider handler (non-seat sliders)
+     Keep the existing "never 0 result" behavior.
+     ------------------------------------------------------- */
   const lastGoodSliderValue = {};
-
   function countResults(){
     let c = 0;
     for(const r of allRows) if(passesAll(r)) c++;
@@ -1011,13 +1149,16 @@ function sortRows(list, mode1, mode2, f){
   }
   function snapshotSlider(id){
     const ui = sliderUI[id];
-    const abs = sliderAbs[id];
-    if(!ui || !abs || ui.minEl.disabled) return null;
-    return clampToAbs(id, Number(ui.minEl.value), Number(ui.maxEl.value));
+    if(!ui || ui.minEl.disabled) return null;
+    return {min:Number(ui.minEl.value), max:Number(ui.maxEl.value)};
   }
   function restoreSlider(id, snap){
     if(!snap) return;
-    setSlider(id, snap.min, snap.max);
+    const ui = sliderUI[id];
+    if(!ui || ui.minEl.disabled) return;
+    ui.minEl.value = String(Math.round(snap.min));
+    ui.maxEl.value = String(Math.round(snap.max));
+    updateDualUI(id);
   }
 
   function onNumericSliderAttempt(id){
@@ -1025,37 +1166,79 @@ function sortRows(list, mode1, mode2, f){
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled) return;
 
-    // l’utilisateur bouge → on clamp et on swap si besoin
     ui.minEl.value = String(Math.round(Number(ui.minEl.value)));
     ui.maxEl.value = String(Math.round(Number(ui.maxEl.value)));
     clampSwap(ui.minEl, ui.maxEl);
 
-    // clamp Excel strict
-    const c = clampToAbs(id, Number(ui.minEl.value), Number(ui.maxEl.value));
-    ui.minEl.value = String(c.min);
-    ui.maxEl.value = String(c.max);
-
     updateDualUI(id);
 
-    // ✅ nouveau comportement siège: auto-ajuste les autres pour ne pas bloquer
-    if(isSeat(id)){
-      syncSeatGroup(id);
-    }
-
-    // anti-0 résultats : on revert seulement le slider touché (et on resynchronise si siège)
     const n = countResults();
     if(n === 0){
-      const snap = lastGoodSliderValue[id] || {min:abs.min, max:abs.max};
-      restoreSlider(id, snap);
-      if(isSeat(id)) syncSeatGroup(id);
+      restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
       render();
       return;
     }
-
     lastGoodSliderValue[id] = snapshotSlider(id) || {min:abs.min, max:abs.max};
     render();
   }
 
+  /* -------------------------------------------------------
+     ✅ Seat group handler:
+     - hard clamp to Excel bounds
+     - then auto-push the others
+     - still keeps "never 0 result": if would make 0, revert only the changed one
+     ------------------------------------------------------- */
+  const lastGoodSeatState = { // snapshot of the 5
+    has:false,
+    values:null
+  };
+
+  function snapshotSeatState(){
+    const st = readSeatRanges();
+    return {
+      seatsPerRow: getUIRange("seatsPerRow"),
+      rowsPerCar: getUIRange("rowsPerCar"),
+      seatsPerCar: getUIRange("seatsPerCar"),
+      carsPerTrain: getUIRange("carsPerTrain"),
+      seatsPerTrain: getUIRange("seatsPerTrain"),
+    };
+  }
+  function restoreSeatState(snap){
+    if(!snap) return;
+    setUIRange("seatsPerRow", snap.seatsPerRow.min, snap.seatsPerRow.max);
+    setUIRange("rowsPerCar", snap.rowsPerCar.min, snap.rowsPerCar.max);
+    setUIRange("seatsPerCar", snap.seatsPerCar.min, snap.seatsPerCar.max);
+    setUIRange("carsPerTrain", snap.carsPerTrain.min, snap.carsPerTrain.max);
+    setUIRange("seatsPerTrain", snap.seatsPerTrain.min, snap.seatsPerTrain.max);
+  }
+
+  function onSeatGroupAttempt(changedId){
+    // hard clamp the changed slider to its Excel bounds immediately
+    const r = clampToAbs(changedId, getUIRange(changedId) || sliderAbs[changedId]);
+    setUIRange(changedId, r.min, r.max);
+
+    // sync others (push)
+    syncSeatGroup(changedId);
+
+    // “never 0 result” fallback
+    const n = countResults();
+    if(n === 0){
+      if(lastGoodSeatState.has){
+        restoreSeatState(lastGoodSeatState.values);
+        // ensure relations still hold after restore:
+        syncSeatGroup("seatsPerRow");
+      }
+      render();
+      return;
+    }
+
+    lastGoodSeatState.has = true;
+    lastGoodSeatState.values = snapshotSeatState();
+
+    render();
+  }
+
+  /* ---------- Cards / modal ---------- */
   function cardHTML(r, idx){
     const name = String(r[fields.name] ?? "").trim();
     const park = fields.park ? String(r[fields.park] ?? "").trim() : "";
@@ -1148,15 +1331,10 @@ function sortRows(list, mode1, mode2, f){
 
     waterOnly = !!waterOnlyEl.checked;
 
-    // refresh values (clamp)
+    // ensure all sliderVal updated
     for(const spec of NUM_SPECS){
       const ui = sliderUI[spec.id];
       if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
-    }
-
-    // garder cohérence sièges (si l’utilisateur a des ranges extrêmes)
-    if(SEAT_IDS.some(id => sliderAbs[id] && sliderUI[id] && !sliderUI[id].minEl.disabled)){
-      syncSeatGroup("seatsPerTrain");
     }
 
     let filtered = allRows.filter(passesAll);
@@ -1214,7 +1392,7 @@ function sortRows(list, mode1, mode2, f){
       return rr;
     });
 
-    // master options + stable rank
+    // stable facet ranks
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
       if(!key){
@@ -1222,11 +1400,9 @@ function sortRows(list, mode1, mode2, f){
         facetStableRank[spec.id] = new Map();
         continue;
       }
-
       const opts = allRows
         .map(r => normalizeFacetValue(spec.id, r[key]))
         .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
-
       const uniq = Array.from(new Set(opts));
 
       const globalCounts = new Map();
@@ -1245,7 +1421,6 @@ function sortRows(list, mode1, mode2, f){
       });
 
       facetMasterOptions[spec.id] = orderedDefault;
-
       const rankMap = new Map();
       orderedDefault.forEach((v,i)=>rankMap.set(v,i));
       facetStableRank[spec.id] = rankMap;
@@ -1253,17 +1428,17 @@ function sortRows(list, mode1, mode2, f){
 
     initSlidersFromData();
 
-    // ✅ par défaut : toutes plages au min/max Excel + lastGood
-    for(const spec of NUM_SPECS){
-      const abs = sliderAbs[spec.id];
-      const ui = sliderUI[spec.id];
-      if(!abs || !ui || ui.minEl.disabled) continue;
-      setSlider(spec.id, abs.min, abs.max);
-      lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
-    }
+    // ✅ initialize seat relations consistently once (push)
+    syncSeatGroup("seatsPerRow");
+    lastGoodSeatState.has = true;
+    lastGoodSeatState.values = snapshotSeatState();
 
-    // cohérence initiale sièges
-    syncSeatGroup("seatsPerTrain");
+    // snapshot for non-seat sliders
+    for(const spec of NUM_SPECS){
+      if(SEAT_GROUP.includes(spec.id)) continue;
+      const abs = sliderAbs[spec.id];
+      if(abs) lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
+    }
 
     qEl.addEventListener("input", render);
 
@@ -1290,20 +1465,26 @@ function sortRows(list, mode1, mode2, f){
         facetUI[spec.id].listEl.scrollTop = 0;
       }
 
+      // reset sliders to Excel full span
       for(const spec of NUM_SPECS){
         const abs = sliderAbs[spec.id];
         const ui = sliderUI[spec.id];
         if(!abs || !ui || ui.minEl.disabled) continue;
-        setSlider(spec.id, abs.min, abs.max);
-        lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
+        ui.minEl.value = String(abs.min);
+        ui.maxEl.value = String(abs.max);
+        updateDualUI(spec.id);
       }
+
+      // re-sync seat relations
+      syncSeatGroup("seatsPerRow");
+      lastGoodSeatState.has = true;
+      lastGoodSeatState.values = snapshotSeatState();
 
       sortSel.value = "park_asc";
       sort2Sel.value = "year_asc";
       prevPrimary = sortSel.value;
 
       closeModal();
-      syncSeatGroup("seatsPerTrain");
       render();
     });
 

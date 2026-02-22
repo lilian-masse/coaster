@@ -768,29 +768,31 @@ function sortRows(list, mode1, mode2, f){
     const abs = sliderAbs[id];
     if(!abs) return;
 
-    // ✅ Sécurité : si les contraintes produisent une plage impossible, on revient à la plage absolue
-    // (sinon le slider peut se retrouver "bloqué" avec min=max)
+    // Si les contraintes donnent une plage impossible, on ne change rien
+    // (évite de "casser" le slider en lui donnant min>max ou NaN)
     if(!Number.isFinite(dynMin) || !Number.isFinite(dynMax) || dynMin > dynMax){
-      sliderDyn[id] = {min: abs.min, max: abs.max};
+      sliderDyn[id] = sliderDyn[id] || {min: abs.min, max: abs.max};
       return;
     }
 
-    const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
-    const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
+    let dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
+    let dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
+    if(dmin > dmax){ const t=dmin; dmin=dmax; dmax=t; }
 
-    // ✅ Anti-blocage : si la plage dynamique se réduit à une seule valeur,
-    // on ne verrouille pas les bornes du slider (sinon impossible de ré-augmenter après avoir mis max à 1).
+    // Anti-blocage : si la plage dynamique s'écrase sur une seule valeur,
+    // on l'élargit d'1 cran (si possible) au lieu de fixer max=min.
     if(dmin === dmax){
-      sliderDyn[id] = {min: abs.min, max: abs.max};
+      const lo = Math.max(abs.min, dmin - 1);
+      const hi = Math.min(abs.max, dmax + 1);
+      if(lo < hi){
+        sliderDyn[id] = {min: lo, max: hi};
+      } else {
+        sliderDyn[id] = {min: abs.min, max: abs.max};
+      }
       return;
     }
 
-    sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
-  }
-
-    const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
-    const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
-    sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
+    sliderDyn[id] = {min: dmin, max: dmax};
   }
 
   function enforceSeatConstraints(){

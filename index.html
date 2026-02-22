@@ -443,10 +443,21 @@ function sortRows(list, mode1, mode2, f){
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
     function formatDuration(sec){
-      const s = Math.max(0, Math.round(sec));
-      const m = Math.floor(s / 60);
-      const r = s % 60;
+      const raw = Math.max(0, Math.round(sec));
+
+      // Interprétation spéciale : 550 = 5 min 50 s (format mmss)
+      if(raw >= 100){
+        const m = Math.floor(raw / 100);
+        const s = raw % 100;
+        if(s < 60) return `${m} min ${s} s`;
+      }
+
+      // Sinon comportement normal en secondes réelles
+      const m = Math.floor(raw / 60);
+      const r = raw % 60;
       if(m === 0) return `${r} s`;
+      return `${m} min ${r} s`;
+    } s`;
       return `${m} min ${r} s`;
     }
 

@@ -43,6 +43,16 @@
   .pill{display:inline-block;padding:2px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px;opacity:.9}
 
   .dual{position:relative;height:36px}
+
+  /* ✅ Slider vertical (Hauteur) */
+  .dualV{height:170px; padding:6px 0}
+  .dualV .track{top:6px;bottom:6px;left:calc(50% - 3px);right:auto;width:6px;height:auto}
+  .dualV .fill{left:calc(50% - 3px);width:6px;height:auto}
+  .dualV input[type="range"]{
+    top:50%;left:50%;width:170px;height:18px;
+    transform:translate(-50%,-50%) rotate(-90deg);
+    transform-origin:center;
+  }
   .dual input[type="range"]{
     position:absolute;left:0;top:9px;width:100%;
     margin:0;padding:0;background:none;
@@ -271,6 +281,7 @@ const FACET_SPECS = [
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
   { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
+  { id:"vertHeight", label:"Hauteur verticale", candidates:["Hauteur verticale","Vertical height","Hauteur vert","Vertical Height","Hauteur_verticale","Vertical"], step:1, integer:true },
   { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:1, integer:true },
   { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
   { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1, integer:true },
@@ -306,12 +317,13 @@ function createFacetBox(spec){
 function createDualSlider(spec){
   const wrap = document.createElement("div");
   wrap.className = "rangeWrap";
+  const dualClass = (spec.id === "height") ? "dual dualV" : "dual";
   wrap.innerHTML = `
     <div class="rangeHead">
       <span class="name">${esc(spec.label)}</span>
       <span class="pill" id="pill_${spec.id}">—</span>
     </div>
-    <div class="dual">
+    <div class="${dualClass}">
       <div class="track"></div>
       <div class="fill" id="fill_${spec.id}"></div>
       <input id="${spec.id}_min" type="range" aria-label="${esc(spec.label)} min">
@@ -442,10 +454,27 @@ function sortRows(list, mode1, mode2, f){
     sliderVal[id] = {min:minV, max:maxV};
 
     const total = (dyn.max - dyn.min) || 1;
-    const left = ((minV - dyn.min) / total) * 100;
-    const right = ((maxV - dyn.min) / total) * 100;
-    ui.fillEl.style.left = left + "%";
-    ui.fillEl.style.width = Math.max(0, right - left) + "%";
+
+    // 🔁 Remise à zéro des styles pour éviter les résidus entre modes
+    ui.fillEl.style.left = "";
+    ui.fillEl.style.width = "";
+    ui.fillEl.style.top = "";
+    ui.fillEl.style.bottom = "";
+    ui.fillEl.style.height = "";
+
+    if(id === "height"){
+      // Vertical: min en bas, max en haut
+      const yMin = ((minV - dyn.min) / total) * 100; // % depuis le bas
+      const yMax = ((maxV - dyn.min) / total) * 100;
+      ui.fillEl.style.bottom = yMin + "%";
+      ui.fillEl.style.top = (100 - yMax) + "%";
+    } else {
+      // Horizontal (par défaut)
+      const left = ((minV - dyn.min) / total) * 100;
+      const right = ((maxV - dyn.min) / total) * 100;
+      ui.fillEl.style.left = left + "%";
+      ui.fillEl.style.width = Math.max(0, right - left) + "%";
+    }
 
     if(id === "duration"){
       const m1 = Math.floor(minV / 100);

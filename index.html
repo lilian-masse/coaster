@@ -326,6 +326,8 @@ function createDualSlider(spec){
 }
 
 /* ---------- Sorting ---------- */
+
+/* ---------- Sorting ---------- */
 function sortRows(list, mode1, mode2, f){
   const getYear = (r)=> f.year ? (toYear(r[f.year]) ?? null) : null;
   const getPark = (r)=> f.park ? String(r[f.park] ?? "") : "";
@@ -517,7 +519,6 @@ function sortRows(list, mode1, mode2, f){
       minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
       maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
     }
-  }
   }
 
   function initSlidersFromData(){

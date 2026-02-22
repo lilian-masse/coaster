@@ -829,8 +829,11 @@ function sortRows(list, mode1, mode2, f){
       const pad = 14;
 
       const carPad = 10;
-      const carW = carPad*2 + (sDraw-1)*seatGapX + seatR*2;
-      const carH = carPad*2 + (rDraw-1)*seatGapY + seatR*2;
+      // Inversion axes :
+      // - Sièges/rang. (seatsX) -> VERTICAL
+      // - Rangées/voit. (rowsX) -> HORIZONTAL
+      const carW = carPad*2 + (rDraw-1)*seatGapX + seatR*2; // horizontal = rangées
+      const carH = carPad*2 + (sDraw-1)*seatGapY + seatR*2; // vertical = sièges/rang.
       const carGap = 18;
 
       const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
@@ -851,10 +854,11 @@ function sortRows(list, mode1, mode2, f){
             <rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>
         `;
 
+        // rr = rangées (horizontal), ss = sièges/rang. (vertical)
         for(let rr=0; rr<rDraw; rr++){
           for(let ss=0; ss<sDraw; ss++){
-            const cx = x0 + carPad + seatR + ss*seatGapX;
-            const cy = y0 + carPad + seatR + rr*seatGapY;
+            const cx = x0 + carPad + seatR + rr*seatGapX;   // horizontal = rangées
+            const cy = y0 + carPad + seatR + ss*seatGapY;   // vertical = sièges/rang.
             svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="#fff" stroke="#999"/>`;
           }
         }

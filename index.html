@@ -211,7 +211,7 @@ function norm(s){
 function esc(s){
   return String(s ?? "")
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    .replace(/\"/g,"&quot;").replace(/'/g,"&#039;");
 }
 function toNumber(v){
   const s = String(v ?? "").trim();
@@ -767,6 +767,14 @@ function sortRows(list, mode1, mode2, f){
   function setDyn(id, dynMin, dynMax){
     const abs = sliderAbs[id];
     if(!abs) return;
+
+    // ✅ Sécurité : si les contraintes produisent une plage impossible, on revient à la plage absolue
+    // (sinon le slider peut se retrouver "bloqué" avec min=max, typiquement à 1)
+    if(!Number.isFinite(dynMin) || !Number.isFinite(dynMax) || dynMin > dynMax){
+      sliderDyn[id] = {min: abs.min, max: abs.max};
+      return;
+    }
+
     const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
     const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
     sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};

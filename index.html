@@ -418,8 +418,6 @@ function sortRows(list, mode1, mode2, f){
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled || ui.maxEl.disabled) return;
 
-    // Pour les sliders "sièges" : on affiche toujours les bornes ABS du JSON
-    // (pas de bornes dynamiques qui rétrécissent et bloquent l'augmentation).
     const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
     const dyn = SEAT_IDS.has(id) ? abs : (sliderDyn[id] || abs);
 
@@ -444,8 +442,19 @@ function sortRows(list, mode1, mode2, f){
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
-    
-    ui.pill.textContent = `${minV} → ${maxV}`;
+    function formatDuration(sec){
+      const s = Math.max(0, Math.round(sec));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      if(m === 0) return `${r} s`;
+      return `${m} min ${r} s`;
+    }
+
+    if(id === "duration"){
+      ui.pill.textContent = `${formatDuration(minV)} → ${formatDuration(maxV)}`;
+    } else {
+      ui.pill.textContent = `${minV} → ${maxV}`;
+    }
   }
 
   function createFacetUI(){

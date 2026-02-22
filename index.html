@@ -813,15 +813,12 @@ function sortRows(list, mode1, mode2, f){
     const seatsPerCarMin = seatsMin * rowsMin;
     const seatsPerTrainMin = seatsPerCarMin * carsMin;
 
-    // limites visuelles (éviter un SVG gigantesque)
-    const maxSeats = 6;
-    const maxRows = 6;
-    const maxCars = 8;
+    // Prévisualisation : on affiche tout (toutes voitures / rangées / sièges)
 
     function buildSvg(seatsX, rowsX, carsX, caption){
-      const sDraw = Math.min(seatsX, maxSeats);
-      const rDraw = Math.min(rowsX, maxRows);
-      const cDraw = Math.min(carsX, maxCars);
+      const sDraw = Math.max(1, seatsX);
+      const rDraw = Math.max(1, rowsX);
+      const cDraw = Math.max(1, carsX);
 
       const seatR = 4;
       const seatGapX = 12;
@@ -867,11 +864,7 @@ function sortRows(list, mode1, mode2, f){
         svg += `</g>`;
       }
 
-      const more = [];
-      if(seatsX > maxSeats) more.push(`+${seatsX-maxSeats} sièges/rang.`);
-      if(rowsX  > maxRows)  more.push(`+${rowsX-maxRows} rangées/voit.`);
-      if(carsX  > maxCars)  more.push(`+${carsX-maxCars} voitures/train`);
-      const hint = more.length ? `Affichage limité (${more.join(" · ")})` : "";
+      
 
       const seatsPerCarX = seatsX * rowsX;
       const seatsPerTrainX = seatsPerCarX * carsX;
@@ -879,7 +872,7 @@ function sortRows(list, mode1, mode2, f){
       svg += `
             <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${seatsX}×${rowsX}×${carsX} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.)</text>
           </svg>
-          ${hint ? `<div class="trainHint">${esc(hint)}</div>` : ""}
+          
         </div>
       `;
 

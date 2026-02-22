@@ -791,23 +791,22 @@ function sortRows(list, mode1, mode2, f){
 
     if(!A || !B || !D){
       metaEl.textContent = "Sélectionnez des plages pour Sièges/rang., Rangées/voit. et Voit./train.";
-      previewEl.innerHTML = `<div class=\"empty\">Prévisualisation indisponible.</div>`;
+      previewEl.innerHTML = `<div class="empty">Prévisualisation indisponible.</div>`;
       return;
     }
 
     const fmt = (r)=> `${Math.round(r.min)} → ${Math.round(r.max)}`;
     metaEl.textContent = `Sièges/rang.: ${fmt(A)} · Rangées/voit.: ${fmt(B)} · Voit./train: ${fmt(D)}`;
 
-    // MAX = structure affichée
     const seatsMax = Math.max(1, Math.round(A.max));
     const rowsMax  = Math.max(1, Math.round(B.max));
     const carsMax  = Math.max(1, Math.round(D.max));
 
-    // MIN = partie grisée
     const seatsMin = Math.max(1, Math.round(A.min));
     const rowsMin  = Math.max(1, Math.round(B.min));
     const carsMin  = Math.max(1, Math.round(D.min));
 
+    // Limites d'affichage (éviter un train énorme)
     const maxSeatsVis = 6;
     const maxRowsVis  = 6;
     const maxCarsVis  = 8;
@@ -816,44 +815,47 @@ function sortRows(list, mode1, mode2, f){
     const rDraw = Math.min(rowsMax, maxRowsVis);
     const cDraw = Math.min(carsMax, maxCarsVis);
 
+    const seatsMinVis = Math.min(seatsMin, maxSeatsVis);
+    const rowsMinVis  = Math.min(rowsMin, maxRowsVis);
+    const carsMinVis  = Math.min(carsMin, maxCarsVis);
+
     const seatR = 4;
-    const seatGapX = 12;
-    const seatGapY = 12;
+    const gapX = 12;
+    const gapY = 12;
     const pad = 14;
     const carPad = 10;
     const carGap = 18;
 
-    const carW = carPad*2 + (sDraw-1)*seatGapX + seatR*2;
-    const carH = carPad*2 + (rDraw-1)*seatGapY + seatR*2;
+    const carW = carPad*2 + (sDraw-1)*gapX + seatR*2;
+    const carH = carPad*2 + (rDraw-1)*gapY + seatR*2;
 
     const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
-    const svgH = pad*2 + carH + 40;
+    const svgH = pad*2 + carH + 44;
 
-    let svg = `
-      <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="Configuration min et max du train">
-        <rect x="0" y="0" width="${svgW}" height="${svgH}" rx="12" ry="12" fill="white" stroke="#eee"/>
-    `;
+    // Construit le SVG en concaténation (moins de risques de syntaxe)
+    let svg = "";
+    svg += '<svg width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '" role="img" aria-label="Configuration min et max du train">';
+    svg += '<rect x="0" y="0" width="' + svgW + '" height="' + svgH + '" rx="12" ry="12" fill="white" stroke="#eee"/>';
 
     for(let ci=0; ci<cDraw; ci++){
       const x0 = pad + ci*(carW + carGap);
       const y0 = pad;
 
-      svg += `<rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>`;
+      svg += '<rect x="' + x0 + '" y="' + y0 + '" width="' + carW + '" height="' + carH + '" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>';
 
-      const carIsMin = ci < Math.min(carsMin, maxCarsVis);
+      const carIsMin = ci < carsMinVis;
 
       for(let rr=0; rr<rDraw; rr++){
         for(let ss=0; ss<sDraw; ss++){
-          const cx = x0 + carPad + seatR + ss*seatGapX;
-          const cy = y0 + carPad + seatR + rr*seatGapY;
-
-          const seatIsMin = carIsMin && rr < Math.min(rowsMin, maxRowsVis) && ss < Math.min(seatsMin, maxSeatsVis);
-
-          svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${seatIsMin ? '#ddd' : '#fff'}" stroke="#999"/>`;
+          const cx = x0 + carPad + seatR + ss*gapX;
+          const cy = y0 + carPad + seatR + rr*gapY;
+          const seatIsMin = carIsMin && rr < rowsMinVis && ss < seatsMinVis;
+          const fill = seatIsMin ? "#ddd" : "#fff";
+          svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + seatR + '" fill="' + fill + '" stroke="#999"/>';
         }
       }
 
-      svg += `<text x="${x0 + carW/2}" y="${y0 + carH + 18}" text-anchor="middle" font-size="12" fill="#666">Voiture ${ci+1}</text>`;
+      svg += '<text x="' + (x0 + carW/2) + '" y="' + (y0 + carH + 18) + '" text-anchor="middle" font-size="12" fill="#666">Voiture ' + (ci+1) + '</text>';
     }
 
     const seatsPerCarMax = seatsMax * rowsMax;
@@ -861,15 +863,19 @@ function sortRows(list, mode1, mode2, f){
     const seatsPerCarMin = seatsMin * rowsMin;
     const seatsPerTrainMin = seatsPerCarMin * carsMin;
 
-    svg += `
-      <text x="${pad}" y="${svgH - 18}" font-size="12" fill="#444">
-        MAX : ${seatsMax}×${rowsMax}×${carsMax} = ${seatsPerTrainMax} sièges/train
-      </text>
-      <text x="${pad}" y="${svgH - 4}" font-size="12" fill="#666">
-        MIN (sièges gris) : ${seatsMin}×${rowsMin}×${carsMin} = ${seatsPerTrainMin} sièges/train
-      </text>
-      </svg>
-    `;
+    svg += '<text x="' + pad + '" y="' + (svgH - 22) + '" font-size="12" fill="#444">MAX : ' + seatsMax + '×' + rowsMax + '×' + carsMax + ' = ' + seatsPerTrainMax + ' sièges/train</text>';
+    svg += '<text x="' + pad + '" y="' + (svgH - 6) + '" font-size="12" fill="#666">MIN (sièges gris) : ' + seatsMin + '×' + rowsMin + '×' + carsMin + ' = ' + seatsPerTrainMin + ' sièges/train</text>';
+
+    // note limitation
+    const lim = [];
+    if(seatsMax > maxSeatsVis) lim.push('+' + (seatsMax-maxSeatsVis) + ' sièges/rang.');
+    if(rowsMax > maxRowsVis) lim.push('+' + (rowsMax-maxRowsVis) + ' rangées/voit.');
+    if(carsMax > maxCarsVis) lim.push('+' + (carsMax-maxCarsVis) + ' voitures/train');
+    if(lim.length){
+      svg += '<text x="' + pad + '" y="' + (svgH - 34) + '" font-size="11" fill="#777">Affichage limité (' + esc(lim.join(' · ')) + ')</text>';
+    }
+
+    svg += '</svg>';
 
     previewEl.innerHTML = svg;
   }

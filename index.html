@@ -769,11 +769,24 @@ function sortRows(list, mode1, mode2, f){
     if(!abs) return;
 
     // ✅ Sécurité : si les contraintes produisent une plage impossible, on revient à la plage absolue
-    // (sinon le slider peut se retrouver "bloqué" avec min=max, typiquement à 1)
+    // (sinon le slider peut se retrouver "bloqué" avec min=max)
     if(!Number.isFinite(dynMin) || !Number.isFinite(dynMax) || dynMin > dynMax){
       sliderDyn[id] = {min: abs.min, max: abs.max};
       return;
     }
+
+    const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
+    const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
+
+    // ✅ Anti-blocage : si la plage dynamique se réduit à une seule valeur,
+    // on ne verrouille pas les bornes du slider (sinon impossible de ré-augmenter après avoir mis max à 1).
+    if(dmin === dmax){
+      sliderDyn[id] = {min: abs.min, max: abs.max};
+      return;
+    }
+
+    sliderDyn[id] = {min: Math.min(dmin,dmax), max: Math.max(dmin,dmax)};
+  }
 
     const dmin = Math.max(abs.min, Math.min(abs.max, Math.round(dynMin)));
     const dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));

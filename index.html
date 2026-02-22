@@ -1285,34 +1285,75 @@ function sortRows(list, mode1, mode2, f){
     }
 
     for(const spec of NUM_SPECS){
-        const abs = sliderAbs[spec.id];
-        const ui = sliderUI[spec.id];
-        if(!abs || !ui || ui.minEl.disabled) continue;
-        sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+      const abs = sliderAbs[spec.id];
+      const ui = sliderUI[spec.id];
+      if(!abs || !ui || ui.minEl.disabled) continue;
 
-        // Reset = valeurs par défaut (quartiles + règles) pour ces 3 sliders
-        if(QUARTILE_IDS.has(spec.id)){
-          const key = numFields[spec.id];
-          const values = allRows
-            .map(r => toInt(r[key]))
-            .filter(v => Number.isFinite(v));
+      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
 
-          if(values.length > 0){
-            const {q1,q3} = computeQuartiles(values);
-            const {minV, maxV} = applyDefaultRules(spec.id, abs, q1, q3);
-            ui.minEl.value = String(minV);
-            ui.maxEl.value = String(maxV);
-          } else {
-            ui.minEl.value = String(abs.min);
-            ui.maxEl.value = String(abs.max);
-          }
+      if(QUARTILE_IDS.has(spec.id)){
+        const key = numFields[spec.id];
+        const values = allRows
+          .map(r => toInt(r[key]))
+          .filter(v => Number.isFinite(v));
+
+        if(values.length > 0){
+          const {q1,q3} = computeQuartiles(values);
+          const {minV, maxV} = applyDefaultRules(spec.id, abs, q1, q3);
+          ui.minEl.value = String(minV);
+          ui.maxEl.value = String(maxV);
         } else {
           ui.minEl.value = String(abs.min);
           ui.maxEl.value = String(abs.max);
         }
+      } else {
+        ui.minEl.value = String(abs.min);
+        ui.maxEl.value = String(abs.max);
+      }
+      } else {
+        ui.minEl.value = String(abs.min);
+        ui.maxEl.value = String(abs.max);
+      }
 
+      updateDualUI(spec.id);
+      lastGoodSliderValue[spec.id] = snapshotSlider(spec.id) || {min:abs.min, max:abs.max};
+    }
+    enforceSeatConstraints();
+
+    qEl.addEventListener("input", render);
+
+    let prevPrimary = sortSel.value;
+    sortSel.addEventListener("change", ()=>{
+      const newPrimary = sortSel.value;
+      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
+        sort2Sel.value = prevPrimary;
+      }
+      prevPrimary = newPrimary;
+      render();
+    });
+    sort2Sel.addEventListener("change", render);
+
+    waterOnlyEl.addEventListener("change", render);
+
+    $("clear").addEventListener("click", ()=>{
+      qEl.value = "";
+      waterOnlyEl.checked = false;
+
+      for(const spec of FACET_SPECS){
+        selected[spec.id].clear();
+        facetUI[spec.id].searchEl.value = "";
+        facetUI[spec.id].listEl.scrollTop = 0;
+      }
+
+      for(const spec of NUM_SPECS){
+        const abs = sliderAbs[spec.id];
+        const ui = sliderUI[spec.id];
+        if(!abs || !ui || ui.minEl.disabled) continue;
+        sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+        ui.minEl.value = String(abs.min);
+        ui.maxEl.value = String(abs.max);
         updateDualUI(spec.id);
-        lastGoodSliderValue[spec.id] = snapshotSlider(spec.id) || {min:abs.min, max:abs.max};
+        lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
       }
       enforceSeatConstraints();
 

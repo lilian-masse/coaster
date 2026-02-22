@@ -317,10 +317,7 @@ function createDualSlider(spec){
       <input id="${spec.id}_min" type="range" aria-label="${esc(spec.label)} min">
       <input id="${spec.id}_max" type="range" aria-label="${esc(spec.label)} max">
     </div>
-    <div class="rangeMeta">
-      <span id="lab_${spec.id}_min">—</span>
-      <span id="lab_${spec.id}_max">—</span>
-    </div>
+    
   `;
   return wrap;
 }
@@ -447,8 +444,7 @@ function sortRows(list, mode1, mode2, f){
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
-    ui.labMin.textContent = String(minV);
-    ui.labMax.textContent = String(maxV);
+    
     ui.pill.textContent = `${minV} → ${maxV}`;
   }
 
@@ -486,11 +482,9 @@ function sortRows(list, mode1, mode2, f){
       const minEl = wrap.querySelector(`#${spec.id}_min`);
       const maxEl = wrap.querySelector(`#${spec.id}_max`);
       const fillEl = wrap.querySelector(`#fill_${spec.id}`);
-      const labMin = wrap.querySelector(`#lab_${spec.id}_min`);
-      const labMax = wrap.querySelector(`#lab_${spec.id}_max`);
-      const pill = wrap.querySelector(`#pill_${spec.id}`);
+      const pill = wrap.querySelector(`#pill_${spec.id}`);(`#pill_${spec.id}`);
 
-      sliderUI[spec.id] = {minEl, maxEl, fillEl, labMin, labMax, pill, spec};
+      sliderUI[spec.id] = {minEl, maxEl, fillEl, pill, spec};
 
       minEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));
       maxEl.addEventListener("input", ()=> onNumericSliderAttempt(spec.id));

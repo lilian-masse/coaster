@@ -1255,105 +1255,64 @@ function sortRows(list, mode1, mode2, f){
 
     const QUARTILE_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
 
-    for(const spec of NUM_SPECS){
-      const abs = sliderAbs[spec.id];
-      const ui = sliderUI[spec.id];
-      if(!abs || !ui || ui.minEl.disabled) continue;
+    function applyDefaultRules(id, abs, q1, q3){
+      // base
+      let minV = Math.max(abs.min, Math.round(q1));
+      let maxV = Math.min(abs.max, Math.round(q3));
 
-      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
+      // Règle 1 : min par défaut différent de 1 (si =1 => +1)
+      if(minV === 1) minV = Math.min(abs.max, minV + 1);
 
-      if(QUARTILE_IDS.has(spec.id)){
-        const key = numFields[spec.id];
-        const values = allRows
-          .map(r => toInt(r[key]))
-          .filter(v => Number.isFinite(v));
-
-        if(values.length > 0){
-          let {q1,q3} = computeQuartiles(values);
-          let dmin = Math.max(abs.min, q1);
-          let dmax = Math.min(abs.max, q3);
-
-          // --- RÈGLES DEMANDÉES ---
-          // 1) min par défaut ≠ 1 (sinon +1)
-          if(dmin === 1) dmin = dmin + 1;
-
-          // 3) Sièges/rang. : min et max doivent être pairs (sinon +1)
-          if(spec.id === "seatsPerRow"){
-            if(dmin % 2 !== 0) dmin = dmin + 1;
-            if(dmax % 2 !== 0) dmax = dmax + 1;
-          }
-
-          // clamp après ajustements
-          dmin = Math.max(abs.min, Math.min(abs.max, dmin));
-          dmax = Math.max(abs.min, Math.min(abs.max, dmax));
-
-          // 2) max par défaut ≠ min (sinon +1)
-          if(dmax === dmin){
-            dmax = dmax + 1;
-            if(spec.id === "seatsPerRow" && (dmax % 2 !== 0)) dmax = dmax + 1;
-            dmax = Math.min(abs.max, dmax);
-          }
-
-          // sécurité si on a touché au plafond
-          if(dmax === dmin && dmin > abs.min){
-            dmin = Math.max(abs.min, dmin - 1);
-            if(spec.id === "seatsPerRow" && (dmin % 2 !== 0)) dmin = Math.max(abs.min, dmin - 1);
-          }
-
-          ui.minEl.value = String(dmin);
-          ui.maxEl.value = String(dmax);
-        } else {
-          ui.minEl.value = String(abs.min);
-          ui.maxEl.value = String(abs.max);
-        }
-      } else {
-        ui.minEl.value = String(abs.min);
-        ui.maxEl.value = String(abs.max);
-      }
-      } else {
-        ui.minEl.value = String(abs.min);
-        ui.maxEl.value = String(abs.max);
+      // Règle 3 : Sièges/rang. doit être pair (min et max)
+      if(id === "seatsPerRow"){
+        if(minV % 2 !== 0) minV = Math.min(abs.max, minV + 1);
+        if(maxV % 2 !== 0) maxV = Math.min(abs.max, maxV + 1);
       }
 
-      updateDualUI(spec.id);
-      lastGoodSliderValue[spec.id] = snapshotSlider(spec.id) || {min:abs.min, max:abs.max};
+      // Règle 2 : max par défaut différent du min (si = => +1)
+      if(maxV <= minV){
+        maxV = Math.min(abs.max, minV + 1);
+      }
+
+      // sécurité finale
+      minV = Math.max(abs.min, Math.min(abs.max, minV));
+      maxV = Math.max(abs.min, Math.min(abs.max, maxV));
+      if(maxV < minV){
+        const t=minV; minV=maxV; maxV=t;
+      }
+
+      return {minV, maxV};
     }
-    enforceSeatConstraints();
 
-    qEl.addEventListener("input", render);
-
-    let prevPrimary = sortSel.value;
-    sortSel.addEventListener("change", ()=>{
-      const newPrimary = sortSel.value;
-      if(sortFamily(newPrimary) === sortFamily(sort2Sel.value)){
-        sort2Sel.value = prevPrimary;
-      }
-      prevPrimary = newPrimary;
-      render();
-    });
-    sort2Sel.addEventListener("change", render);
-
-    waterOnlyEl.addEventListener("change", render);
-
-    $("clear").addEventListener("click", ()=>{
-      qEl.value = "";
-      waterOnlyEl.checked = false;
-
-      for(const spec of FACET_SPECS){
-        selected[spec.id].clear();
-        facetUI[spec.id].searchEl.value = "";
-        facetUI[spec.id].listEl.scrollTop = 0;
-      }
-
-      for(const spec of NUM_SPECS){
+    for(const spec of NUM_SPECS){
         const abs = sliderAbs[spec.id];
         const ui = sliderUI[spec.id];
         if(!abs || !ui || ui.minEl.disabled) continue;
         sliderDyn[spec.id] = {min:abs.min, max:abs.max};
-        ui.minEl.value = String(abs.min);
-        ui.maxEl.value = String(abs.max);
+
+        // Reset = valeurs par défaut (quartiles + règles) pour ces 3 sliders
+        if(QUARTILE_IDS.has(spec.id)){
+          const key = numFields[spec.id];
+          const values = allRows
+            .map(r => toInt(r[key]))
+            .filter(v => Number.isFinite(v));
+
+          if(values.length > 0){
+            const {q1,q3} = computeQuartiles(values);
+            const {minV, maxV} = applyDefaultRules(spec.id, abs, q1, q3);
+            ui.minEl.value = String(minV);
+            ui.maxEl.value = String(maxV);
+          } else {
+            ui.minEl.value = String(abs.min);
+            ui.maxEl.value = String(abs.max);
+          }
+        } else {
+          ui.minEl.value = String(abs.min);
+          ui.maxEl.value = String(abs.max);
+        }
+
         updateDualUI(spec.id);
-        lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
+        lastGoodSliderValue[spec.id] = snapshotSlider(spec.id) || {min:abs.min, max:abs.max};
       }
       enforceSeatConstraints();
 

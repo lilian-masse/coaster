@@ -1239,16 +1239,50 @@ function sortRows(list, mode1, mode2, f){
     initSlidersFromData();
     enforceSeatConstraints();
 
-    // full span at load + lastGood = full span
+    // Valeurs par défaut aux quartiles pour certains sliders
+    function computeQuartiles(values){
+      const arr = values.slice().sort((a,b)=>a-b);
+      const q = (p)=>{
+        const pos = (arr.length-1)*p;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        if(arr[base+1] !== undefined)
+          return arr[base] + rest*(arr[base+1]-arr[base]);
+        return arr[base];
+      };
+      return {q1: Math.round(q(0.25)), q3: Math.round(q(0.75))};
+    }
+
+    const QUARTILE_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
+
     for(const spec of NUM_SPECS){
       const abs = sliderAbs[spec.id];
       const ui = sliderUI[spec.id];
       if(!abs || !ui || ui.minEl.disabled) continue;
+
       sliderDyn[spec.id] = {min:abs.min, max:abs.max};
-      ui.minEl.value = String(abs.min);
-      ui.maxEl.value = String(abs.max);
+
+      if(QUARTILE_IDS.has(spec.id)){
+        const key = numFields[spec.id];
+        const values = allRows
+          .map(r => toInt(r[key]))
+          .filter(v => Number.isFinite(v));
+
+        if(values.length > 0){
+          const {q1,q3} = computeQuartiles(values);
+          ui.minEl.value = String(Math.max(abs.min, q1));
+          ui.maxEl.value = String(Math.min(abs.max, q3));
+        } else {
+          ui.minEl.value = String(abs.min);
+          ui.maxEl.value = String(abs.max);
+        }
+      } else {
+        ui.minEl.value = String(abs.min);
+        ui.maxEl.value = String(abs.max);
+      }
+
       updateDualUI(spec.id);
-      lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
+      lastGoodSliderValue[spec.id] = snapshotSlider(spec.id) || {min:abs.min, max:abs.max};
     }
     enforceSeatConstraints();
 

@@ -883,58 +883,79 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function normText(v){ return norm(String(v ?? "")); }
-function isRailBasculant(v){ const s = normText(v); return s.includes("rail basculant") || s.includes("bascul"); }
+function isRailBasculant(v){ const s = normText(v); return s.includes("rail basculant") || s.includes("bascul") || s.includes("switch track") || s.includes("track switch"); }
 function isWoodStructure(v){ const s = normText(v); return s.includes("bois") || s.includes("wood"); }
 function clamp01(x){ return Math.max(0, Math.min(1, x)); }
 
-function buildTrackPreviewSVG(row){
-  const W=240,H=66,p=10;
+// Aperçu de tracé (passe explicitement fields/numFields pour éviter tout souci de scope)
+function buildTrackPreviewSVG(row, fields, numFields){
+  const W=240, H=66, p=10;
+
   const len = numFields.length ? toInt(row[numFields.length]) : null;
   const ht  = numFields.height ? toInt(row[numFields.height]) : null;
-  const inv = numFields.inversions ? (toInt(row[numFields.inversions])||0) : 0;
+  const inv = numFields.inversions ? (toInt(row[numFields.inversions]) || 0) : 0;
+
   const angleRaw = fields.launchAngle ? row[fields.launchAngle] : null;
-  const angle = Number.isFinite(toNumber(angleRaw)) ? Math.max(0,Math.min(90,toNumber(angleRaw))) : 20;
+  const angleNum = toNumber(angleRaw);
+  const angle = Number.isFinite(angleNum) ? Math.max(0, Math.min(90, angleNum)) : 20;
+
   const structureRaw = fields.structure ? row[fields.structure] : "";
   const particularityRaw = fields.particularity ? row[fields.particularity] : "";
 
-  const lenNorm = len?clamp01(len/2500):0.5;
-  const htNorm = ht?clamp01(ht/80):0.4;
+  const lenNorm = len ? clamp01(len/2500) : 0.5;
+  const htNorm  = ht  ? clamp01(ht/80)    : 0.4;
 
-  const baseY=H-p;
-  const topY=p+(1-htNorm)*(H-2*p);
-  const x0=p,x1=p+(W-2*p)*0.28,x2=p+(W-2*p)*0.62,x3=W-p;
-  const lift=(H-2*p)*clamp01(angle/65);
-  const y1=Math.max(topY,baseY-lift);
-  const yPeak=Math.min(y1,topY);
-  const yMid=baseY-(baseY-yPeak)*(0.65+0.25*(1-lenNorm));
+  const baseY = H - p;
+  const topY  = p + (1-htNorm) * (H - 2*p);
+  const x0=p, x1=p+(W-2*p)*0.28, x2=p+(W-2*p)*0.62, x3=W-p;
 
-  const d=`M ${x0} ${baseY} C ${x0+18} ${baseY} ${x1-18} ${y1} ${x1} ${y1} C ${x1+22} ${y1} ${x2-26} ${yPeak} ${x2} ${yPeak} C ${x2+26} ${yPeak} ${x3-18} ${yMid} ${x3} ${yMid}`;
+  const lift = (H-2*p) * clamp01(angle/65);
+  const y1 = Math.max(topY, baseY - lift);
+  const yPeak = Math.min(y1, topY);
+  const yMid  = baseY - (baseY - yPeak) * (0.65 + 0.25*(1-lenNorm));
+
+  const d = `M ${x0} ${baseY} C ${x0+18} ${baseY} ${x1-18} ${y1} ${x1} ${y1} C ${x1+22} ${y1} ${x2-26} ${yPeak} ${x2} ${yPeak} C ${x2+26} ${yPeak} ${x3-18} ${yMid} ${x3} ${yMid}`;
 
   const loops=[];
-  const loopCount=Math.max(0,Math.min(6,inv));
+  const loopCount = Math.max(0, Math.min(6, inv));
   if(loopCount>0){
     const start=p+(W-2*p)*0.40;
     const span=(W-2*p)*0.38;
     for(let i=0;i<loopCount;i++){
       const cx=start+(loopCount===1?span*0.5:(span*i/(loopCount-1)));
-      const cy=yPeak+10,r=7;
+      const cy=yPeak+10, r=7;
       loops.push(`<path d="M ${cx-r} ${cy} a ${r} ${r} 0 1 0 ${2*r} 0 a ${r} ${r} 0 1 0 ${-2*r} 0" fill="none" stroke="currentColor" stroke-width="1.6"/>`);
     }
   }
 
-  const hasSwitch=isRailBasculant(particularityRaw);
-  const switchSvg=hasSwitch?(()=>{
-    const sx=p+(W-2*p)*0.78,sy=yMid;
-    return `<path d="M ${sx-18} ${sy} L ${sx-4} ${sy}" stroke="currentColor" stroke-width="2" fill="none"/>
-            <path d="M ${sx+4} ${sy} L ${sx+18} ${sy}" stroke="currentColor" stroke-width="2" fill="none"/>`;})();
+  const hasSwitch = isRailBasculant(particularityRaw);
+  const switchSvg = hasSwitch ? (()=>{
+    const sx=p+(W-2*p)*0.78, sy=yMid;
+    return `
+      <path d="M ${sx-18} ${sy} L ${sx-4} ${sy}" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M ${sx+4} ${sy} L ${sx+18} ${sy}" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M ${sx-2} ${sy-6} L ${sx+12} ${sy-12}" stroke="currentColor" stroke-width="2" fill="none"/>
+    `;
+  })() : "";
 
-  const dash=isWoodStructure(structureRaw)?"6 4":"";
+  const dash = isWoodStructure(structureRaw) ? "6 4" : "";
 
-  return `<div class="preview"><svg viewBox="0 0 ${W} ${H}">
-    <path d="${d}" fill="none" stroke="currentColor" stroke-width="2.2" ${dash?`stroke-dasharray="${dash}"`:""}/>
-    ${loops.join("")}
-    ${switchSvg||""}
-  </svg></div>`;
+  const metaLeft = `H ${ht ?? "—"} m · L ${len ?? "—"} m · Inv ${inv ?? 0}`;
+  const metaRight = hasSwitch ? "Rail basculant" : "";
+
+  return `
+    <div class="preview" aria-hidden="true">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aperçu du tracé">
+        <path d="${d}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ${dash ? `stroke-dasharray="${dash}"` : ""}/>
+        ${loops.join("")}
+        ${switchSvg}
+      </svg>
+      <div class="previewMeta">
+        <span>${esc(metaLeft)}</span>
+        ${metaRight ? `<span class="tag">${esc(metaRight)}</span>` : `<span></span>`}
+      </div>
+    </div>
+  `;
 }
 
 function cardHTML(r, idx){
@@ -956,7 +977,7 @@ function cardHTML(r, idx){
         <h2 class="title">${esc(name)}</h2>
         ${park ? `<p class="sub">${esc(park)}</p>` : ""}
         <div class="kv">${kv || `<div class="empty">Aucune info</div>`}</div>
-        ${buildTrackPreviewSVG(r)}
+        ${buildTrackPreviewSVG(r, fields, numFields)}
       </article>
     `;
   }

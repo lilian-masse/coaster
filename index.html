@@ -433,7 +433,10 @@ function sortRows(list, mode1, mode2, f){
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled || ui.maxEl.disabled) return;
 
-    const dyn = sliderDyn[id] || abs;
+    // Pour les sliders "sièges" : on affiche toujours les bornes ABS du JSON
+    // (pas de bornes dynamiques qui rétrécissent et bloquent l'augmentation).
+    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"]);
+    const dyn = SEAT_IDS.has(id) ? abs : (sliderDyn[id] || abs);
 
     ui.minEl.min = String(dyn.min);
     ui.maxEl.min = String(dyn.min);
@@ -764,13 +767,21 @@ function sortRows(list, mode1, mode2, f){
     const {min, max} = sliderVal[id] || abs;
     return {min:Number(min), max:Number(max)};
   }
+
   function setDyn(id, dynMin, dynMax){
     const abs = sliderAbs[id];
     if(!abs) return;
 
-    // Si les contraintes donnent une plage impossible, on ne change rien
-    // (évite de "casser" le slider en lui donnant min>max ou NaN)
-    if(!Number.isFinite(dynMin) || !Number.isFinite(dynMax) || dynMin > dynMax){
+    // IMPORTANT : les sliders "sièges" doivent toujours afficher min/max du JSON
+    // => on ne leur applique pas de bornes dynamiques.
+    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"]);
+    if(SEAT_IDS.has(id)){
+      sliderDyn[id] = {min: abs.min, max: abs.max};
+      return;
+    }
+
+    // Si contraintes invalides, on garde la plage actuelle (ou l'absolue).
+    if(!Number.isFinite(dynMin) || !Number.isFinite(dynMax)){
       sliderDyn[id] = sliderDyn[id] || {min: abs.min, max: abs.max};
       return;
     }
@@ -779,16 +790,12 @@ function sortRows(list, mode1, mode2, f){
     let dmax = Math.max(abs.min, Math.min(abs.max, Math.round(dynMax)));
     if(dmin > dmax){ const t=dmin; dmin=dmax; dmax=t; }
 
-    // Anti-blocage : si la plage dynamique s'écrase sur une seule valeur,
-    // on l'élargit d'1 cran (si possible) au lieu de fixer max=min.
+    // Anti-blocage : si la plage se réduit à une valeur, on l'élargit d'1 cran si possible
     if(dmin === dmax){
       const lo = Math.max(abs.min, dmin - 1);
       const hi = Math.min(abs.max, dmax + 1);
-      if(lo < hi){
-        sliderDyn[id] = {min: lo, max: hi};
-      } else {
-        sliderDyn[id] = {min: abs.min, max: abs.max};
-      }
+      if(lo < hi){ sliderDyn[id] = {min: lo, max: hi}; }
+      else { sliderDyn[id] = {min: abs.min, max: abs.max}; }
       return;
     }
 
@@ -796,9 +803,39 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function enforceSeatConstraints(){
+    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"]);
+
+    // Clamp une sélection (min/max) dans une plage autorisée sans changer les bornes affichées.
+    function clampSelection(id, allowedMin, allowedMax){
+      const ui = sliderUI[id];
+      const abs = sliderAbs[id];
+      if(!ui || !abs || ui.minEl.disabled) return;
+
+      // on garde l'affichage ABS (JSON)
+      sliderDyn[id] = {min: abs.min, max: abs.max};
+
+      const lo = Math.max(abs.min, Math.round(allowedMin));
+      const hi = Math.min(abs.max, Math.round(allowedMax));
+      if(!Number.isFinite(lo) || !Number.isFinite(hi) || lo > hi) return;
+
+      let curMin = Math.round(Number(ui.minEl.value));
+      let curMax = Math.round(Number(ui.maxEl.value));
+      if(curMin > curMax){ const t=curMin; curMin=curMax; curMax=t; }
+
+      curMin = Math.max(lo, Math.min(hi, curMin));
+      curMax = Math.max(lo, Math.min(hi, curMax));
+      if(curMin > curMax){ const t=curMin; curMin=curMax; curMax=t; }
+
+      ui.minEl.value = String(curMin);
+      ui.maxEl.value = String(curMax);
+      updateDualUI(id);
+    }
+
     const A = getRange("seatsPerRow");
     const B = getRange("rowsPerCar");
     const C = getRange("seatsPerCar");
+
+    // A * B = C (cohérence voiture)
     if(A && B && C){
       const cmin = Math.max(1, Math.floor(C.min));
       const cmax = Math.max(1, Math.floor(C.max));
@@ -807,18 +844,24 @@ function sortRows(list, mode1, mode2, f){
       const bmin = Math.max(1, Math.floor(B.min));
       const bmax = Math.max(1, Math.floor(B.max));
 
-      setDyn("seatsPerRow", Math.ceil(cmin / Math.max(1, bmax)), Math.floor(cmax / Math.max(1, bmin)));
-      setDyn("rowsPerCar", Math.ceil(cmin / Math.max(1, amax)), Math.floor(cmax / Math.max(1, amin)));
-      setDyn("seatsPerCar", amin * bmin, amax * bmax);
+      // plages autorisées dérivées
+      const A_lo = Math.ceil(cmin / Math.max(1, bmax));
+      const A_hi = Math.floor(cmax / Math.max(1, bmin));
+      const B_lo = Math.ceil(cmin / Math.max(1, amax));
+      const B_hi = Math.floor(cmax / Math.max(1, amin));
+      const C_lo = amin * bmin;
+      const C_hi = amax * bmax;
 
-      updateDualUI("seatsPerRow");
-      updateDualUI("rowsPerCar");
-      updateDualUI("seatsPerCar");
+      clampSelection("seatsPerRow", A_lo, A_hi);
+      clampSelection("rowsPerCar", B_lo, B_hi);
+      clampSelection("seatsPerCar", C_lo, C_hi);
     }
 
     const C2 = getRange("seatsPerCar");
     const D = getRange("carsPerTrain");
     const E = getRange("seatsPerTrain");
+
+    // C * D = E (cohérence train)
     if(C2 && D && E){
       const emin = Math.max(1, Math.floor(E.min));
       const emax = Math.max(1, Math.floor(E.max));
@@ -827,17 +870,22 @@ function sortRows(list, mode1, mode2, f){
       const dmin = Math.max(1, Math.floor(D.min));
       const dmax = Math.max(1, Math.floor(D.max));
 
-      const C_low2 = Math.ceil(emin / Math.max(1, dmax));
-      const C_high2 = Math.floor(emax / Math.max(1, dmin));
-      const cur = sliderDyn["seatsPerCar"] || sliderAbs["seatsPerCar"];
-      setDyn("seatsPerCar", Math.max(cur.min, C_low2), Math.min(cur.max, C_high2));
+      const C_lo2 = Math.ceil(emin / Math.max(1, dmax));
+      const C_hi2 = Math.floor(emax / Math.max(1, dmin));
+      const D_lo = Math.ceil(emin / Math.max(1, cmax2));
+      const D_hi = Math.floor(emax / Math.max(1, cmin2));
+      const E_lo = cmin2 * dmin;
+      const E_hi = cmax2 * dmax;
 
-      setDyn("carsPerTrain", Math.ceil(emin / Math.max(1, cmax2)), Math.floor(emax / Math.max(1, cmin2)));
-      setDyn("seatsPerTrain", cmin2 * dmin, cmax2 * dmax);
+      clampSelection("seatsPerCar", C_lo2, C_hi2);
+      clampSelection("carsPerTrain", D_lo, D_hi);
+      clampSelection("seatsPerTrain", E_lo, E_hi);
+    }
 
-      updateDualUI("seatsPerCar");
-      updateDualUI("carsPerTrain");
-      updateDualUI("seatsPerTrain");
+    // sécurité : on force dyn=abs pour ces sliders au cas où
+    for(const id of SEAT_IDS){
+      const abs = sliderAbs[id];
+      if(abs) sliderDyn[id] = {min: abs.min, max: abs.max};
     }
   }
 

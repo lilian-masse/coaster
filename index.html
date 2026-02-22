@@ -280,9 +280,8 @@ const NUM_SPECS = [
   { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
   { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
 
-  { id:"seatsPerCar", label:"Sièges/voit.", candidates:["Sieges/voit.","Sièges/voit.","Seats/car","Seats per car","Sieges par voiture"], step:1, integer:true },
-  { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
-  { id:"seatsPerTrain", label:"Sièges/train", candidates:["Sieges/train","Sièges/train","Seats/train","Seats per train","Sieges par train"], step:1, integer:true },
+    { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
+  
 ];
 
 const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];
@@ -403,18 +402,7 @@ function sortRows(list, mode1, mode2, f){
     const bKey = numFields.rowsPerCar;
     const cKey = numFields.seatsPerCar;
     const dKey = numFields.carsPerTrain;
-    const eKey = numFields.seatsPerTrain;
-
-    const a = aKey ? toInt(row[aKey]) : null;
-    const b = bKey ? toInt(row[bKey]) : null;
-    const c = cKey ? toInt(row[cKey]) : null;
-    const d = dKey ? toInt(row[dKey]) : null;
-    const e = eKey ? toInt(row[eKey]) : null;
-
-    if(cKey && c === null && a !== null && b !== null) row[cKey] = a * b;
-
-    const cNow = cKey ? toInt(row[cKey]) : null;
-    if(eKey && e === null && d !== null && cNow !== null) row[eKey] = cNow * d;
+    
   }
 
   function clampSwap(minEl, maxEl){
@@ -435,7 +423,7 @@ function sortRows(list, mode1, mode2, f){
 
     // Pour les sliders "sièges" : on affiche toujours les bornes ABS du JSON
     // (pas de bornes dynamiques qui rétrécissent et bloquent l'augmentation).
-    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"]);
+    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
     const dyn = SEAT_IDS.has(id) ? abs : (sliderDyn[id] || abs);
 
     ui.minEl.min = String(dyn.min);
@@ -774,7 +762,7 @@ function sortRows(list, mode1, mode2, f){
 
     // IMPORTANT : les sliders "sièges" doivent toujours afficher min/max du JSON
     // => on ne leur applique pas de bornes dynamiques.
-    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"]);
+    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
     if(SEAT_IDS.has(id)){
       sliderDyn[id] = {min: abs.min, max: abs.max};
       return;
@@ -803,7 +791,7 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function enforceSeatConstraints(){
-    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","seatsPerCar","carsPerTrain","seatsPerTrain"]);
+    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
 
     // Clamp une sélection (min/max) dans une plage autorisée sans changer les bornes affichées.
     function clampSelection(id, allowedMin, allowedMax){
@@ -857,30 +845,7 @@ function sortRows(list, mode1, mode2, f){
       clampSelection("seatsPerCar", C_lo, C_hi);
     }
 
-    const C2 = getRange("seatsPerCar");
-    const D = getRange("carsPerTrain");
-    const E = getRange("seatsPerTrain");
-
-    // C * D = E (cohérence train)
-    if(C2 && D && E){
-      const emin = Math.max(1, Math.floor(E.min));
-      const emax = Math.max(1, Math.floor(E.max));
-      const cmin2 = Math.max(1, Math.floor(C2.min));
-      const cmax2 = Math.max(1, Math.floor(C2.max));
-      const dmin = Math.max(1, Math.floor(D.min));
-      const dmax = Math.max(1, Math.floor(D.max));
-
-      const C_lo2 = Math.ceil(emin / Math.max(1, dmax));
-      const C_hi2 = Math.floor(emax / Math.max(1, dmin));
-      const D_lo = Math.ceil(emin / Math.max(1, cmax2));
-      const D_hi = Math.floor(emax / Math.max(1, cmin2));
-      const E_lo = cmin2 * dmin;
-      const E_hi = cmax2 * dmax;
-
-      clampSelection("seatsPerCar", C_lo2, C_hi2);
-      clampSelection("carsPerTrain", D_lo, D_hi);
-      clampSelection("seatsPerTrain", E_lo, E_hi);
-    }
+    
 
     // sécurité : on force dyn=abs pour ces sliders au cas où
     for(const id of SEAT_IDS){

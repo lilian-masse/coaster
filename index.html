@@ -803,8 +803,15 @@ function sortRows(list, mode1, mode2, f){
     const rows  = Math.max(1, Math.round(B.max));
     const cars  = Math.max(1, Math.round(D.max));
 
+    const seatsMin = Math.max(1, Math.round(A.min));
+    const rowsMin  = Math.max(1, Math.round(B.min));
+    const carsMin  = Math.max(1, Math.round(D.min));
+
     const seatsPerCar = seats * rows;
     const seatsPerTrain = seatsPerCar * cars;
+
+    const seatsPerCarMin = seatsMin * rowsMin;
+    const seatsPerTrainMin = seatsPerCarMin * carsMin;
 
     // limites visuelles (éviter un SVG gigantesque)
     const maxSeats = 6;
@@ -860,6 +867,7 @@ function sortRows(list, mode1, mode2, f){
 
     svg += `
         <text x="${pad}" y="${svgH - 14}" font-size="12" fill="#444">Exemple (max sélectionnés) : ${seats}×${rows}×${cars} = ${seatsPerTrain} sièges/train (${seatsPerCar} sièges/voit.)</text>
+        <text x="${pad}" y="${svgH - 2}" font-size="12" fill="#444">Exemple (min sélectionnés) : ${seatsMin}×${rowsMin}×${carsMin} = ${seatsPerTrainMin} sièges/train (${seatsPerCarMin} sièges/voit.)</text>
       </svg>
     `;
 

@@ -845,9 +845,10 @@ function sortRows(list, mode1, mode2, f){
               ss < seatsMin
             );
 
-            const fillColor = isInMin ? "#b8b8b8" : "#ffffff";
-            const strokeColor = isInMin ? "#555" : "#b0b0b0";
-            const strokeW = isInMin ? 1.3 : 1;
+            // Rendu très contrasté pour être immédiatement visible
+            const fillColor = isInMin ? "#666666" : "#ffffff";
+            const strokeColor = isInMin ? "#222222" : "#cccccc";
+            const strokeW = isInMin ? 1.8 : 1;
 
             svg += `<circle cx=\"${cx}\" cy=\"${cy}\" r=\"${seatR}\" fill=\"${fillColor}\" stroke=\"${strokeColor}\" stroke-width=\"${strokeW}\"/>`;
           }

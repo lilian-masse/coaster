@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 1</title>
+<title>Coasters — Fiches</title>
 
 <style>
   :root{
@@ -885,100 +885,19 @@ function sortRows(list, mode1, mode2, f){
     }
 
     previewEl.innerHTML =
-      `<div style="font-size:12px;font-weight:800;margin:2px 0 10px;color:#111">DEBUG: MIN=${seatsMin}×${rowsMin}×${carsMin} · MAX=${seats}×${rows}×${cars}</div>` +
-      buildSvg(seats, rows, cars, "Train — configuration MAX (borne sup.)", {seats:seatsMin, rows:rowsMin, cars:carsMin}) +
-      buildSvg(seatsMin, rowsMin, carsMin, "Train — configuration MIN (borne inf.)");
-      return;
-    }
-
-    const fmt = (r)=> `${Math.round(r.min)} → ${Math.round(r.max)}`;
-    metaEl.textContent = `Sièges/rang.: ${fmt(A)} · Rangées/voit.: ${fmt(B)} · Voit./train: ${fmt(D)}`;
-
-    const seats = Math.max(1, Math.round(A.max));
-    const rows  = Math.max(1, Math.round(B.max));
-    const cars  = Math.max(1, Math.round(D.max));
-
-    const seatsMin = Math.max(1, Math.round(A.min));
-    const rowsMin  = Math.max(1, Math.round(B.min));
-    const carsMin  = Math.max(1, Math.round(D.min));
-
-    function buildSvg(seatsX, rowsX, carsX, caption, overlayMin){
-      const sDraw = Math.max(1, Math.round(Number(seatsX)));
-      const rDraw = Math.max(1, Math.round(Number(rowsX)));
-      const cDraw = Math.max(1, Math.round(Number(carsX)));
-
-      const oS = overlayMin ? Math.max(1, Math.round(Number(overlayMin.seats))) : 0;
-      const oR = overlayMin ? Math.max(1, Math.round(Number(overlayMin.rows))) : 0;
-      const oC = overlayMin ? Math.max(1, Math.round(Number(overlayMin.cars))) : 0;
-
-      const seatR = 4;
-      const seatGapX = 12;
-      const seatGapY = 12;
-      const pad = 14;
-      const carPad = 10;
-
-      const carW = carPad*2 + (rDraw-1)*seatGapX + seatR*2;
-      const carH = carPad*2 + (sDraw-1)*seatGapY + seatR*2;
-      const carGap = 18;
-
-      const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
-      const svgH = pad*2 + carH + 40;
-
-      let svg = `
-        <div style="margin-bottom:10px">
-          <div style="font-size:13px;font-weight:700;margin:4px 0 8px">${esc(caption)}</div>
-          <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="${esc(caption)}">
-            <rect x="0" y="0" width="${svgW}" height="${svgH}" rx="12" ry="12" fill="white" stroke="#eee"/>
-      `;
-
-      for(let ci=0; ci<cDraw; ci++){
-        const x0 = pad + ci*(carW + carGap);
-        const y0 = pad;
-
-        svg += `<g>`;
-        svg += `<rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>`;
-
-        // Cadre MIN (si overlay)
-        if(overlayMin && ci < oC){
-          const minW = carPad*2 + (Math.max(1,oR)-1)*seatGapX + seatR*2;
-          const minH = carPad*2 + (Math.max(1,oS)-1)*seatGapY + seatR*2;
-          svg += `<rect x="${x0}" y="${y0}" width="${minW}" height="${minH}" rx="12" ry="12" fill="rgba(0,0,0,0.03)" stroke="#000" stroke-dasharray="5 4"/>`;
-        }
-
-        for(let rr=0; rr<rDraw; rr++){
-          for(let ss=0; ss<sDraw; ss++){
-            const cx = x0 + carPad + seatR + rr*seatGapX;
-            const cy = y0 + carPad + seatR + ss*seatGapY;
-
-            const isInMin = !!overlayMin && (ci < oC && rr < oR && ss < oS);
-            const fill = isInMin ? "#000000" : "#ffffff";
-            const stroke = isInMin ? "#000000" : "#cccccc";
-            const sw = isInMin ? 1.8 : 1;
-
-            svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-          }
-        }
-
-        svg += `<text x="${x0 + carW/2}" y="${y0 + carH + 18}" text-anchor="middle" font-size="12" fill="#666">Voiture ${ci+1}</text>`;
-        svg += `</g>`;
-      }
-
-      // Ligne de calcul
-      const seatsPerCarX = sDraw * rDraw;
-      const seatsPerTrainX = seatsPerCarX * cDraw;
-      svg += `<text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${sDraw}×${rDraw}×${cDraw} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.)</text>`;
-
-      svg += `
-          </svg>
-        </div>
-      `;
-
-      return svg;
-    }
-
-    previewEl.innerHTML =
-      buildSvg(seats, rows, cars, "Train — configuration MAX (borne sup.)") +
-      buildSvg(seatsMin, rowsMin, carsMin, "Train — configuration MIN (borne inf.)");
+      buildSvg(
+        seats,
+        rows,
+        cars,
+        "Train — configuration MAX (borne sup.)",
+        { seats: seatsMin, rows: rowsMin, cars: carsMin }
+      ) +
+      buildSvg(
+        seatsMin,
+        rowsMin,
+        carsMin,
+        "Train — configuration MIN (borne inf.)"
+      );
   }
 
   function updateAllFacetUIs(){

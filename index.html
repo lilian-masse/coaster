@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 1</title>
+<title>Coasters — Fiches</title>
 
 <style>
   :root{
@@ -885,6 +885,7 @@ function sortRows(list, mode1, mode2, f){
     }
 
     previewEl.innerHTML =
+      `<div style="font-size:12px;font-weight:800;margin:2px 0 10px;color:#111">DEBUG: MIN=${seatsMin}×${rowsMin}×${carsMin} · MAX=${seats}×${rows}×${cars}</div>` +
       buildSvg(seats, rows, cars, "Train — configuration MAX (borne sup.)", {seats:seatsMin, rows:rowsMin, cars:carsMin}) +
       buildSvg(seatsMin, rowsMin, carsMin, "Train — configuration MIN (borne inf.)");
       return;
@@ -907,10 +908,15 @@ function sortRows(list, mode1, mode2, f){
       const cDraw = Math.max(1, carsX);
 
       // Overlay MIN (uniquement pour la vue MAX)
-      const useOverlay = !!overlayMin && String(caption||"").includes("configuration MAX");
-      const oS = useOverlay ? Math.max(1, Math.round(Number(overlayMin.seats))) : 0;
-      const oR = useOverlay ? Math.max(1, Math.round(Number(overlayMin.rows))) : 0;
-      const oC = useOverlay ? Math.max(1, Math.round(Number(overlayMin.cars))) : 0;
+      const useOverlay = !!overlayMin; // overlay activé dès qu'on fournit overlayMin
+      const safePosInt = (v, fallback=1)=>{
+        const n = Number(v);
+        if(!Number.isFinite(n)) return fallback;
+        return Math.max(1, Math.round(n));
+      };
+      const oS = useOverlay ? safePosInt(overlayMin.seats, 1) : 0;
+      const oR = useOverlay ? safePosInt(overlayMin.rows, 1) : 0;
+      const oC = useOverlay ? safePosInt(overlayMin.cars, 1) : 0;
 
       const seatR = 4;
       const seatGapX = 12;
@@ -969,8 +975,9 @@ function sortRows(list, mode1, mode2, f){
       const seatsPerCarX = seatsX * rowsX;
       const seatsPerTrainX = seatsPerCarX * carsX;
 
+      // Affichage debug + légende overlay (toujours si overlay actif)
       if(useOverlay){
-        svg += `<text x="${pad}" y="${svgH - 28}" font-size="12" fill="#444">Overlay MIN (noir) = ${oS}×${oR}×${oC}</text>`;
+        svg += `<text x="${pad}" y="${svgH - 28}" font-size="12" fill="#111">MIN dans MAX (noir) = ${oS}×${oR}×${oC}</text>`;
       }
 
       svg += `

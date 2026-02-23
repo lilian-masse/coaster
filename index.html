@@ -799,7 +799,77 @@ function sortRows(list, mode1, mode2, f){
 
     if(!A || !B || !D){
       metaEl.textContent = "Sélectionnez des plages pour Sièges/rang., Rangées/voit. et Voit./train.";
-      previewEl.innerHTML = `<div class="empty">Prévisualisation indisponible.</div>`;
+          // --- Prévisualisation ---
+    // Dans la configuration MAX, on colorie en gris les sièges correspondant à la configuration MIN
+
+    function buildSvgWithMinOverlay(){
+      const seatR = 4;
+      const seatGapX = 12;
+      const seatGapY = 12;
+      const pad = 14;
+      const carPad = 10;
+
+      const sDraw = seats;
+      const rDraw = rows;
+      const cDraw = cars;
+
+      const carW = carPad*2 + (rDraw-1)*seatGapX + seatR*2;
+      const carH = carPad*2 + (sDraw-1)*seatGapY + seatR*2;
+      const carGap = 18;
+
+      const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
+      const svgH = pad*2 + carH + 34;
+
+      let svg = `
+        <div style="margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;margin:4px 0 8px">Train — configuration MAX (borne sup.)</div>
+          <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img">
+            <rect x="0" y="0" width="${svgW}" height="${svgH}" rx="12" ry="12" fill="white" stroke="#eee"/>
+      `;
+
+      for(let ci=0; ci<cDraw; ci++){
+        const x0 = pad + ci*(carW + carGap);
+        const y0 = pad;
+        svg += `<g>`;
+        svg += `<rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>`;
+
+        for(let rr=0; rr<rDraw; rr++){
+          for(let ss=0; ss<sDraw; ss++){
+            const cx = x0 + carPad + seatR + rr*seatGapX;
+            const cy = y0 + carPad + seatR + ss*seatGapY;
+
+            // Si ce siège appartient à la config MIN → gris
+            const isInMin = (
+              ci < carsMin &&
+              rr < rowsMin &&
+              ss < seatsMin
+            );
+
+            const fillColor = isInMin ? "#ccc" : "#fff";
+
+            svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fillColor}" stroke="#999"/>`;
+          }
+        }
+
+        svg += `<text x="${x0 + carW/2}" y="${y0 + carH + 18}" text-anchor="middle" font-size="12" fill="#666">Voiture ${ci+1}</text>`;
+        svg += `</g>`;
+      }
+
+      const seatsPerCarX = seats * rows;
+      const seatsPerTrainX = seatsPerCarX * cars;
+
+      svg += `
+            <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${seats}×${rows}×${cars} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.)</text>
+          </svg>
+        </div>
+      `;
+
+      return svg;
+    }
+
+    previewEl.innerHTML =
+      buildSvgWithMinOverlay() +
+      buildSvg(seatsMin, rowsMin, carsMin, "Train — configuration MIN (borne inf.)");
       return;
     }
 

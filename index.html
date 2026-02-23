@@ -838,16 +838,18 @@ function sortRows(list, mode1, mode2, f){
             const cx = x0 + carPad + seatR + rr*seatGapX;
             const cy = y0 + carPad + seatR + ss*seatGapY;
 
-            // Si ce siège appartient à la config MIN → gris
+            // Si ce siège appartient à la config MIN → gris (plus contrasté)
             const isInMin = (
               ci < carsMin &&
               rr < rowsMin &&
               ss < seatsMin
             );
 
-            const fillColor = isInMin ? "#ccc" : "#fff";
+            const fillColor = isInMin ? "#b8b8b8" : "#ffffff";
+            const strokeColor = isInMin ? "#555" : "#b0b0b0";
+            const strokeW = isInMin ? 1.3 : 1;
 
-            svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fillColor}" stroke="#999"/>`;
+            svg += `<circle cx=\"${cx}\" cy=\"${cy}\" r=\"${seatR}\" fill=\"${fillColor}\" stroke=\"${strokeColor}\" stroke-width=\"${strokeW}\"/>`;
           }
         }
 

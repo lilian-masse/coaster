@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — Fiches</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -774,9 +774,24 @@ function sortRows(list, mode1, mode2, f){
   function getRange(id){
     const abs = sliderAbs[id];
     const ui = sliderUI[id];
-    if(!abs || !ui || ui.minEl.disabled) return null;
-    const {min, max} = sliderVal[id] || abs;
-    return {min:Number(min), max:Number(max)};
+
+    if(!abs || !ui) return null;
+
+    // Même si le slider est désactivé temporairement ou si sliderVal n'est pas prêt,
+    // on tente de lire les valeurs actuelles des inputs. Sinon, on retombe sur abs.
+    const readNum = (el, fallback)=>{
+      const n = Number(el?.value);
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    let min = readNum(ui.minEl, abs.min);
+    let max = readNum(ui.maxEl, abs.max);
+
+    min = Math.round(min);
+    max = Math.round(max);
+    if(min > max){ const t=min; min=max; max=t; }
+
+    return {min, max};
   }
 
   function enforceSeatConstraints(){

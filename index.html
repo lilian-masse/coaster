@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 1</title>
+<title>Coasters — Fiches</title>
 
 <style>
   :root{
@@ -903,20 +903,13 @@ function sortRows(list, mode1, mode2, f){
     const carsMin  = Math.max(1, Math.round(D.min));
 
     function buildSvg(seatsX, rowsX, carsX, caption, overlayMin){
-      const sDraw = Math.max(1, seatsX);
-      const rDraw = Math.max(1, rowsX);
-      const cDraw = Math.max(1, carsX);
+      const sDraw = Math.max(1, Math.round(Number(seatsX)));
+      const rDraw = Math.max(1, Math.round(Number(rowsX)));
+      const cDraw = Math.max(1, Math.round(Number(carsX)));
 
-      // Overlay MIN (uniquement pour la vue MAX)
-      const useOverlay = !!overlayMin; // overlay activé dès qu'on fournit overlayMin
-      const safePosInt = (v, fallback=1)=>{
-        const n = Number(v);
-        if(!Number.isFinite(n)) return fallback;
-        return Math.max(1, Math.round(n));
-      };
-      const oS = useOverlay ? safePosInt(overlayMin.seats, 1) : 0;
-      const oR = useOverlay ? safePosInt(overlayMin.rows, 1) : 0;
-      const oC = useOverlay ? safePosInt(overlayMin.cars, 1) : 0;
+      const oS = overlayMin ? Math.max(1, Math.round(Number(overlayMin.seats))) : 0;
+      const oR = overlayMin ? Math.max(1, Math.round(Number(overlayMin.rows))) : 0;
+      const oC = overlayMin ? Math.max(1, Math.round(Number(overlayMin.cars))) : 0;
 
       const seatR = 4;
       const seatGapX = 12;
@@ -929,7 +922,7 @@ function sortRows(list, mode1, mode2, f){
       const carGap = 18;
 
       const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
-      const svgH = pad*2 + carH + 52;
+      const svgH = pad*2 + carH + 40;
 
       let svg = `
         <div style="margin-bottom:10px">
@@ -941,16 +934,15 @@ function sortRows(list, mode1, mode2, f){
       for(let ci=0; ci<cDraw; ci++){
         const x0 = pad + ci*(carW + carGap);
         const y0 = pad;
-        svg += `
-          <g>
-            <rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>
-        `;
 
-        // Encadrement de la zone MIN (très visible)
-        if(useOverlay && ci < oC){
+        svg += `<g>`;
+        svg += `<rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>`;
+
+        // Cadre MIN (si overlay)
+        if(overlayMin && ci < oC){
           const minW = carPad*2 + (Math.max(1,oR)-1)*seatGapX + seatR*2;
           const minH = carPad*2 + (Math.max(1,oS)-1)*seatGapY + seatR*2;
-          svg += `<rect x="${x0}" y="${y0}" width="${minW}" height="${minH}" rx="12" ry="12" fill="rgba(0,0,0,0.06)" stroke="#222" stroke-dasharray="5 4"/>`;
+          svg += `<rect x="${x0}" y="${y0}" width="${minW}" height="${minH}" rx="12" ry="12" fill="rgba(0,0,0,0.03)" stroke="#000" stroke-dasharray="5 4"/>`;
         }
 
         for(let rr=0; rr<rDraw; rr++){
@@ -958,11 +950,10 @@ function sortRows(list, mode1, mode2, f){
             const cx = x0 + carPad + seatR + rr*seatGapX;
             const cy = y0 + carPad + seatR + ss*seatGapY;
 
-            const isInMin = useOverlay && (ci < oC && rr < oR && ss < oS);
-
-            const fill = isInMin ? "#111111" : "#ffffff";
-            const stroke = isInMin ? "#000000" : "#bdbdbd";
-            const sw = isInMin ? 2 : 1;
+            const isInMin = !!overlayMin && (ci < oC && rr < oR && ss < oS);
+            const fill = isInMin ? "#000000" : "#ffffff";
+            const stroke = isInMin ? "#000000" : "#cccccc";
+            const sw = isInMin ? 1.8 : 1;
 
             svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
           }
@@ -972,16 +963,12 @@ function sortRows(list, mode1, mode2, f){
         svg += `</g>`;
       }
 
-      const seatsPerCarX = seatsX * rowsX;
-      const seatsPerTrainX = seatsPerCarX * carsX;
-
-      // Affichage debug + légende overlay (toujours si overlay actif)
-      if(useOverlay){
-        svg += `<text x="${pad}" y="${svgH - 28}" font-size="12" fill="#111">MIN dans MAX (noir) = ${oS}×${oR}×${oC}</text>`;
-      }
+      // Ligne de calcul
+      const seatsPerCarX = sDraw * rDraw;
+      const seatsPerTrainX = seatsPerCarX * cDraw;
+      svg += `<text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${sDraw}×${rDraw}×${cDraw} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.)</text>`;
 
       svg += `
-            <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${seatsX}×${rowsX}×${carsX} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.)</text>
           </svg>
         </div>
       `;

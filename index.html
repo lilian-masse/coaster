@@ -1203,90 +1203,13 @@ function sortRows(list, mode1, mode2, f){
       if(!A || !B || !absA || !absB) return;
       if(A.minEl.disabled || B.minEl.disabled) return;
 
+      // Seats (A)
       let aMin = Math.round(Number(A.minEl.value));
       let aMax = Math.round(Number(A.maxEl.value));
       if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
 
-      // si l'espace côté rowsPerCar ne permet pas d'avoir B > A, on baisse A.
-      const maxAllowedA = absB.max - 1;
-      if(aMin > maxAllowedA) aMin = maxAllowedA;
-      if(aMax > maxAllowedA) aMax = maxAllowedA;
-
-      // règles seatsPerRow (pair, min != 1)
-      if(aMin === 1) aMin = 2;
-      if(aMin % 2 !== 0) aMin = Math.max(absA.min, aMin - 1); // essaie de rester proche, en pair
-      if(aMin % 2 !== 0) aMin = Math.min(absA.max, aMin + 1);
-
-      if(aMax % 2 !== 0) aMax = Math.min(absA.max, aMax + 1);
-      if(aMax < aMin){ aMax = Math.min(absA.max, aMin + 2); }
-      if(aMax % 2 !== 0) aMax = Math.min(absA.max, aMax + 1);
-      if(aMax < aMin){ aMin = Math.max(absA.min, aMax - 2); }
-
-      aMin = Math.max(absA.min, Math.min(absA.max, aMin));
-      aMax = Math.max(absA.min, Math.min(absA.max, aMax));
-      if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
-
-      let bMin = Math.round(Number(B.minEl.value));
-      let bMax = Math.round(Number(B.maxEl.value));
-      if(bMin > bMax){ const t=bMin; bMin=bMax; bMax=t; }
-
-      bMin = Math.max(bMin, aMin + 1);
-      bMax = Math.max(bMax, aMax + 1);
-
-      // clamp rowsPerCar
-      bMin = Math.max(absB.min, Math.min(absB.max, bMin));
-      bMax = Math.max(absB.min, Math.min(absB.max, bMax));
-
-      // garantir bMax > bMin
-      if(bMax === bMin){
-        if(bMax < absB.max) bMax = bMax + 1;
-        else if(bMin > absB.min) bMin = bMin - 1;
-      }
-
-      // re-vérif stricte après clamp
-      if(!(bMin > aMin)){
-        const target = Math.min(absB.max, aMin + 1);
-        bMin = target;
-      }
-      if(!(bMax > aMax)){
-        const target = Math.min(absB.max, aMax + 1);
-        bMax = target;
-        if(bMax === bMin && bMax < absB.max) bMax++;
-      }
-
-      // appliquer + rafraîchir
-      A.minEl.value = String(aMin);
-      A.maxEl.value = String(aMax);
-      B.minEl.value = String(bMin);
-      B.maxEl.value = String(bMax);
-
-      updateDualUI("seatsPerRow");
-      updateDualUI("rowsPerCar");
-
-      lastGoodSliderValue.seatsPerRow = snapshotSlider("seatsPerRow") || {min:absA.min, max:absA.max};
-      lastGoodSliderValue.rowsPerCar  = snapshotSlider("rowsPerCar")  || {min:absB.min, max:absB.max};
-    }
-
-    enforceDefaultRowsAboveSeats();
-
-    /* ✅ RÈGLE :
-       Par défaut, les bornes de Rangées/voit. (rowsPerCar)
-       doivent être STRICTEMENT supérieures à celles de Sièges/rang. (seatsPerRow).
-    */
-    function enforceDefaultRowsAboveSeats(){
-      const A = sliderUI.seatsPerRow;
-      const B = sliderUI.rowsPerCar;
-      const absA = sliderAbs.seatsPerRow;
-      const absB = sliderAbs.rowsPerCar;
-      if(!A || !B || !absA || !absB) return;
-      if(A.minEl.disabled || B.minEl.disabled) return;
-
-      let aMin = Math.round(Number(A.minEl.value));
-      let aMax = Math.round(Number(A.maxEl.value));
-      if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
-
-      // Il faut pouvoir avoir B > A -> si A dépasse absB.max-1, on rabaisse A.
-      const maxAllowedA = absB.max - 1;
+      // Pour garantir B = 1.5×A, il faut que 1.5×A <= absB.max.
+      const maxAllowedA = Math.floor(absB.max / 1.5);
       aMin = Math.min(aMin, maxAllowedA);
       aMax = Math.min(aMax, maxAllowedA);
 
@@ -1303,13 +1226,9 @@ function sortRows(list, mode1, mode2, f){
       aMax = Math.max(absA.min, Math.min(absA.max, aMax));
       if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
 
-      let bMin = Math.round(Number(B.minEl.value));
-      let bMax = Math.round(Number(B.maxEl.value));
-      if(bMin > bMax){ const t=bMin; bMin=bMax; bMax=t; }
-
-      // rendre strictement supérieur
-      bMin = Math.max(bMin, aMin + 1);
-      bMax = Math.max(bMax, aMax + 1);
+      // Rows (B) = 1.5×Seats, arrondi au-dessus.
+      let bMin = Math.ceil(aMin * 1.5);
+      let bMax = Math.ceil(aMax * 1.5);
 
       // clamp rowsPerCar
       bMin = Math.max(absB.min, Math.min(absB.max, bMin));
@@ -1334,7 +1253,58 @@ function sortRows(list, mode1, mode2, f){
       lastGoodSliderValue.rowsPerCar  = snapshotSlider("rowsPerCar")  || {min:absB.min, max:absB.max};
     }
 
+    /* ✅ RÈGLE :
+       Par défaut, la borne max de Voit./train (carsPerTrain)
+       doit être STRICTEMENT inférieure au double de sa borne min.
+       (donc max <= 2*min - 1)
+    */
+    function enforceDefaultCarsMaxUnderDoubleMin(){
+      const C = sliderUI.carsPerTrain;
+      const absC = sliderAbs.carsPerTrain;
+      if(!C || !absC) return;
+      if(C.minEl.disabled) return;
+
+      let cMin = Math.round(Number(C.minEl.value));
+      let cMax = Math.round(Number(C.maxEl.value));
+      if(cMin > cMax){ const t=cMin; cMin=cMax; cMax=t; }
+
+      // si min=1, impossible d'avoir (max>min) ET (max < 2*min). On force min à 2 si possible.
+      if(cMin < 2 && absC.max >= 3){
+        cMin = 2;
+      }
+
+      // clamp min
+      cMin = Math.max(absC.min, Math.min(absC.max, cMin));
+
+      // limiter le max
+      const limit = (2 * cMin) - 1;
+      if(cMax > limit) cMax = limit;
+
+      // clamp max
+      cMax = Math.max(absC.min, Math.min(absC.max, cMax));
+
+      // garantir un intervalle non nul
+      if(cMax <= cMin){
+        // essaie de créer un intervalle (min, min+1)
+        const candidate = Math.min(absC.max, cMin + 1);
+        // si candidate viole la règle (max < 2*min), ça ne peut arriver que si min=1 (déjà géré)
+        cMax = candidate;
+      }
+
+      // re-check stricte (sécurité)
+      if(cMax >= 2 * cMin){
+        cMax = Math.min(absC.max, (2 * cMin) - 1);
+      }
+
+      C.minEl.value = String(cMin);
+      C.maxEl.value = String(cMax);
+      updateDualUI("carsPerTrain");
+
+      lastGoodSliderValue.carsPerTrain = snapshotSlider("carsPerTrain") || {min:absC.min, max:absC.max};
+    }
+
     enforceDefaultRowsAboveSeats();
+    enforceDefaultCarsMaxUnderDoubleMin();
     enforceSeatConstraints();
 
     // listeners

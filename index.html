@@ -218,8 +218,12 @@
   </div>
 </div>
 
+<script id="COASTERS_DATA" type="application/json">
+"+json_str+"
+</script>
+
 <script>
-// ✅ Mode "import local" : le JSON est chargé via un sélecteur de fichier (File API).
+// ✅ Données : JSON intégré (plus de file input).
 const $ = (id)=>document.getElementById(id);
 // ✅ Données intégrées (plus de file input)
 
@@ -1410,7 +1414,8 @@ function sortRows(list, mode1, mode2, f){
 
     // Démarrage : données intégrées
   try{
-    const EMBEDDED_ROWS = "+json_str+";
+    const raw = document.getElementById("COASTERS_DATA")?.textContent || "[]";
+    const EMBEDDED_ROWS = JSON.parse(raw);
     const dc = document.getElementById("dataCount");
     if(dc) dc.textContent = String(Array.isArray(EMBEDDED_ROWS) ? EMBEDDED_ROWS.length : "—");
     clearError();

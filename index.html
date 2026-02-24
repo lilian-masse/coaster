@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 2</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -491,6 +491,17 @@ function sortRows(list, mode1, mode2, f){
 
   function createFacetUI(){
     facetBar.innerHTML = "";
+
+    const NO_SEARCH_IDS = new Set([
+      "propulsion",
+      "launchAngle",
+      "structure",
+      "particularity",
+      "rotation",
+      "layout",
+      "restraint",
+    ]);
+
     for(const spec of FACET_SPECS){
       const box = createFacetBox(spec);
       facetBar.appendChild(box);
@@ -501,13 +512,23 @@ function sortRows(list, mode1, mode2, f){
       const bannerEl = box.querySelector(`#banner_${spec.id}`);
       const clearBtn = box.querySelector(`#clear_${spec.id}`);
 
+      // ✅ Suppression de la barre "Filtrer…" pour certains filtres
+      if(NO_SEARCH_IDS.has(spec.id) && searchEl){
+        searchEl.remove();
+      }
+
       facetUI[spec.id] = {searchEl, listEl, itemsEl, bannerEl, clearBtn};
       selected[spec.id] = new Set();
 
       clearBtn.addEventListener("click", ()=>{ selected[spec.id].clear(); render(); });
-      searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
+
+      if(searchEl && !NO_SEARCH_IDS.has(spec.id)){
+        searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
+      }
+
       listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
     }
+  }
   }
 
   function createSliderUI(){

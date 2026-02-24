@@ -219,12 +219,12 @@
 </div>
 
 <script id="COASTERS_DATA" type="application/json">
-"+json_str+"
+[]
 </script>
 
 <script>
-// Données intégrées (base64 UTF‑8) — aucune lecture de fichier nécessaire.
-const COASTERS_DATA_B64 = "REPLACE_B64";
+// Données intégrées — aucune lecture de fichier nécessaire.
+// Les données sont placées dans <script id="COASTERS_DATA" type="application/json">…</script>
 
 const $ = (id)=>document.getElementById(id);
 
@@ -434,10 +434,20 @@ function sortRows(list, mode1, mode2, f){
   let lastRendered = [];
   let currentIndex = -1;
 
-  function decodeDataB64(b64){
-    const bytes = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
-    const jsonStr = new TextDecoder("utf-8").decode(bytes);
-    return JSON.parse(jsonStr);
+  function getEmbeddedJsonText(){
+
+    const ids = ["coastersData","COASTERS_DATA","data","json","coasters_json","COASTERS_JSON"];
+    for(const id of ids){
+      const el = document.getElementById(id);
+      if(el && (el.textContent || "").trim()) return el.textContent.trim();
+    }
+    // fallback: premier <script type="application/json">
+    const scripts = Array.from(document.querySelectorAll('script[type="application/json"]'));
+    for(const s of scripts){
+      const t = (s.textContent || "").trim();
+      if(t.startsWith("[") || t.startsWith("{")) return t;
+    }
+    return "";
   }
 
   function normalizeFacetValue(facetId, raw){
@@ -1263,7 +1273,10 @@ function sortRows(list, mode1, mode2, f){
   }
 
   try{
-    const rows = decodeDataB64(COASTERS_DATA_B64);
+    const embedded = getEmbeddedJsonText();
+    const rows = embedded ? JSON.parse(embedded) : [];
+    const cnt = document.getElementById("dataCount");
+    if(cnt) cnt.textContent = String(Array.isArray(rows) ? rows.length : "—");
     bootWithRows(rows);
   } catch(e){
     console.error(e);

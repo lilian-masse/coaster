@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 2</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -774,24 +774,93 @@ function sortRows(list, mode1, mode2, f){
   function getRange(id){
     const abs = sliderAbs[id];
     const ui = sliderUI[id];
-
     if(!abs || !ui) return null;
 
-    // Même si le slider est désactivé temporairement ou si sliderVal n'est pas prêt,
-    // on tente de lire les valeurs actuelles des inputs. Sinon, on retombe sur abs.
     const readNum = (el, fallback)=>{
       const n = Number(el?.value);
       return Number.isFinite(n) ? n : fallback;
     };
 
-    let min = readNum(ui.minEl, abs.min);
-    let max = readNum(ui.maxEl, abs.max);
-
-    min = Math.round(min);
-    max = Math.round(max);
+    let min = Math.round(readNum(ui.minEl, abs.min));
+    let max = Math.round(readNum(ui.maxEl, abs.max));
     if(min > max){ const t=min; min=max; max=t; }
 
     return {min, max};
+  }
+
+  // ✅ SVG train helper (utilisé par updateTrainPreview)
+  function buildSvg(seatsX, rowsX, carsX, caption, minOverlay){
+    const seats = Math.max(1, Math.round(Number(seatsX)));
+    const rows  = Math.max(1, Math.round(Number(rowsX)));
+    const cars  = Math.max(1, Math.round(Number(carsX)));
+
+    const hasMin = !!minOverlay &&
+      Number.isFinite(Number(minOverlay.seats)) &&
+      Number.isFinite(Number(minOverlay.rows)) &&
+      Number.isFinite(Number(minOverlay.cars));
+
+    const seatsMin = hasMin ? Math.max(1, Math.round(Number(minOverlay.seats))) : 0;
+    const rowsMin  = hasMin ? Math.max(1, Math.round(Number(minOverlay.rows)))  : 0;
+    const carsMin  = hasMin ? Math.max(1, Math.round(Number(minOverlay.cars)))  : 0;
+
+    const seatR = 4;
+    const seatGapX = 12;
+    const seatGapY = 12;
+    const pad = 14;
+    const carPad = 10;
+
+    const carW = carPad*2 + (rows-1)*seatGapX + seatR*2;
+    const carH = carPad*2 + (seats-1)*seatGapY + seatR*2;
+    const carGap = 18;
+
+    const svgW = pad*2 + cars*carW + (cars-1)*carGap;
+    const svgH = pad*2 + carH + 34;
+
+    let svg = `
+      <div style="margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;margin:4px 0 8px">${esc(caption)}</div>
+        <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="${esc(caption)}">
+          <rect x="0" y="0" width="${svgW}" height="${svgH}" rx="12" ry="12" fill="white" stroke="#eee"/>
+    `;
+
+    for(let ci=0; ci<cars; ci++){
+      const x0 = pad + ci*(carW + carGap);
+      const y0 = pad;
+
+      svg += `
+        <g>
+          <rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>
+      `;
+
+      for(let rr=0; rr<rows; rr++){
+        for(let ss=0; ss<seats; ss++){
+          const cx = x0 + carPad + seatR + rr*seatGapX;
+          const cy = y0 + carPad + seatR + ss*seatGapY;
+
+          // ✅ gris si le siège appartient à la config MIN
+          const inMin = hasMin && (ci < carsMin) && (rr < rowsMin) && (ss < seatsMin);
+          const fill = inMin ? "#d0d0d0" : "#ffffff";
+          const stroke = inMin ? "#666" : "#cccccc";
+          const sw = inMin ? 1.4 : 1;
+
+          svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+        }
+      }
+
+      svg += `<text x="${x0 + carW/2}" y="${y0 + carH + 18}" text-anchor="middle" font-size="12" fill="#666">Voiture ${ci+1}</text>`;
+      svg += `</g>`;
+    }
+
+    const seatsPerCar = seats * rows;
+    const seatsPerTrain = seatsPerCar * cars;
+
+    svg += `
+          <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${seats}×${rows}×${cars} = ${seatsPerTrain} sièges/train (${seatsPerCar} sièges/voit.)</text>
+        </svg>
+      </div>
+    `;
+
+    return svg;
   }
 
   function enforceSeatConstraints(){
@@ -804,18 +873,39 @@ function sortRows(list, mode1, mode2, f){
   }
 
   function updateTrainPreview(){
-  const metaEl = $("trainMeta");
-  const previewEl = $("trainPreview");
-  if(!metaEl || !previewEl) return;
+    const metaEl = $("trainMeta");
+    const previewEl = $("trainPreview");
+    if(!metaEl || !previewEl) return;
 
-  const A = getRange("seatsPerRow");
-  const B = getRange("rowsPerCar");
-  const D = getRange("carsPerTrain");
+    const A = getRange("seatsPerRow");
+    const B = getRange("rowsPerCar");
+    const D = getRange("carsPerTrain");
 
-  if(!A || !B || !D){
-    metaEl.textContent = "Sélectionnez des plages pour Sièges/rang., Rangées/voit. et Voit./train.";
-    previewEl.innerHTML = `<div class="empty">Prévisualisation indisponible.</div>`;
-    return;
+    if(!A || !B || !D){
+      metaEl.textContent = "Sélectionnez des plages pour Sièges/rang., Rangées/voit. et Voit./train.";
+      previewEl.innerHTML = `<div class="empty">Prévisualisation indisponible.</div>`;
+      return;
+    }
+
+    const seatsMax = Math.max(1, Math.round(A.max));
+    const rowsMax  = Math.max(1, Math.round(B.max));
+    const carsMax  = Math.max(1, Math.round(D.max));
+
+    const seatsMin = Math.max(1, Math.round(A.min));
+    const rowsMin  = Math.max(1, Math.round(B.min));
+    const carsMin  = Math.max(1, Math.round(D.min));
+
+    const fmt = (r)=> `${Math.round(r.min)} → ${Math.round(r.max)}`;
+    metaEl.textContent = `Sièges/rang.: ${fmt(A)} · Rangées/voit.: ${fmt(B)} · Voit./train: ${fmt(D)}`;
+
+    // ✅ On n’affiche QUE la configuration MAX, mais on grise les sièges du bloc MIN.
+    previewEl.innerHTML = buildSvg(
+      seatsMax,
+      rowsMax,
+      carsMax,
+      "Train — configuration MAX (borne sup.)",
+      { seats: seatsMin, rows: rowsMin, cars: carsMin }
+    );
   }
 
   const fmt = (r)=> `${Math.round(r.min)} → ${Math.round(r.max)}`;

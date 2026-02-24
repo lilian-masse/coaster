@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 2</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -285,6 +285,8 @@ const FACET_SPECS = [
   { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
   { id:"park", label:"Parc", candidates:["Parc","Park"] },
   { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
+
+  // ✅ sans barre "Filtrer…"
   { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"], search:false },
   { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"], search:false },
   { id:"structure", label:"Structure", candidates:["Structure","Structure type"], search:false },
@@ -315,7 +317,7 @@ function createFacetBox(spec){
   box.className = "box";
   box.innerHTML = `
     <div class="boxTitle">${esc(spec.label)}</div>
-    ${spec.search === false ? "" : '<input id="search_'+spec.id+'" placeholder="Filtrer…">'}
+    <input id="search_${spec.id}" placeholder="Filtrer…">
     <div id="list_${spec.id}" class="listWrap">
       <div id="banner_${spec.id}" class="selBanner"></div>
       <div id="items_${spec.id}"></div>
@@ -491,17 +493,6 @@ function sortRows(list, mode1, mode2, f){
 
   function createFacetUI(){
     facetBar.innerHTML = "";
-
-    const NO_SEARCH_IDS = new Set([
-      "propulsion",
-      "launchAngle",
-      "structure",
-      "particularity",
-      "rotation",
-      "layout",
-      "restraint",
-    ]);
-
     for(const spec of FACET_SPECS){
       const box = createFacetBox(spec);
       facetBar.appendChild(box);
@@ -512,8 +503,8 @@ function sortRows(list, mode1, mode2, f){
       const bannerEl = box.querySelector(`#banner_${spec.id}`);
       const clearBtn = box.querySelector(`#clear_${spec.id}`);
 
-      // ✅ Suppression de la barre "Filtrer…" pour certains filtres
-      if(NO_SEARCH_IDS.has(spec.id) && searchEl){
+      // ✅ Pour certains facets, on supprime la barre "Filtrer…" (requis)
+      if(spec.search === false && searchEl){
         searchEl.remove();
       }
 
@@ -522,8 +513,9 @@ function sortRows(list, mode1, mode2, f){
 
       clearBtn.addEventListener("click", ()=>{ selected[spec.id].clear(); render(); });
 
-      if(searchEl && !NO_SEARCH_IDS.has(spec.id)){
-        if(searchEl){ searchEl.addEventListener("input", ()=> drawFacetList(spec.id)); }
+      // Si la barre de recherche a été supprimée, on n'ajoute pas de listener
+      if(searchEl){
+        searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
       }
 
       listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
@@ -756,6 +748,7 @@ function sortRows(list, mode1, mode2, f){
       return;
     }
 
+    // ✅ Si la barre de recherche a été supprimée, pas de filtre texte.
     const q = ui.searchEl ? norm(ui.searchEl.value) : "";
     const selectedSet = selected[facetId];
     const counts = computeFacetCounts(facetId);
@@ -765,7 +758,7 @@ function sortRows(list, mode1, mode2, f){
     let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
 
     options = sortOptionsSelectedCountStable(facetId, options, counts, selectedSet);
-    const shown = options.filter(v => norm(v).includes(q));
+    const shown = q ? options.filter(v => norm(v).includes(q)) : options;
 
     ui.itemsEl.innerHTML = shown.map(v=>{
       const c = counts.get(v) || 0;
@@ -919,13 +912,81 @@ function sortRows(list, mode1, mode2, f){
     const rowsMin  = Math.max(1, Math.round(B.min));
     const carsMin  = Math.max(1, Math.round(D.min));
 
-    // ✅ On n'affiche PLUS la configuration MIN : seulement MAX, avec MIN grisée.
-    previewEl.innerHTML = buildSvg(seatsMax, rowsMax, carsMax, {
-      seatsMin,
-      rowsMin,
-      carsMin,
-      caption: "Train — configuration MAX (borne sup.)",
-    });
+    // ✅ buildSvg unique : rendu MAX avec surlignage MIN
+    function buildSvg(seatsX, rowsX, carsX, minCfg){
+      const sDraw = Math.max(1, Math.round(Number(seatsX)));
+      const rDraw = Math.max(1, Math.round(Number(rowsX)));
+      const cDraw = Math.max(1, Math.round(Number(carsX)));
+
+      const sMin = Math.max(1, Math.round(Number(minCfg?.seats ?? 1)));
+      const rMin = Math.max(1, Math.round(Number(minCfg?.rows  ?? 1)));
+      const cMin = Math.max(1, Math.round(Number(minCfg?.cars  ?? 1)));
+
+      const seatR = 4;
+      const seatGapX = 12;
+      const seatGapY = 12;
+      const pad = 14;
+      const carPad = 10;
+
+      const carW = carPad*2 + (rDraw-1)*seatGapX + seatR*2;
+      const carH = carPad*2 + (sDraw-1)*seatGapY + seatR*2;
+      const carGap = 18;
+
+      const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
+      const svgH = pad*2 + carH + 52;
+
+      let svg = `
+        <div style="margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;margin:4px 0 8px">Train — configuration MAX (borne sup.)</div>
+          <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="Configuration MAX avec surlignage MIN">
+            <defs>
+              <pattern id="minHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#777" />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#555" stroke-width="2" />
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="${svgW}" height="${svgH}" rx="12" ry="12" fill="white" stroke="#eee"/>
+      `;
+
+      for(let ci=0; ci<cDraw; ci++){
+        const x0 = pad + ci*(carW + carGap);
+        const y0 = pad;
+        svg += `<g>`;
+        svg += `<rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>`;
+
+        for(let rr=0; rr<rDraw; rr++){
+          for(let ss=0; ss<sDraw; ss++){
+            const cx = x0 + carPad + seatR + rr*seatGapX;
+            const cy = y0 + carPad + seatR + ss*seatGapY;
+
+            const isInMin = (ci < cMin && rr < rMin && ss < sMin);
+            const fill = isInMin ? "url(#minHatch)" : "#ffffff";
+            const stroke = isInMin ? "#111" : "#cccccc";
+            const sw = isInMin ? 1.8 : 1;
+
+            svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+          }
+        }
+
+        svg += `<text x="${x0 + carW/2}" y="${y0 + carH + 18}" text-anchor="middle" font-size="12" fill="#666">Voiture ${ci+1}</text>`;
+        svg += `</g>`;
+      }
+
+      const seatsPerCarX = sDraw * rDraw;
+      const seatsPerTrainX = seatsPerCarX * cDraw;
+
+      svg += `
+            <text x="${pad}" y="${svgH - 28}" font-size="12" fill="#444">${sDraw}×${rDraw}×${cDraw} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.)</text>
+            <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">Surlignage MIN = ${sMin}×${rMin}×${cMin}</text>
+          </svg>
+        </div>
+      `;
+
+      return svg;
+    }
+
+    // ✅ On n'affiche PLUS la configuration MIN séparée
+    previewEl.innerHTML = buildSvg(seatsMax, rowsMax, carsMax, {seats:seatsMin, rows:rowsMin, cars:carsMin});
   }
 
   // ✅ Prévisualisation : dans la configuration MAX, on grise les sièges de la configuration MIN

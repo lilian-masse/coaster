@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 2</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -487,12 +487,13 @@ function sortRows(list, mode1, mode2, f){
     const unit = UNIT_MAP[id] ?? "";
 
     if(id === "duration"){
-      ui.pill.textContent = `${formatDuration(minV)} → ${formatDuration(maxV)}`;
+      const minTxt = formatDuration(minV);
+      const maxTxt = formatDuration(maxV);
+      ui.pill.textContent = `${minTxt} → ${maxTxt}`;
+      if(ui.labMin) ui.labMin.textContent = minTxt;
+      if(ui.labMax) ui.labMax.textContent = maxTxt;
     } else {
       ui.pill.textContent = `${minV}${unit} → ${maxV}${unit}`;
-    }
-
-    if(id !== "duration"){
       if(ui.labMin) ui.labMin.textContent = `${minV}${unit}`;
       if(ui.labMax) ui.labMax.textContent = `${maxV}${unit}`;
     }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 2</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -134,11 +134,10 @@
 <body>
 <h1>Coasters</h1>
 
-<div class="bar">
-  <div>
-    <label>Données (JSON local)</label>
-    <input id="jsonFile" type="file" accept="application/json,.json" />
-    <div style="font-size:12px;opacity:.7;margin-top:6px">Charge <code>coasters_clean.json</code> depuis ton ordinateur (aucun fetch).</div>
+<div class="bar">  <div class="box">
+    <div class="boxTitle">Données</div>
+    <div style="font-size:13px;opacity:.85">JSON intégré dans l’HTML (<span id="dataCount">—</span> entrées)</div>
+    <div style="font-size:12px;opacity:.7;margin-top:6px">Aucun import nécessaire.</div>
   </div>
 
   <div>
@@ -222,7 +221,7 @@
 <script>
 // ✅ Mode "import local" : le JSON est chargé via un sélecteur de fichier (File API).
 const $ = (id)=>document.getElementById(id);
-const jsonFileEl = document.getElementById("jsonFile");
+// ✅ Données intégrées (plus de file input)
 
 function showError(msg){ $("err").style.display="block"; $("err").textContent = msg; }
 function clearError(){ $("err").style.display="none"; $("err").textContent = ""; }
@@ -1409,36 +1408,18 @@ function sortRows(list, mode1, mode2, f){
     render();
   }
 
-  // Démarrage : on attend un fichier.
-  let hasBooted = false;
-  if(!jsonFileEl){
-    showError("Champ de fichier introuvable (id=\"jsonFile\").");
-    return;
+    // Démarrage : données intégrées
+  try{
+    const EMBEDDED_ROWS = "+json_str+";
+    const dc = document.getElementById("dataCount");
+    if(dc) dc.textContent = String(Array.isArray(EMBEDDED_ROWS) ? EMBEDDED_ROWS.length : "—");
+    clearError();
+    bootWithRows(EMBEDDED_ROWS);
+  } catch(e){
+    console.error(e);
+    showError("Erreur de chargement des données intégrées:
+" + (e?.message ?? String(e)));
   }
-
-  showError("Charge un fichier JSON (coasters_clean.json) avec le champ ‘Données (JSON local)’ en haut.");
-
-  jsonFileEl.addEventListener("change", async ()=>{
-    const f = jsonFileEl.files && jsonFileEl.files[0];
-    if(!f) return;
-
-    // Si tu changes de fichier après init, on recharge la page (plus propre pour remettre les handlers à zéro)
-    if(hasBooted){
-      location.reload();
-      return;
-    }
-
-    try{
-      const text = await f.text();
-      const rows = JSON.parse(text);
-      clearError();
-      bootWithRows(rows);
-      hasBooted = true;
-    } catch(e){
-      console.error(e);
-      showError("Erreur de lecture du JSON:\n" + (e?.message ?? String(e)));
-    }
-  });
 
 })();
 </script>

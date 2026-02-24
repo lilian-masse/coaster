@@ -187,7 +187,7 @@
 <div class="sectionTitle">Prévisualisation du train</div>
 <div class="bar">
   <div class="box" style="grid-column:1 / -1">
-    <div class="boxTitle">Train (selon Sièges/rang., Rangées/voit., Voit./train)</div>
+    <div class="boxTitle">Train (selon Sièges/rangée, Rangées/voiture, Voitures/train)</div>
     <div id="trainMeta" style="font-size:13px;opacity:.85;margin-bottom:8px">—</div>
     <div id="trainPreview" class="trainPreview" aria-label="Prévisualisation du train"></div>
   </div>
@@ -298,15 +298,15 @@ const FACET_SPECS = [
 
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
-  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
-  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:1, integer:true },
+  { id:"height", label:"Hauteur (m)", candidates:["Hauteur","Height"], step:1, integer:true },
+  { id:"speed", label:"Vitesse (km/h)", candidates:["Vitesse","Speed"], step:1, integer:true },
   { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
-  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1, integer:true },
+  { id:"length", label:"Longueur (m)", candidates:["Longueur","Length"], step:1, integer:true },
   { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:1, integer:true },
-  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
-  { id:"seatsPerRow", label:"Sièges/rang.", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
-  { id:"rowsPerCar", label:"Rangées/voit.", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
-  { id:"carsPerTrain", label:"Voit./train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
+  { id:"capacity", label:"Débit (personnes/h)", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
+  { id:"seatsPerRow", label:"Sièges/rangée", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
+  { id:"rowsPerCar", label:"Rangées/voiture", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
+  { id:"carsPerTrain", label:"Voitures/train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
 ];
 
 const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];

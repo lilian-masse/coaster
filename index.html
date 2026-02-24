@@ -298,12 +298,12 @@ const FACET_SPECS = [
 
 const NUM_SPECS = [
   { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
-  { id:"height", label:"Hauteur (m)", candidates:["Hauteur","Height"], step:1, integer:true },
-  { id:"speed", label:"Vitesse (km/h)", candidates:["Vitesse","Speed"], step:1, integer:true },
+  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
+  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:1, integer:true },
   { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
-  { id:"length", label:"Longueur (m)", candidates:["Longueur","Length"], step:1, integer:true },
+  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1, integer:true },
   { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:1, integer:true },
-  { id:"capacity", label:"Débit (personnes/h)", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
+  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
   { id:"seatsPerRow", label:"Sièges/rangée", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
   { id:"rowsPerCar", label:"Rangées/voiture", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
   { id:"carsPerTrain", label:"Voitures/train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
@@ -466,29 +466,28 @@ function sortRows(list, mode1, mode2, f){
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
+        const UNIT_MAP = {
+      height:" m",
+      speed:" km/h",
+      length:" m",
+      capacity:" personnes/h",
+      seatsPerRow:"",
+      rowsPerCar:"",
+      carsPerTrain:""
+    };
+
+    const unit = UNIT_MAP[id] ?? "";
+
     if(id === "duration"){
-      const m1 = Math.floor(minV / 100);
-      const s1 = minV % 100;
-      const m2 = Math.floor(maxV / 100);
-      const s2 = maxV % 100;
-
-      if(ui.labMin) ui.labMin.textContent = (m1 === 0) ? `${s1} s` : `${m1} min ${s1} s`;
-      if(ui.labMax) ui.labMax.textContent = (m2 === 0) ? `${s2} s` : `${m2} min ${s2} s`;
+      ui.pill.textContent = `${formatDuration(minV)} → ${formatDuration(maxV)}`;
     } else {
-      if(ui.labMin) ui.labMin.textContent = String(minV);
-      if(ui.labMax) ui.labMax.textContent = String(maxV);
+      ui.pill.textContent = `${minV}${unit} → ${maxV}${unit}`;
     }
 
-    function formatDuration(sec){
-      const raw = Math.max(0, Math.round(sec));
-      const m = Math.floor(raw / 100);
-      const s = raw % 100;
-      if(m === 0) return `${s} s`;
-      return `${m} min ${s} s`;
+    if(id !== "duration"){
+      if(ui.labMin) ui.labMin.textContent = `${minV}${unit}`;
+      if(ui.labMax) ui.labMax.textContent = `${maxV}${unit}`;
     }
-
-    if(id === "duration") ui.pill.textContent = `${formatDuration(minV)} → ${formatDuration(maxV)}`;
-    else ui.pill.textContent = `${minV} → ${maxV}`;
   }
 
   function createFacetUI(){

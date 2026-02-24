@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 1</title>
+<title>Coasters — 2</title>
 
 <style>
   :root{
@@ -466,7 +466,15 @@ function sortRows(list, mode1, mode2, f){
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
-        const UNIT_MAP = {
+        function formatDuration(sec){
+      const raw = Math.max(0, Math.round(sec));
+      const m = Math.floor(raw / 100);
+      const s = raw % 100;
+      if(m === 0) return `${s} s`;
+      return `${m} min ${s} s`;
+    }
+
+    const UNIT_MAP = {
       height:" m",
       speed:" km/h",
       length:" m",

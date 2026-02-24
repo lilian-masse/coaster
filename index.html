@@ -814,22 +814,11 @@ function sortRows(list, mode1, mode2, f){
 
     if(!A || !B || !C){
       metaEl.textContent = "Sélectionnez des plages pour Sièges/rang., Rangées/voit. et Voit./train.";
-      previewEl.innerHTML = "";
-      return;
-    }
-
-    const seats = Math.max(1, Math.round(A.max));
-    const rows  = Math.max(1, Math.round(B.max));
-    const cars  = Math.max(1, Math.round(C.max));
-
-    const seatsMin = Math.max(1, Math.round(A.min));
-    const rowsMin  = Math.max(1, Math.round(B.min));
-    const carsMin  = Math.max(1, Math.round(C.min));
-
-    metaEl.textContent =
-      `Sièges/rang.: ${A.min} → ${A.max} · ` +
-      `Rangées/voit.: ${B.min} → ${B.max} · ` +
-      `Voit./train: ${C.min} → ${C.max}`;
+      previewEl.innerHTML =
+      `<div style="margin-bottom:12px">
+         <div style="font-size:13px;font-weight:700;margin:4px 0 8px">Train — configuration MAX (borne sup.)</div>
+         ${buildSvg(seats, rows, cars, { seats: seatsMin, rows: rowsMin, cars: carsMin })}
+       </div>`;
 
     // --- rendu SVG ---
     const seatR = 4;

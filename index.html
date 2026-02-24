@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 1</title>
+<title>Coasters — 2</title>
 
 <style>
   :root{
@@ -285,13 +285,13 @@ const FACET_SPECS = [
   { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
   { id:"park", label:"Parc", candidates:["Parc","Park"] },
   { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
-  { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"] },
-  { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"] },
-  { id:"structure", label:"Structure", candidates:["Structure","Structure type"] },
-  { id:"particularity", label:"Particularité", candidates:["Particularite","Particularité","Particularity","Spécificité","Specificite"] },
-  { id:"rotation", label:"Rotation", candidates:["Rotation","Rotating"] },
-  { id:"layout", label:"Disposition", candidates:["Disposition","Layout","Implantation"] },
-  { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"] },
+  { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"], search:false },
+  { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"], search:false },
+  { id:"structure", label:"Structure", candidates:["Structure","Structure type"], search:false },
+  { id:"particularity", label:"Particularité", candidates:["Particularite","Particularité","Particularity","Spécificité","Specificite"], search:false },
+  { id:"rotation", label:"Rotation", candidates:["Rotation","Rotating"], search:false },
+  { id:"layout", label:"Disposition", candidates:["Disposition","Layout","Implantation"], search:false },
+  { id:"restraint", label:"Sécurité", candidates:["Securite","Sécurité","Restraint","Restraints"], search:false },
 ];
 
 const NUM_SPECS = [
@@ -315,7 +315,7 @@ function createFacetBox(spec){
   box.className = "box";
   box.innerHTML = `
     <div class="boxTitle">${esc(spec.label)}</div>
-    <input id="search_${spec.id}" placeholder="Filtrer…">
+    ${spec.search === false ? "" : '<input id="search_'+spec.id+'" placeholder="Filtrer…">'}
     <div id="list_${spec.id}" class="listWrap">
       <div id="banner_${spec.id}" class="selBanner"></div>
       <div id="items_${spec.id}"></div>
@@ -523,7 +523,7 @@ function sortRows(list, mode1, mode2, f){
       clearBtn.addEventListener("click", ()=>{ selected[spec.id].clear(); render(); });
 
       if(searchEl && !NO_SEARCH_IDS.has(spec.id)){
-        searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
+        if(searchEl){ searchEl.addEventListener("input", ()=> drawFacetList(spec.id)); }
       }
 
       listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
@@ -751,12 +751,12 @@ function sortRows(list, mode1, mode2, f){
 
     if(!key){
       ui.itemsEl.innerHTML = `<div class="empty">Champ introuvable</div>`;
-      ui.searchEl.disabled = true;
+      if(ui.searchEl) ui.searchEl.disabled = true;
       updateSelectedBanner(facetId);
       return;
     }
 
-    const q = norm(ui.searchEl.value);
+    const q = ui.searchEl ? norm(ui.searchEl.value) : "";
     const selectedSet = selected[facetId];
     const counts = computeFacetCounts(facetId);
 
@@ -1453,7 +1453,7 @@ function sortRows(list, mode1, mode2, f){
 
       for(const spec of FACET_SPECS){
         selected[spec.id].clear();
-        facetUI[spec.id].searchEl.value = "";
+        if(facetUI[spec.id].searchEl) facetUI[spec.id].searchEl.value = "";
         facetUI[spec.id].listEl.scrollTop = 0;
       }
 

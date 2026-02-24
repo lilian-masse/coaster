@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Coasters — 2</title>
+<title>Coasters — 1</title>
 
 <style>
   :root{
@@ -223,29 +223,50 @@
 </script>
 
 <script>
-// ✅ Données : JSON intégré (plus de file input).
-const $ = (id)=>document.getElementById(id);
-// ✅ Données intégrées (plus de file input)
+// Données intégrées (base64 UTF‑8) — aucune lecture de fichier nécessaire.
+const COASTERS_DATA_B64 = "REPLACE_B64";
 
-function showError(msg){ $("err").style.display="block"; $("err").textContent = msg; }
-function clearError(){ $("err").style.display="none"; $("err").textContent = ""; }
+const $ = (id)=>document.getElementById(id);
+
+function showError(msg){ const el=$("err"); if(!el) return; el.style.display="block"; el.textContent = msg; }
+function clearError(){ const el=$("err"); if(!el) return; el.style.display="none"; el.textContent = ""; }
+
+function stripDiacritics(s){
+  const n = String(s ?? "").normalize("NFD");
+  let out = "";
+  for(let i=0;i<n.length;i++){
+    const c = n.charCodeAt(i);
+    if(c >= 0x0300 && c <= 0x036F) continue;
+    out += n[i];
+  }
+  return out;
+}
 
 function norm(s){
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/\s+/g," ")
+  return stripDiacritics(String(s ?? "").toLowerCase())
+    .split(" ").filter(Boolean).join(" ")
     .trim();
 }
+
 function esc(s){
   return String(s ?? "")
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/\"/g,"&quot;").replace(/'/g,"&#039;");
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
+
 function toNumber(v){
   const s = String(v ?? "").trim();
   if(!s) return null;
-  const cleaned = s.replace(/[^0-9.\-]/g,"");
+  let cleaned = "";
+  for(const ch of s){
+    const cc = ch.charCodeAt(0);
+    const isDigit = cc >= 48 && cc <= 57;
+    if(isDigit || ch === "." || ch === "-") cleaned += ch;
+  }
+  if(!cleaned || cleaned === "-" || cleaned === ".") return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
@@ -264,32 +285,40 @@ function toYear(v){
   return null;
 }
 function titleizeKey(k){
-  const s = String(k ?? "").replace(/_/g," ").trim();
+  const s = String(k ?? "").replaceAll("_"," ").trim();
   if(!s) return "Champ";
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 function sortFamily(mode){ return String(mode||"").split("_")[0]; }
 function pickField(obj, candidates){
   const keys = Object.keys(obj || {});
-  const map = new Map(keys.map(k => [norm(k), k]));
+  const normMap = new Map(keys.map(k => [norm(k), k]));
   for(const c of candidates){
-    const hit = map.get(norm(c));
+    const hit = normMap.get(norm(c));
     if(hit) return hit;
   }
   for(const k of keys){
     const nk = norm(k);
-    if(candidates.some(c => nk.includes(norm(c)))) return k;
+    for(const c of candidates){
+      if(nk.includes(norm(c))) return k;
+    }
   }
   return null;
 }
 
-/* ---------- Specs ---------- */
-const FACET_SPECS = [
-  { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"] },
-  { id:"park", label:"Parc", candidates:["Parc","Park"] },
-  { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"] },
+// Durée stockée comme "mss" (ex: 550 => 5min50)
+function formatDurationMMSS(v){
+  const raw = Math.max(0, Math.round(Number(v)||0));
+  const m = Math.floor(raw / 100);
+  const s = raw % 100;
+  if(m === 0) return `${s} s`;
+  return `${m} min ${s} s`;
+}
 
-  // ✅ sans barre "Filtrer…"
+const FACET_SPECS = [
+  { id:"maker", label:"Fabricant", candidates:["Fabricant","Manufacturer","Constructeur","Builder","Maker"], search:true },
+  { id:"park", label:"Parc", candidates:["Parc","Park"], search:true },
+  { id:"model", label:"Modèle", candidates:["Modele","Modèle","Model"], search:true },
   { id:"propulsion", label:"Propulsion", candidates:["Propulsion","Launch","Type de propulsion"], search:false },
   { id:"launchAngle", label:"Angle de propulsion", candidates:["Angle de propulsion","Launch angle","Angle propulsion"], search:false },
   { id:"structure", label:"Structure", candidates:["Structure","Structure type"], search:false },
@@ -300,37 +329,36 @@ const FACET_SPECS = [
 ];
 
 const NUM_SPECS = [
-  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true, step:1, integer:true },
-  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], step:1, integer:true },
-  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], step:1, integer:true },
-  { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"], step:1, integer:true },
-  { id:"length", label:"Longueur", candidates:["Longueur","Length"], step:1, integer:true },
-  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], step:1, integer:true },
-  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], step:1, integer:true },
-  { id:"seatsPerRow", label:"Sièges/rangée", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], step:1, integer:true },
-  { id:"rowsPerCar", label:"Rangées/voiture", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], step:1, integer:true },
-  { id:"carsPerTrain", label:"Voitures/train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], step:1, integer:true },
+  { id:"year", label:"Ouverture", candidates:["Ouverture","Année","Annee","Year","Opened","Opening year"], isYear:true },
+  { id:"height", label:"Hauteur", candidates:["Hauteur","Height"], unit:"m" },
+  { id:"speed", label:"Vitesse", candidates:["Vitesse","Speed"], unit:"km/h" },
+  { id:"inversions", label:"Inversions", candidates:["Inversions","Inversion"] },
+  { id:"length", label:"Longueur", candidates:["Longueur","Length"], unit:"m" },
+  { id:"duration", label:"Durée", candidates:["Duree","Durée","Duration"], isDuration:true },
+  { id:"capacity", label:"Débit", candidates:["Debit","Débit","Capacity","Throughput"], unit:"personnes/h" },
+  { id:"seatsPerRow", label:"Sièges/rangée", candidates:["Sièges","Sieges","Sieges/rang.","Sièges/rang.","Seats/row","Seats per row","Sieges par rang"], unit:"Sièges/rangée" },
+  { id:"rowsPerCar", label:"Rangées/voiture", candidates:["Rangées","Rangees","Rangees/voit.","Rangées/voit.","Rows/car","Rows per car","Rangees par voiture"], unit:"Rangées/voiture" },
+  { id:"carsPerTrain", label:"Voitures/train", candidates:["Voit./train","Cars/train","Cars per train","Voitures/train"], unit:"Voitures/train" },
 ];
 
 const WATER_CANDIDATES = ["Eau","Water","Splash","Aquatique"];
 
-/* ---------- UI builders ---------- */
 function createFacetBox(spec){
   const box = document.createElement("div");
   box.className = "box";
+  const searchHTML = (spec.search === false) ? "" : `<input id="search_${spec.id}" placeholder="Filtrer…">`;
   box.innerHTML = `
     <div class="boxTitle">${esc(spec.label)}</div>
-    <input id="search_${spec.id}" placeholder="Filtrer…">
+    ${searchHTML}
     <div id="list_${spec.id}" class="listWrap">
       <div id="banner_${spec.id}" class="selBanner"></div>
       <div id="items_${spec.id}"></div>
     </div>
-    <div class="tools">
-      <button id="clear_${spec.id}" type="button">Effacer</button>
-    </div>
+    <div class="tools"><button id="clear_${spec.id}" type="button">Effacer</button></div>
   `;
   return box;
 }
+
 function createDualSlider(spec){
   const wrap = document.createElement("div");
   wrap.className = "rangeWrap";
@@ -353,16 +381,15 @@ function createDualSlider(spec){
   return wrap;
 }
 
-/* ---------- Sorting ---------- */
 function sortRows(list, mode1, mode2, f){
   const getYear = (r)=> f.year ? (toYear(r[f.year]) ?? null) : null;
   const getPark = (r)=> f.park ? String(r[f.park] ?? "") : "";
-  function cmp(mode, a, b){
+  const cmp = (mode, a, b)=>{
     if(mode === "year_desc") return (getYear(b) ?? -Infinity) - (getYear(a) ?? -Infinity);
     if(mode === "year_asc")  return (getYear(a) ?? Infinity) - (getYear(b) ?? Infinity);
     if(mode === "park_asc")  return getPark(a).localeCompare(getPark(b), "fr");
     return 0;
-  }
+  };
   return list.slice().sort((a,b)=>{
     let c = cmp(mode1,a,b); if(c!==0) return c;
     c = cmp(mode2,a,b); if(c!==0) return c;
@@ -371,7 +398,7 @@ function sortRows(list, mode1, mode2, f){
   });
 }
 
-(async function(){
+(function(){
   clearError();
 
   const facetBar = $("facetBar");
@@ -390,23 +417,28 @@ function sortRows(list, mode1, mode2, f){
   const modalSubEl = $("modalSub");
   const modalGridEl = $("modalGrid");
 
+  const selected = {};
+  const facetUI = {};
+  const sliderUI = {};
+  const sliderAbs = {};
+  const sliderVal = {};
+  const facetMasterOptions = {};
+  const facetStableRank = {};
+
   let allRows = [];
   let fields = {};
   let numFields = {};
   let waterField = null;
 
-  const selected = {};
-  const facetUI = {};
-  const sliderUI = {};
-  const sliderAbs = {};
-  const sliderDyn = {};
-  const sliderVal = {};
-  const facetMasterOptions = {};
-  const facetStableRank = {};
-
   let waterOnly = false;
   let lastRendered = [];
   let currentIndex = -1;
+
+  function decodeDataB64(b64){
+    const bytes = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+    const jsonStr = new TextDecoder("utf-8").decode(bytes);
+    return JSON.parse(jsonStr);
+  }
 
   function normalizeFacetValue(facetId, raw){
     let v = String(raw ?? "").trim();
@@ -419,14 +451,14 @@ function sortRows(list, mode1, mode2, f){
     if(waterField){
       const s = norm(row[waterField]);
       if(!s) return false;
-      return ["1","true","oui","yes","y","water","eau","splash"].some(t => s === t || s.includes(t));
+      const tokens = ["1","true","oui","yes","y","water","eau","splash"];
+      for(const t of tokens){
+        if(s === t || s.includes(t)) return true;
+      }
+      return false;
     }
     const blob = Object.values(row).map(v=>String(v??"")).join(" ").toLowerCase();
     return blob.includes("eau") || blob.includes("water") || blob.includes("splash");
-  }
-
-  function computeDerivedSeats(row){
-    // (placeholder si tu veux dériver seatsPerCar etc.)
   }
 
   function clampSwap(minEl, maxEl){
@@ -437,7 +469,13 @@ function sortRows(list, mode1, mode2, f){
       minEl.value = String(a);
       maxEl.value = String(b);
     }
-    return {min:a, max:b};
+  }
+
+  function formatValueForSpec(spec, v){
+    if(spec.isDuration) return formatDurationMMSS(v);
+    const n = Math.round(Number(v));
+    if(spec.unit) return `${n} ${spec.unit}`;
+    return String(n);
   }
 
   function updateDualUI(id){
@@ -445,61 +483,33 @@ function sortRows(list, mode1, mode2, f){
     const abs = sliderAbs[id];
     if(!ui || !abs || ui.minEl.disabled || ui.maxEl.disabled) return;
 
-    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
-    const dyn = SEAT_IDS.has(id) ? abs : (sliderDyn[id] || abs);
-
-    ui.minEl.min = String(dyn.min);
-    ui.maxEl.min = String(dyn.min);
-    ui.minEl.max = String(dyn.max);
-    ui.maxEl.max = String(dyn.max);
-
     let minV = Math.round(Number(ui.minEl.value));
     let maxV = Math.round(Number(ui.maxEl.value));
-    minV = Math.max(dyn.min, Math.min(dyn.max, minV));
-    maxV = Math.max(dyn.min, Math.min(dyn.max, maxV));
+
+    minV = Math.max(abs.min, Math.min(abs.max, minV));
+    maxV = Math.max(abs.min, Math.min(abs.max, maxV));
     if(minV > maxV){ const t=minV; minV=maxV; maxV=t; }
+
+    ui.minEl.min = String(abs.min);
+    ui.maxEl.min = String(abs.min);
+    ui.minEl.max = String(abs.max);
+    ui.maxEl.max = String(abs.max);
+
     ui.minEl.value = String(minV);
     ui.maxEl.value = String(maxV);
 
     sliderVal[id] = {min:minV, max:maxV};
 
-    const total = (dyn.max - dyn.min) || 1;
-    const left = ((minV - dyn.min) / total) * 100;
-    const right = ((maxV - dyn.min) / total) * 100;
+    const total = (abs.max - abs.min) || 1;
+    const left = ((minV - abs.min) / total) * 100;
+    const right = ((maxV - abs.min) / total) * 100;
     ui.fillEl.style.left = left + "%";
     ui.fillEl.style.width = Math.max(0, right - left) + "%";
 
-        function formatDuration(sec){
-      const raw = Math.max(0, Math.round(sec));
-      const m = Math.floor(raw / 100);
-      const s = raw % 100;
-      if(m === 0) return `${s} s`;
-      return `${m} min ${s} s`;
-    }
-
-    const UNIT_MAP = {
-      height:" m",
-      speed:" km/h",
-      length:" m",
-      capacity:" personnes/h",
-      seatsPerRow:" sièges/rangée",
-      rowsPerCar:" rangées/voiture",
-      carsPerTrain:" voitures/train"
-    };
-
-    const unit = UNIT_MAP[id] ?? "";
-
-    if(id === "duration"){
-      const minTxt = formatDuration(minV);
-      const maxTxt = formatDuration(maxV);
-      ui.pill.textContent = `${minTxt} → ${maxTxt}`;
-      if(ui.labMin) ui.labMin.textContent = minTxt;
-      if(ui.labMax) ui.labMax.textContent = maxTxt;
-    } else {
-      ui.pill.textContent = `${minV}${unit} → ${maxV}${unit}`;
-      if(ui.labMin) ui.labMin.textContent = `${minV}${unit}`;
-      if(ui.labMax) ui.labMax.textContent = `${maxV}${unit}`;
-    }
+    const spec = ui.spec;
+    ui.labMin.textContent = formatValueForSpec(spec, minV);
+    ui.labMax.textContent = formatValueForSpec(spec, maxV);
+    ui.pill.textContent = `${formatValueForSpec(spec, minV)} → ${formatValueForSpec(spec, maxV)}`;
   }
 
   function createFacetUI(){
@@ -514,21 +524,11 @@ function sortRows(list, mode1, mode2, f){
       const bannerEl = box.querySelector(`#banner_${spec.id}`);
       const clearBtn = box.querySelector(`#clear_${spec.id}`);
 
-      // ✅ Pour certains facets, on supprime la barre "Filtrer…" (requis)
-      if(spec.search === false && searchEl){
-        searchEl.remove();
-      }
-
       facetUI[spec.id] = {searchEl, listEl, itemsEl, bannerEl, clearBtn};
       selected[spec.id] = new Set();
 
       clearBtn.addEventListener("click", ()=>{ selected[spec.id].clear(); render(); });
-
-      // Si la barre de recherche a été supprimée, on n'ajoute pas de listener
-      if(searchEl){
-        searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
-      }
-
+      if(searchEl) searchEl.addEventListener("input", ()=> drawFacetList(spec.id));
       listEl.addEventListener("scroll", ()=> updateSelectedBanner(spec.id));
     }
   }
@@ -562,12 +562,12 @@ function sortRows(list, mode1, mode2, f){
         ui.minEl.disabled = true;
         ui.maxEl.disabled = true;
         ui.pill.textContent = "— (champ introuvable)";
-        if(ui.labMin) ui.labMin.textContent = "—";
-        if(ui.labMax) ui.labMax.textContent = "—";
+        ui.labMin.textContent = "—";
+        ui.labMax.textContent = "—";
         continue;
       }
 
-      let values = allRows
+      const values = allRows
         .map(r => spec.isYear ? toYear(r[key]) : toInt(r[key]))
         .filter(v => Number.isFinite(v));
 
@@ -575,22 +575,19 @@ function sortRows(list, mode1, mode2, f){
         ui.minEl.disabled = true;
         ui.maxEl.disabled = true;
         ui.pill.textContent = "— (pas de valeurs)";
-        if(ui.labMin) ui.labMin.textContent = "—";
-        if(ui.labMax) ui.labMax.textContent = "—";
+        ui.labMin.textContent = "—";
+        ui.labMax.textContent = "—";
         continue;
       }
 
-      let min = Math.floor(Math.min(...values));
-      let max = Math.ceil(Math.max(...values));
-
-      sliderAbs[spec.id] = {min, max, step:1, integer:true};
-      sliderDyn[spec.id] = {min, max};
+      const min = Math.floor(Math.min(...values));
+      const max = Math.ceil(Math.max(...values));
+      sliderAbs[spec.id] = {min, max};
 
       ui.minEl.step = "1";
       ui.maxEl.step = "1";
       ui.minEl.value = String(min);
       ui.maxEl.value = String(max);
-
       updateDualUI(spec.id);
     }
   }
@@ -619,14 +616,14 @@ function sortRows(list, mode1, mode2, f){
       const ui = sliderUI[spec.id];
       if(!key || !ui || ui.minEl.disabled) continue;
 
-      const {min, max} = sliderVal[spec.id] || sliderAbs[spec.id];
+      const abs = sliderAbs[spec.id];
+      const range = sliderVal[spec.id] || abs;
       const val = spec.isYear ? toYear(row[key]) : toInt(row[key]);
 
       if(val === null){
-        const abs = sliderAbs[spec.id];
-        if(min !== abs.min || max !== abs.max) return false;
+        if(range.min !== abs.min || range.max !== abs.max) return false;
       } else {
-        if(val < min || val > max) return false;
+        if(val < range.min || val > range.max) return false;
       }
     }
     return true;
@@ -758,14 +755,13 @@ function sortRows(list, mode1, mode2, f){
       return;
     }
 
-    // ✅ Si la barre de recherche a été supprimée, pas de filtre texte.
     const q = ui.searchEl ? norm(ui.searchEl.value) : "";
     const selectedSet = selected[facetId];
     const counts = computeFacetCounts(facetId);
 
     const baseOptions = facetMasterOptions[facetId] || [];
     const optSet = new Set([...baseOptions, ...Array.from(selectedSet)]);
-    let options = Array.from(optSet).filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+    let options = Array.from(optSet).filter(v => v && norm(v) !== "-" && norm(v) !== "—");
 
     options = sortOptionsSelectedCountStable(facetId, options, counts, selectedSet);
     const shown = q ? options.filter(v => norm(v).includes(q)) : options;
@@ -798,121 +794,48 @@ function sortRows(list, mode1, mode2, f){
   function getRange(id){
     const abs = sliderAbs[id];
     const ui = sliderUI[id];
-    if(!abs || !ui) return null;
-
-    const readNum = (el, fallback)=>{
-      const n = Number(el?.value);
-      return Number.isFinite(n) ? n : fallback;
-    };
-
-    let min = Math.round(readNum(ui.minEl, abs.min));
-    let max = Math.round(readNum(ui.maxEl, abs.max));
+    if(!abs || !ui || ui.minEl.disabled) return null;
+    let min = Math.round(Number(ui.minEl.value));
+    let max = Math.round(Number(ui.maxEl.value));
     if(min > max){ const t=min; min=max; max=t; }
-
     return {min, max};
   }
 
-  
-
-  function enforceSeatConstraints(){
-    const SEAT_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
-
-    for(const id of SEAT_IDS){
-      const abs = sliderAbs[id];
-      if(abs) sliderDyn[id] = {min: abs.min, max: abs.max};
-    }
-  }
-
-  function updateTrainPreview(){
-    const metaEl = $("trainMeta");
-    const previewEl = $("trainPreview");
-    if(!metaEl || !previewEl) return;
-
-    const A = getRange("seatsPerRow");
-    const B = getRange("rowsPerCar");
-    const D = getRange("carsPerTrain");
-
-    if(!A || !B || !D){
-      metaEl.textContent = "Sélectionnez des plages pour Sièges/rang., Rangées/voit. et Voit./train.";
-      previewEl.innerHTML = `<div class="empty">Prévisualisation indisponible.</div>`;
-      return;
-    }
-
-    const fmt = (r)=> `${Math.round(r.min)} → ${Math.round(r.max)}`;
-    metaEl.textContent = `Sièges/rang.: ${fmt(A)} · Rangées/voit.: ${fmt(B)} · Voit./train: ${fmt(D)}`;
-
-    const seatsMax = Math.max(1, Math.round(A.max));
-    const rowsMax  = Math.max(1, Math.round(B.max));
-    const carsMax  = Math.max(1, Math.round(D.max));
-
-    const seatsMin = Math.max(1, Math.round(A.min));
-    const rowsMin  = Math.max(1, Math.round(B.min));
-    const carsMin  = Math.max(1, Math.round(D.min));
-
-    
-
-    // ✅ On n'affiche PLUS la configuration MIN séparée
-        previewEl.innerHTML = buildSvg(seatsMax, rowsMax, carsMax, {
-      seatsMin: seatsMin,
-      rowsMin: rowsMin,
-      carsMin: carsMin,
-      caption: "Train — configuration MAX (borne sup.)"
-    });
-  }
-
-  // ✅ Prévisualisation : dans la configuration MAX, on grise les sièges de la configuration MIN
-  // seatsX = sièges/rangée (vertical), rowsX = rangées/voiture (horizontal), carsX = voitures
-  function buildSvg(seatsX, rowsX, carsX, overlay){
-    const sDraw = Math.max(1, Math.round(Number(seatsX)));
-    const rDraw = Math.max(1, Math.round(Number(rowsX)));
-    const cDraw = Math.max(1, Math.round(Number(carsX)));
-
-    const sMin = Math.max(1, Math.round(Number(overlay?.seatsMin ?? 1)));
-    const rMin = Math.max(1, Math.round(Number(overlay?.rowsMin  ?? 1)));
-    const cMin = Math.max(1, Math.round(Number(overlay?.carsMin  ?? 1)));
-
-    const caption = String(overlay?.caption ?? "Train — configuration MAX (borne sup.)");
-
+  function buildTrainSvg(seatsMax, rowsMax, carsMax, seatsMin, rowsMin, carsMin){
     const seatR = 4;
     const seatGapX = 12;
     const seatGapY = 12;
     const pad = 14;
     const carPad = 10;
 
-    const carW = carPad*2 + (rDraw-1)*seatGapX + seatR*2;
-    const carH = carPad*2 + (sDraw-1)*seatGapY + seatR*2;
+    const carW = carPad*2 + (rowsMax-1)*seatGapX + seatR*2;
+    const carH = carPad*2 + (seatsMax-1)*seatGapY + seatR*2;
     const carGap = 18;
 
-    const svgW = pad*2 + cDraw*carW + (cDraw-1)*carGap;
+    const svgW = pad*2 + carsMax*carW + (carsMax-1)*carGap;
     const svgH = pad*2 + carH + 34;
 
     let svg = `
       <div style="margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;margin:4px 0 8px">${esc(caption)}</div>
-        <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="${esc(caption)}">
+        <div style="font-size:13px;font-weight:700;margin:4px 0 8px">Train — configuration MAX (borne sup.)</div>
+        <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" role="img" aria-label="Train configuration MAX">
           <rect x="0" y="0" width="${svgW}" height="${svgH}" rx="12" ry="12" fill="white" stroke="#eee"/>
     `;
 
-    for(let ci=0; ci<cDraw; ci++){
+    for(let ci=0; ci<carsMax; ci++){
       const x0 = pad + ci*(carW + carGap);
       const y0 = pad;
+      svg += `<g><rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>`;
 
-      svg += `
-        <g>
-          <rect x="${x0}" y="${y0}" width="${carW}" height="${carH}" rx="12" ry="12" fill="#fafafa" stroke="#ddd"/>
-      `;
-
-      for(let rr=0; rr<rDraw; rr++){
-        for(let ss=0; ss<sDraw; ss++){
+      for(let rr=0; rr<rowsMax; rr++){
+        for(let ss=0; ss<seatsMax; ss++){
           const cx = x0 + carPad + seatR + rr*seatGapX;
           const cy = y0 + carPad + seatR + ss*seatGapY;
 
-          const isInMin = (ci < cMin && rr < rMin && ss < sMin);
-
-          // ✅ MIN = gris bien visible
-          const fill = isInMin ? "#d6d6d6" : "#ffffff";
-          const stroke = isInMin ? "#666" : "#cccccc";
-          const sw = isInMin ? 1.6 : 1;
+          const inMin = (ci < carsMin) && (rr < rowsMin) && (ss < seatsMin);
+          const fill = inMin ? "#d6d6d6" : "#ffffff";
+          const stroke = inMin ? "#666" : "#cccccc";
+          const sw = inMin ? 1.6 : 1;
 
           svg += `<circle cx="${cx}" cy="${cy}" r="${seatR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
         }
@@ -922,16 +845,36 @@ function sortRows(list, mode1, mode2, f){
       svg += `</g>`;
     }
 
-    const seatsPerCarX = sDraw * rDraw;
-    const seatsPerTrainX = seatsPerCarX * cDraw;
+    const seatsPerCar = seatsMax * rowsMax;
+    const seatsPerTrain = seatsPerCar * carsMax;
 
     svg += `
-          <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${sDraw}×${rDraw}×${cDraw} = ${seatsPerTrainX} sièges/train (${seatsPerCarX} sièges/voit.) — gris = MIN (${sMin}×${rMin}×${cMin})</text>
+          <text x="${pad}" y="${svgH - 12}" font-size="12" fill="#444">${seatsMax}×${rowsMax}×${carsMax} = ${seatsPerTrain} sièges/train (${seatsPerCar} sièges/voit.) — gris = MIN (${seatsMin}×${rowsMin}×${carsMin})</text>
         </svg>
       </div>
     `;
 
     return svg;
+  }
+
+  function updateTrainPreview(){
+    const metaEl = $("trainMeta");
+    const previewEl = $("trainPreview");
+    if(!metaEl || !previewEl) return;
+
+    const A = getRange("seatsPerRow");
+    const B = getRange("rowsPerCar");
+    const C = getRange("carsPerTrain");
+
+    if(!A || !B || !C){
+      metaEl.textContent = "Prévisualisation indisponible.";
+      previewEl.innerHTML = `<div class="empty">Prévisualisation indisponible.</div>`;
+      return;
+    }
+
+    metaEl.textContent = `Sièges/rangée: ${A.min} → ${A.max} · Rangées/voiture: ${B.min} → ${B.max} · Voitures/train: ${C.min} → ${C.max}`;
+
+    previewEl.innerHTML = buildTrainSvg(A.max, B.max, C.max, A.min, B.min, C.min);
   }
 
   function updateAllFacetUIs(){
@@ -1024,8 +967,7 @@ function sortRows(list, mode1, mode2, f){
     if(e.key==="ArrowRight"){ e.preventDefault(); nextModal(); return; }
   });
 
-  // Numeric sliders must never lead to 0 results
-  const lastGoodSliderValue = {}; // id -> {min,max}
+  const lastGoodSliderValue = {};
 
   function countResults(){
     let c = 0;
@@ -1045,6 +987,7 @@ function sortRows(list, mode1, mode2, f){
     ui.maxEl.value = String(Math.round(snap.max));
     updateDualUI(id);
   }
+
   function onNumericSliderAttempt(id){
     const ui = sliderUI[id];
     const abs = sliderAbs[id];
@@ -1055,17 +998,92 @@ function sortRows(list, mode1, mode2, f){
     clampSwap(ui.minEl, ui.maxEl);
 
     updateDualUI(id);
-    enforceSeatConstraints();
 
     const n = countResults();
     if(n === 0){
       restoreSlider(id, lastGoodSliderValue[id] || {min:abs.min, max:abs.max});
-      enforceSeatConstraints();
       render();
       return;
     }
+
     lastGoodSliderValue[id] = snapshotSlider(id) || {min:abs.min, max:abs.max};
     render();
+  }
+
+  function computeQuartiles(values){
+    const arr = values.slice().sort((a,b)=>a-b);
+    const q = (p)=>{
+      const pos = (arr.length-1)*p;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      if(arr[base+1] !== undefined) return arr[base] + rest*(arr[base+1]-arr[base]);
+      return arr[base];
+    };
+    return {q1: Math.round(q(0.25)), q3: Math.round(q(0.75))};
+  }
+
+  function enforceDefaultRowsAndCarsRules(){
+    // Rangées/voiture = 1,5× Sièges/rangée
+    const A = sliderUI.seatsPerRow;
+    const B = sliderUI.rowsPerCar;
+    const absA = sliderAbs.seatsPerRow;
+    const absB = sliderAbs.rowsPerCar;
+    if(A && B && absA && absB && !A.minEl.disabled && !B.minEl.disabled){
+      let aMin = Math.round(Number(A.minEl.value));
+      let aMax = Math.round(Number(A.maxEl.value));
+      if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
+
+      if(aMin === 1) aMin = 2;
+      if(aMin % 2 !== 0) aMin++;
+      if(aMax % 2 !== 0) aMax++;
+
+      aMin = Math.max(absA.min, Math.min(absA.max, aMin));
+      aMax = Math.max(absA.min, Math.min(absA.max, aMax));
+      if(aMax < aMin) aMax = Math.min(absA.max, aMin + 2);
+
+      let bMin = Math.ceil(aMin * 1.5);
+      let bMax = Math.ceil(aMax * 1.5);
+
+      bMin = Math.max(absB.min, Math.min(absB.max, bMin));
+      bMax = Math.max(absB.min, Math.min(absB.max, bMax));
+      if(bMax <= bMin && bMax < absB.max) bMax = bMin + 1;
+
+      A.minEl.value = String(aMin);
+      A.maxEl.value = String(aMax);
+      B.minEl.value = String(bMin);
+      B.maxEl.value = String(bMax);
+
+      updateDualUI("seatsPerRow");
+      updateDualUI("rowsPerCar");
+
+      lastGoodSliderValue.seatsPerRow = snapshotSlider("seatsPerRow") || {min:absA.min, max:absA.max};
+      lastGoodSliderValue.rowsPerCar  = snapshotSlider("rowsPerCar")  || {min:absB.min, max:absB.max};
+    }
+
+    // Voitures/train : max < 2×min
+    const C = sliderUI.carsPerTrain;
+    const absC = sliderAbs.carsPerTrain;
+    if(C && absC && !C.minEl.disabled){
+      let cMin = Math.round(Number(C.minEl.value));
+      let cMax = Math.round(Number(C.maxEl.value));
+      if(cMin > cMax){ const t=cMin; cMin=cMax; cMax=t; }
+
+      if(cMin < 2 && absC.max >= 3) cMin = 2;
+      cMin = Math.max(absC.min, Math.min(absC.max, cMin));
+
+      const limit = (2 * cMin) - 1;
+      if(cMax > limit) cMax = limit;
+      cMax = Math.max(absC.min, Math.min(absC.max, cMax));
+      if(cMax <= cMin){
+        const cand = Math.min(absC.max, cMin + 1);
+        cMax = (cand < 2*cMin) ? cand : Math.min(absC.max, (2*cMin)-1);
+      }
+
+      C.minEl.value = String(cMin);
+      C.maxEl.value = String(cMax);
+      updateDualUI("carsPerTrain");
+      lastGoodSliderValue.carsPerTrain = snapshotSlider("carsPerTrain") || {min:absC.min, max:absC.max};
+    }
   }
 
   function render(){
@@ -1082,7 +1100,6 @@ function sortRows(list, mode1, mode2, f){
       const ui = sliderUI[spec.id];
       if(ui && sliderAbs[spec.id] && !ui.minEl.disabled) updateDualUI(spec.id);
     }
-    enforceSeatConstraints();
 
     let filtered = allRows.filter(passesAll);
     filtered = sortRows(filtered, sortSel.value, sort2Sel.value, {year:numFields.year, park:fields.park});
@@ -1114,9 +1131,16 @@ function sortRows(list, mode1, mode2, f){
     }
   }
 
+  function updateArrowsState(){
+    const n = lastRendered.length;
+    if(n <= 1){ navLeftBtn.disabled = true; navRightBtn.disabled = true; return; }
+    navLeftBtn.disabled = (currentIndex <= 0);
+    navRightBtn.disabled = (currentIndex >= n - 1);
+  }
+
   function bootWithRows(rows){
     if(!Array.isArray(rows)) throw new Error("Le JSON doit être un tableau.");
-    if(rows.length === 0){ grid.innerHTML = `<div class=\"empty\">Aucune donnée.</div>`; return; }
+    if(rows.length === 0){ grid.innerHTML = `<div class="empty">Aucune donnée.</div>`; return; }
 
     const sample = rows[0];
 
@@ -1127,31 +1151,23 @@ function sortRows(list, mode1, mode2, f){
     for(const spec of NUM_SPECS) numFields[spec.id] = pickField(sample, spec.candidates);
     waterField = pickField(sample, WATER_CANDIDATES);
 
-    // build facets & sliders
     createFacetUI();
     createSliderUI();
 
-    // prepare data
-    allRows = rows.map(r=>{
-      const rr = {...r};
-      rr.__water = parseWater(rr);
-      computeDerivedSeats(rr);
-      return rr;
-    });
+    allRows = rows.map(r=>({ ...r, __water: parseWater(r) }));
 
-    // master options + stable rank
     for(const spec of FACET_SPECS){
       const key = fields[spec.id];
       if(!key){ facetMasterOptions[spec.id] = []; facetStableRank[spec.id] = new Map(); continue; }
 
       const opts = allRows
         .map(r => normalizeFacetValue(spec.id, r[key]))
-        .filter(v => v && !["-", "—", "n/a", "na", "unknown"].includes(norm(v)));
+        .filter(v => v && norm(v) !== "-" && norm(v) !== "—");
 
       const uniq = Array.from(new Set(opts));
 
       const globalCounts = new Map();
-      uniq.forEach(v => globalCounts.set(v, 0));
+      for(const v of uniq) globalCounts.set(v, 0);
       for(const r of allRows){
         const v = normalizeFacetValue(spec.id, r[key]);
         if(!v || !globalCounts.has(v)) continue;
@@ -1172,200 +1188,33 @@ function sortRows(list, mode1, mode2, f){
       facetStableRank[spec.id] = rankMap;
     }
 
-    // init sliders
     initSlidersFromData();
-    enforceSeatConstraints();
-
-    // Valeurs par défaut aux quartiles pour certains sliders
-    function computeQuartiles(values){
-      const arr = values.slice().sort((a,b)=>a-b);
-      const q = (p)=>{
-        const pos = (arr.length-1)*p;
-        const base = Math.floor(pos);
-        const rest = pos - base;
-        if(arr[base+1] !== undefined)
-          return arr[base] + rest*(arr[base+1]-arr[base]);
-        return arr[base];
-      };
-      return {q1: Math.round(q(0.25)), q3: Math.round(q(0.75))};
-    }
 
     const QUARTILE_IDS = new Set(["seatsPerRow","rowsPerCar","carsPerTrain"]);
-
     for(const spec of NUM_SPECS){
       const abs = sliderAbs[spec.id];
       const ui = sliderUI[spec.id];
       if(!abs || !ui || ui.minEl.disabled) continue;
 
-      sliderDyn[spec.id] = {min:abs.min, max:abs.max};
-
       if(QUARTILE_IDS.has(spec.id)){
         const key = numFields[spec.id];
-        const values = allRows
-          .map(r => toInt(r[key]))
-          .filter(v => Number.isFinite(v));
-
-        if(values.length > 0){
+        const values = allRows.map(r => toInt(r[key])).filter(v => Number.isFinite(v));
+        if(values.length){
           let {q1,q3} = computeQuartiles(values);
           let dmin = Math.max(abs.min, q1);
           let dmax = Math.min(abs.max, q3);
-
-          // --- RÈGLES DEMANDÉES ---
-          if(dmin === 1) dmin = dmin + 1;
-          if(spec.id === "seatsPerRow"){
-            if(dmin % 2 !== 0) dmin = dmin + 1;
-            if(dmax % 2 !== 0) dmax = dmax + 1;
-          }
-
-          // clamp après ajustements
-          dmin = Math.max(abs.min, Math.min(abs.max, dmin));
-          dmax = Math.max(abs.min, Math.min(abs.max, dmax));
-
-          // 2) max par défaut ≠ min
-          if(dmax === dmin){
-            dmax = dmax + 1;
-            if(spec.id === "seatsPerRow" && (dmax % 2 !== 0)) dmax = dmax + 1;
-            dmax = Math.min(abs.max, dmax);
-          }
-
-          // sécurité si on a touché au plafond
-          if(dmax === dmin && dmin > abs.min){
-            dmin = Math.max(abs.min, dmin - 1);
-            if(spec.id === "seatsPerRow" && (dmin % 2 !== 0)) dmin = Math.max(abs.min, dmin - 1);
-          }
-
+          if(dmax === dmin) dmax = Math.min(abs.max, dmin + 1);
           ui.minEl.value = String(dmin);
           ui.maxEl.value = String(dmax);
-        } else {
-          ui.minEl.value = String(abs.min);
-          ui.maxEl.value = String(abs.max);
         }
-      } else {
-        ui.minEl.value = String(abs.min);
-        ui.maxEl.value = String(abs.max);
       }
 
       updateDualUI(spec.id);
       lastGoodSliderValue[spec.id] = snapshotSlider(spec.id) || {min:abs.min, max:abs.max};
     }
 
-    /* ✅ NOUVELLE RÈGLE :
-       Par défaut, Rangées/voit. (rowsPerCar) doit avoir des bornes STRICTEMENT supérieures
-       à celles de Sièges/rang. (seatsPerRow).
-    */
-    function enforceDefaultRowsAboveSeats(){
-      const A = sliderUI.seatsPerRow;
-      const B = sliderUI.rowsPerCar;
-      const absA = sliderAbs.seatsPerRow;
-      const absB = sliderAbs.rowsPerCar;
-      if(!A || !B || !absA || !absB) return;
-      if(A.minEl.disabled || B.minEl.disabled) return;
+    enforceDefaultRowsAndCarsRules();
 
-      // Seats (A)
-      let aMin = Math.round(Number(A.minEl.value));
-      let aMax = Math.round(Number(A.maxEl.value));
-      if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
-
-      // Pour garantir B = 1.5×A, il faut que 1.5×A <= absB.max.
-      const maxAllowedA = Math.floor(absB.max / 1.5);
-      aMin = Math.min(aMin, maxAllowedA);
-      aMax = Math.min(aMax, maxAllowedA);
-
-      // conserver les règles existantes sur seatsPerRow (min != 1, pair)
-      if(aMin === 1) aMin = 2;
-      if(aMin % 2 !== 0) aMin = Math.max(absA.min, aMin - 1);
-      if(aMin % 2 !== 0) aMin = Math.min(absA.max, aMin + 1);
-
-      if(aMax % 2 !== 0) aMax = Math.min(absA.max, aMax + 1);
-      if(aMax < aMin) aMax = Math.min(absA.max, aMin + 2);
-      if(aMax % 2 !== 0) aMax = Math.min(absA.max, aMax + 1);
-
-      aMin = Math.max(absA.min, Math.min(absA.max, aMin));
-      aMax = Math.max(absA.min, Math.min(absA.max, aMax));
-      if(aMin > aMax){ const t=aMin; aMin=aMax; aMax=t; }
-
-      // Rows (B) = 1.5×Seats, arrondi au-dessus.
-      let bMin = Math.ceil(aMin * 1.5);
-      let bMax = Math.ceil(aMax * 1.5);
-
-      // clamp rowsPerCar
-      bMin = Math.max(absB.min, Math.min(absB.max, bMin));
-      bMax = Math.max(absB.min, Math.min(absB.max, bMax));
-
-      // garantir un intervalle non nul
-      if(bMax === bMin){
-        if(bMax < absB.max) bMax++;
-        else if(bMin > absB.min) bMin--;
-      }
-
-      // appliquer
-      A.minEl.value = String(aMin);
-      A.maxEl.value = String(aMax);
-      B.minEl.value = String(bMin);
-      B.maxEl.value = String(bMax);
-
-      updateDualUI("seatsPerRow");
-      updateDualUI("rowsPerCar");
-
-      lastGoodSliderValue.seatsPerRow = snapshotSlider("seatsPerRow") || {min:absA.min, max:absA.max};
-      lastGoodSliderValue.rowsPerCar  = snapshotSlider("rowsPerCar")  || {min:absB.min, max:absB.max};
-    }
-
-    /* ✅ RÈGLE :
-       Par défaut, la borne max de Voit./train (carsPerTrain)
-       doit être STRICTEMENT inférieure au double de sa borne min.
-       (donc max <= 2*min - 1)
-    */
-    function enforceDefaultCarsMaxUnderDoubleMin(){
-      const C = sliderUI.carsPerTrain;
-      const absC = sliderAbs.carsPerTrain;
-      if(!C || !absC) return;
-      if(C.minEl.disabled) return;
-
-      let cMin = Math.round(Number(C.minEl.value));
-      let cMax = Math.round(Number(C.maxEl.value));
-      if(cMin > cMax){ const t=cMin; cMin=cMax; cMax=t; }
-
-      // si min=1, impossible d'avoir (max>min) ET (max < 2*min). On force min à 2 si possible.
-      if(cMin < 2 && absC.max >= 3){
-        cMin = 2;
-      }
-
-      // clamp min
-      cMin = Math.max(absC.min, Math.min(absC.max, cMin));
-
-      // limiter le max
-      const limit = (2 * cMin) - 1;
-      if(cMax > limit) cMax = limit;
-
-      // clamp max
-      cMax = Math.max(absC.min, Math.min(absC.max, cMax));
-
-      // garantir un intervalle non nul
-      if(cMax <= cMin){
-        // essaie de créer un intervalle (min, min+1)
-        const candidate = Math.min(absC.max, cMin + 1);
-        // si candidate viole la règle (max < 2*min), ça ne peut arriver que si min=1 (déjà géré)
-        cMax = candidate;
-      }
-
-      // re-check stricte (sécurité)
-      if(cMax >= 2 * cMin){
-        cMax = Math.min(absC.max, (2 * cMin) - 1);
-      }
-
-      C.minEl.value = String(cMin);
-      C.maxEl.value = String(cMax);
-      updateDualUI("carsPerTrain");
-
-      lastGoodSliderValue.carsPerTrain = snapshotSlider("carsPerTrain") || {min:absC.min, max:absC.max};
-    }
-
-    enforceDefaultRowsAboveSeats();
-    enforceDefaultCarsMaxUnderDoubleMin();
-    enforceSeatConstraints();
-
-    // listeners
     qEl.addEventListener("input", render);
 
     let prevPrimary = sortSel.value;
@@ -1379,7 +1228,8 @@ function sortRows(list, mode1, mode2, f){
 
     waterOnlyEl.addEventListener("change", render);
 
-    $("clear").addEventListener("click", ()=>{
+    const clearBtn = $("clear");
+    if(clearBtn) clearBtn.addEventListener("click", ()=>{
       qEl.value = "";
       waterOnlyEl.checked = false;
 
@@ -1393,13 +1243,13 @@ function sortRows(list, mode1, mode2, f){
         const abs = sliderAbs[spec.id];
         const ui = sliderUI[spec.id];
         if(!abs || !ui || ui.minEl.disabled) continue;
-        sliderDyn[spec.id] = {min:abs.min, max:abs.max};
         ui.minEl.value = String(abs.min);
         ui.maxEl.value = String(abs.max);
         updateDualUI(spec.id);
         lastGoodSliderValue[spec.id] = {min:abs.min, max:abs.max};
       }
-      enforceSeatConstraints();
+
+      enforceDefaultRowsAndCarsRules();
 
       sortSel.value = "park_asc";
       sort2Sel.value = "year_asc";
@@ -1412,20 +1262,13 @@ function sortRows(list, mode1, mode2, f){
     render();
   }
 
-    // Démarrage : données intégrées
   try{
-    const raw = document.getElementById("COASTERS_DATA")?.textContent || "[]";
-    const EMBEDDED_ROWS = JSON.parse(raw);
-    const dc = document.getElementById("dataCount");
-    if(dc) dc.textContent = String(Array.isArray(EMBEDDED_ROWS) ? EMBEDDED_ROWS.length : "—");
-    clearError();
-    bootWithRows(EMBEDDED_ROWS);
+    const rows = decodeDataB64(COASTERS_DATA_B64);
+    bootWithRows(rows);
   } catch(e){
     console.error(e);
-    showError("Erreur de chargement des données intégrées:
-" + (e?.message ?? String(e)));
+    showError("Erreur de lecture du JSON intégré:\n" + (e?.message ?? String(e)));
   }
-
 })();
 </script>
 </body>
